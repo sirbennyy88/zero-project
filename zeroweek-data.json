@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated": "2026-09-06T07:57:10+00:00",
+  "generated": "2026-09-06T07:59:44+00:00",
   "data_through": "2026-09-04",
   "scope_start": "2021-01-01",
   "kev_released": "2026-09-04T16:47:03.5197Z",
@@ -15,7 +15,14 @@
    "repo": "https://github.com/benitoperies/zero-project"
   },
   "log": [
-   "[gh_repos] ok"
+   "[kev] ok",
+   "[ledger] ok",
+   "[epoch] ok",
+   "[msrc] ok",
+   "[oracle] ok",
+   "[gh_eco] ok",
+   "[gh_repos] ok",
+   "[dotnet] ok"
   ]
  },
  "events": [
