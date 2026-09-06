@@ -684,11 +684,21 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
     <div><h2>Five years in one row</h2><p>KEV additions per year (CISA), Google Threat Intelligence's count of zero-days exploited in the wild, and Microsoft's Patch Tuesday CVE total. KEV started on 3 Nov 2021, so 2021 is two months; the current year is year-to-date.</p></div>
   </div>
   <div class="yrs" id="yrs"></div>
+  <div class="chart-wrap" style="height:120px;margin-top:var(--s5)"><canvas id="p0mini"></canvas></div>
+  <p class="note">Before KEV: Project Zero's "0day In the Wild" tracker, by year discovered, 2014→. A different definition and a narrower, P0-scoped set of investigators than KEV — see <a href="#tab=exploited">Exploited</a> for the full breakdown and methodology note.</p>
 </section>
 
 <section class="panel">
   <div class="panel-head"><div><h2>Model releases and access events</h2><p>The dashed markers on every weekly chart. Anthropic model milestones and the access changes that moved the numbers.</p></div></div>
   <div class="timeline" aria-label="Model release timeline" id="tl"></div>
+</section>
+
+<section class="panel" id="advisories">
+  <div class="panel-head">
+    <div><h2>Advisories this week</h2><p>The latest items across national CERTs, ZDI and vendor threat-intel blogs, newest first. Each source's own RSS feed, keyword-filtered where the feed mixes non-security posts in. See <a href="#tab=data">Data &amp; sources</a> for per-feed status.</p></div>
+  </div>
+  <div class="duelist" id="advlist"></div>
+  <p class="note" id="advnote"></p>
 </section>
 </div>
 
@@ -718,6 +728,40 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
   <div class="chart-wrap"><canvas id="catchart"></canvas></div>
   <div class="legend" id="catlegend"></div>
   <p id="catnote" class="note"></p>
+</section>
+
+<section class="panel" id="exploitavail">
+  <div class="panel-head">
+    <div><h2>Exploit availability</h2><p>Of the CVEs CISA confirms are exploited (KEV), how many also have a public exploit tool: a Metasploit module, an Exploit-DB entry, or at least one GitHub repo referencing the CVE (nomi-sec PoC-in-GitHub — a noisy signal, write-ups and scanners included, not just working exploits). Weekly share is the fraction of that week's KEV additions with at least one of the three.</p></div>
+  </div>
+  <div class="chart-wrap"><canvas id="exploitchart"></canvas></div>
+  <p class="note" id="exploitnote"></p>
+</section>
+
+<section class="panel" id="euvdblock">
+  <div class="panel-head">
+    <div><h2>Europe &amp; Canada</h2><p>ENISA's EU Vulnerability Database publishes its own "exploited" flag, independent of CISA KEV — catching EU-notified exploitation that may lag or never appear in the US catalog. Canada's Cyber Centre (CCCS) publishes alerts too; see the note below on why it isn't wired in yet.</p></div>
+  </div>
+  <div class="chart-wrap"><canvas id="euvdchart"></canvas></div>
+  <div class="two" style="margin-top:var(--s4)">
+    <div>
+      <h3>Exploited per ENISA EUVD, not (yet) in CISA KEV</h3>
+      <div id="euvdonly" class="tbl-scroll" style="max-height:260px"></div>
+    </div>
+    <div>
+      <h3>Exploited per CISA KEV, not in ENISA EUVD</h3>
+      <div id="kevonly" class="tbl-scroll" style="max-height:260px"></div>
+    </div>
+  </div>
+  <p class="note" id="euvdnote">CCCS (Canadian Centre for Cyber Security) publishes alerts and advisories at <a href="https://www.cyber.gc.ca/en/alerts-advisories" rel="noopener">cyber.gc.ca/en/alerts-advisories</a>, but no working machine-readable feed for it was found as of this build — the site's documented RSS paths and API guesses all 404. It is listed in the Sources directory below as not-yet-wired rather than silently omitted; check there for current status.</p>
+</section>
+
+<section class="panel" id="p0block">
+  <div class="panel-head">
+    <div><h2>Before KEV: Project Zero zero-days in the wild, 2014→</h2><p>Google Project Zero's own tracker of confirmed in-the-wild zero-days, predating CISA KEV by seven years. <b>A different definition</b>: P0 scopes this list to targets it actively investigates, not a complete census the way KEV aims to be — see the methodology note.</p></div>
+  </div>
+  <div class="chart-wrap" style="height:220px"><canvas id="p0chart"></canvas></div>
+  <p class="note">Some P0 entries from 2021 onward also appear in CISA KEV; both are shown so the pre/post-KEV series can be compared honestly rather than spliced into one continuous line.</p>
 </section>
 
 <section class="panel" id="bod">
@@ -898,7 +942,7 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
   </div>
   <div class="wkstrip" id="wkstrip" aria-label="Weeks of the selected year"></div>
   <div class="wkhead" id="wkhead"></div>
-  <div class="tbl-scroll tbl-scroll--tall"><table class="kevlist" id="kevlist"><thead><tr><th>Added</th><th>CVE</th><th>Vendor</th><th>Product</th><th>Class</th><th>Vulnerability</th><th>Patch due</th></tr></thead><tbody></tbody></table></div>
+  <div class="tbl-scroll tbl-scroll--tall"><table class="kevlist" id="kevlist"><thead><tr><th>Added</th><th>CVE</th><th>Vendor</th><th>Product</th><th>Class</th><th>Vulnerability</th><th>Patch due</th><th>EPSS</th><th>Exploit</th><th>SSVC</th></tr></thead><tbody></tbody></table></div>
   <div class="wkfoot" id="wkfoot"></div>
 </section>
 </div>
@@ -937,8 +981,9 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
   <p><strong>Week boundaries</strong> are ISO Mondays. The latest week is partial until the next Monday refresh.</p>
   </div>
 
-  <h3 style="margin-top:var(--s6)">Where every number comes from</h3>
-  <div class="srcgrid" id="srcgrid"></div>
+  <h3 style="margin-top:var(--s6)">Sources directory</h3>
+  <p class="note" style="margin-top:0">Every source considered for this tracker, with its own verdict and live status from the last pipeline run. "Wired" sources feed the page directly; others are link-only or pending a working feed URL.</p>
+  <div class="tbl-scroll tbl-scroll--tall"><table id="srctable"><thead><tr><th>Source</th><th>Org</th><th>What we take</th><th>Cadence</th><th>Auth</th><th>Last item</th><th>Status</th></tr></thead><tbody></tbody></table></div>
 
   <h3 style="margin-top:var(--s6)">Similar trackers, and how this one differs</h3>
   <div class="compare" id="compare"></div>
@@ -1012,6 +1057,42 @@ const REVEALED = D.ledger_revealed_curated || [];
 const THIS_YEAR = +(DATA_THROUGH||"2026").slice(0,4);
 const MYTHOS_WEEK = "2026-04-06";
 const TODAY = new Date().toISOString().slice(0,10);
+const EUVD = D.euvd || {};
+const EUVD_WEEKLY = EUVD.weekly || [];
+const EUVD_ENTRIES = EUVD.entries || [];      // [date,euvd_id,cves[],vendor,product,score,desc]
+const EUVD_ONLY = EUVD.only_in_euvd || [];
+const EUVD_KEVONLY = EUVD.only_in_kev || [];
+const EPSS = D.epss || {};
+const EPSS_BY_CVE = EPSS.by_cve || {};
+const P0 = D.p0 || {};
+const P0_YEARLY = P0.yearly || {};
+const P0_ENTRIES = P0.entries || [];          // [date,cve,vendor,product,type,in_kev]
+const EXPLOIT = D.exploit || {};
+const EXPLOIT_BY_CVE = EXPLOIT.by_cve || {};
+const EXPLOIT_WEEKLY_SHARE = EXPLOIT.weekly_share || [];
+const SSVC = D.ssvc || {};
+const ADVISORIES = D.advisories || {};
+const ADVISORY_NAMES = {};
+((D.sources_registry||[])).forEach(s=>{ ADVISORY_NAMES[s.id]=s.name; });
+function epssPill(cve){
+  const e=EPSS_BY_CVE[cve]; if(!e) return '<span class="pill old">—</span>';
+  const [score,pctl]=e; const cls = pctl>=0.9?"sev-critical":pctl>=0.5?"sev-high":pctl>=0.2?"sev-medium":"sev-low";
+  return `<span class="pill ${cls}" title="EPSS percentile ${(pctl*100).toFixed(1)}%, as of ${esc(EPSS.asof||"")}">${(score*100).toFixed(1)}%</span>`;
+}
+function exploitBadges(cve){
+  const x=EXPLOIT_BY_CVE[cve]; if(!x) return '<span class="pill old">—</span>';
+  const b=[];
+  if(x.msf) b.push('<span class="badge final" title="Metasploit module available">MSF</span>');
+  if(x.edb) b.push('<span class="badge draft" title="Exploit-DB entry exists">EDB</span>');
+  if(x.poc) b.push(`<span class="badge type" title="${x.poc} GitHub repos reference this CVE (nomi-sec PoC-in-GitHub — a noisy signal, not all are working exploits)">PoC ${x.poc}</span>`);
+  return b.length?b.join(" "):'<span class="pill old">none found</span>';
+}
+function ssvcPill(cve){
+  const s=SSVC[cve]; if(!s||!s.exploitation) return '<span class="pill old">—</span>';
+  const v=String(s.exploitation).toLowerCase();
+  const cls = v.includes("active")?"sev-critical":v.includes("poc")?"sev-medium":"sev-low";
+  return `<span class="pill ${cls}" title="CISA-ADP SSVC · Automatable: ${esc(s.automatable||"—")} · Technical impact: ${esc(s.impact||"—")}">${esc(s.exploitation)}</span>`;
+}
 el("dataThrough").textContent = DATA_THROUGH ? fmtLong(DATA_THROUGH) : "—";
 el("footstamp").textContent = D.meta ? `Last refresh ${(D.meta.generated||"").slice(0,16).replace("T"," ")} UTC · KEV feed ${(D.meta.kev_released||"").slice(0,10)} · ledger rev ${(D.ledger&&D.ledger.totals&&D.ledger.totals.as_of)||"—"}` : "";
 el("datastamp").textContent = D.meta ? `Generated ${(D.meta.generated||"").slice(0,16).replace("T"," ")} UTC · ${num(KEV_ALL.length)} KEV entries · ${num(KWEEKS.length)} weeks · KEV catalog ${num(D.meta.kev_catalog_size)} entries · ledger ${num(D.meta.ledger_entries)} entries.` : "";
@@ -1635,8 +1716,66 @@ function oldDraw(){ const es=KEV_ALL.filter(e=>e[0].startsWith(oldYear+"")); con
   el("agebars").innerHTML=ys.map(y=>`<div class="r ${y===oldYear?"cur":""}"><span class="y">CVE-${y}</span><span class="b" style="width:${Math.max(2,Math.round(100*byY[y]/mx))}%"></span><span class="n"><a href="#tab=browse&cveyear=${y}&year=${oldYear}" title="show these in the week browser">${byY[y]}</a></span></div>`).join("");
   const L=D.ledger||{}; el("oldledger").textContent=L.old_found_patched_this_year!=null?`Mythos ledger: ${L.old_found_patched_this_year} findings discovered before ${THIS_YEAR} were patched upstream in ${THIS_YEAR}; ${(L.weekly||[]).filter(r=>r[0]<`${THIS_YEAR}-01-01`).reduce((s,r)=>s+r[1]+r[2]+r[3]+r[4]+r[5],0)} disclosed findings carry a ${THIS_YEAR-1} discovery date.`:""; }
 
+/* --- exploit availability --- */
+let exploitChart=null;
+function drawExploitAvail(){
+  const rows=EXPLOIT_WEEKLY_SHARE.filter(r=>r[1]!=null && r[0]>=`${THIS_YEAR-1}-01-01`);
+  const o=baseOpts("share of KEV additions with a public exploit"); o.scales.y.max=1; o.scales.y.ticks.callback=v=>Math.round(v*100)+"%";
+  o.plugins.tooltip.callbacks.label=c=>`${Math.round(c.raw*100)}% of that week's KEV additions`;
+  exploitChart=new Chart(el("exploitchart"),{data:{labels:rows.map(r=>r[0]),datasets:[{type:"line",label:"share with MSF/EDB/PoC",data:rows.map(r=>r[1]),borderColor:css("--kev"),backgroundColor:css("--kev"),borderWidth:2,pointRadius:2,tension:.25,fill:false}]},options:o});
+  const cves=Object.keys(EXPLOIT_BY_CVE); const withAny=cves.filter(c=>{const x=EXPLOIT_BY_CVE[c];return x.msf||x.edb||x.poc;});
+  const msfN=cves.filter(c=>EXPLOIT_BY_CVE[c].msf).length, edbN=cves.filter(c=>EXPLOIT_BY_CVE[c].edb).length;
+  el("exploitnote").textContent = cves.length ? `${num(withAny.length)} of ${num(cves.length)} tracked CVEs (${pct(withAny.length,cves.length)}%) have at least one public exploit signal: ${num(msfN)} with a Metasploit module, ${num(edbN)} with an Exploit-DB entry. PoC-in-GitHub counts are a repo-reference tally, not a verified-working-exploit count.` : "Available after the next pipeline refresh.";
+}
+
+/* --- EUVD (Europe) --- */
+let euvdChart=null;
+function drawEuvd(){
+  const kevW=new Map(KW.map(r=>[r[0],r[1]]));
+  const weeks=EUVD_WEEKLY.map(r=>r[0]).filter(w=>w>=`${THIS_YEAR-1}-01-01`);
+  const o=baseOpts("additions / week");
+  euvdChart=new Chart(el("euvdchart"),{data:{labels:weeks,datasets:[
+    {type:"bar",label:"ENISA EUVD exploited",data:weeks.map(w=>(EUVD_WEEKLY.find(r=>r[0]===w)||[0,0])[1]),backgroundColor:css("--myth"),barPercentage:.8,categoryPercentage:.9},
+    {type:"line",label:"CISA KEV",data:weeks.map(w=>kevW.get(w)||0),borderColor:css("--kev"),backgroundColor:css("--kev"),borderWidth:2,pointRadius:1,tension:.25}
+  ]},options:o});
+  const cveLink=c=>`<a class="pill" href="#tab=browse&cve=${c}">${c}</a>`;
+  el("euvdonly").innerHTML = EUVD_ONLY.length ? `<div class="chips">${EUVD_ONLY.slice(0,60).map(cveLink).join(" ")}</div><p class="note">${num(EUVD_ONLY.length)} CVEs ENISA marks exploited that are not (yet) in CISA KEV.</p>` : `<p class="note">${EUVD_ENTRIES.length?"None currently — every EUVD-exploited CVE with a CVE alias is already in KEV.":"Available after the next pipeline refresh."}</p>`;
+  el("kevonly").innerHTML = EUVD_KEVONLY.length ? `<p class="note">${num(EUVD_KEVONLY.length)} KEV CVEs not flagged exploited by ENISA EUVD (EUVD's exploited-vulnerabilities window is narrower / more recent than KEV's).</p>` : `<p class="note">${EUVD_ENTRIES.length?"None — every KEV CVE also appears in EUVD's exploited set.":"Available after the next pipeline refresh."}</p>`;
+}
+
+/* --- Project Zero 0day-in-the-wild --- */
+let p0Chart=null, p0MiniChart=null;
+function p0YearData(){ const years=[]; for(let y=2014;y<=THIS_YEAR;y++) years.push(String(y)); return {years, counts: years.map(y=>P0_YEARLY[y]||0)}; }
+function drawP0Full(){
+  const {years,counts}=p0YearData();
+  const o=baseOpts("0-days confirmed in the wild / year",false);
+  o.scales.x.grid.display=false;
+  p0Chart=new Chart(el("p0chart"),{data:{labels:years,datasets:[{type:"bar",data:counts,backgroundColor:years.map(y=>+y>=2021?css("--kev"):css("--myth-2")),barPercentage:.7,categoryPercentage:.85}]},options:o});
+}
+function drawP0Mini(){
+  if(!el("p0mini")) return;
+  const {years,counts}=p0YearData();
+  const o=baseOpts("",false); o.scales.y.display=false; o.scales.x.ticks.maxTicksLimit=13; o.layout.padding.top=4;
+  p0MiniChart=new Chart(el("p0mini"),{data:{labels:years,datasets:[{type:"bar",data:counts,backgroundColor:years.map(y=>+y>=2021?css("--kev"):css("--myth-2")),barPercentage:.7,categoryPercentage:.85}]},options:o});
+}
+
+/* --- advisories (Overview) --- */
+function drawAdvisories(){
+  const box=el("advlist"); if(!box) return;
+  const all=[];
+  Object.entries(ADVISORIES).forEach(([sid,rows])=>(rows||[]).forEach(([date,s,title,link])=>all.push({date,sid,title,link})));
+  all.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const top=all.slice(0,12);
+  box.innerHTML = top.length ? top.map(a=>`<div class="d"><div class="top"><span class="w mono">${esc(a.date||"—")}</span><span class="pill">${esc(ADVISORY_NAMES[a.sid]||a.sid)}</span></div><div class="bot"><a href="${esc(a.link||"#")}" target="_blank" rel="noopener">${esc(a.title)}</a></div></div>`).join("") :
+    `<p class="note">Available after the next Monday refresh.</p>`;
+  const ok=Object.values(D.source_status||{}).filter(s=>s&&s.ok).length, total=Object.keys(D.source_status||{}).length;
+  el("advnote").textContent = total ? `${num(all.length)} items across ${Object.keys(ADVISORIES).length} feeds this run; ${ok} of ${total} tracked sources returned data successfully.` : "";
+}
+drawP0Mini();
+drawAdvisories();
+
 BUILDERS.exploited=function(){
-  drawTTE(); drawDue(); drawCats(); drawBOD();
+  drawTTE(); drawDue(); drawCats(); drawBOD(); drawExploitAvail(); drawEuvd(); drawP0Full();
   const oy=el("oldyears");
   for(let y=2021;y<=THIS_YEAR;y++){ const b=document.createElement("button"); b.type="button"; b.textContent=y; b.setAttribute("aria-pressed",y===oldYear?"true":"false"); b.addEventListener("click",()=>{oldYear=y;[...oy.children].forEach(x=>x.setAttribute("aria-pressed",x.textContent==String(y)?"true":"false"));oldDraw();}); oy.appendChild(b); }
   oldDraw();
@@ -1952,7 +2091,7 @@ function showWeek(w, scroll){
   const es=all.filter(e=>(!kf.fresh||isFresh(e))&&(!kf.old||!isFresh(e))&&(!kf.ransom||e[4]==="K")&&(!cveFilter||cveFilter(e)));
   const fresh=all.filter(isFresh).length, rans=all.filter(e=>e[4]==="K").length; const idx=KWEEKS.indexOf(w); const ev=EVENTS.find(x=>x.week===w);
   whead.innerHTML=`<span class="t">Week ${ws.indexOf(w)+1} of ${y} · ${fmtLong(w)} – ${fmtLong(endOf(w))}${w===LATEST_WEEK&&LATEST_PARTIAL?` <span class='pill'>partial · data to ${fmtWk(DATA_THROUGH)}</span>`:""} <a class="pill" href="#tab=browse&week=${w}" title="permalink">#</a></span><span class="s"><b>${all.length}</b> added · <b>${fresh}</b> fresh · <b>${all.length-fresh}</b> older · <b>${rans}</b> ransomware${ev?` · <span class="mkev">◆ ${esc(ev.label)}</span>`:""}</span>`;
-  klist.innerHTML=es.length?es.map(e=>{const c=catOf(e);return `<tr data-cve="${e[1]}"><td class="mono">${e[0].slice(5)}</td><td><a class="pill ${isFresh(e)?"fresh":"old"}" href="https://nvd.nist.gov/vuln/detail/${e[1]}" target="_blank" rel="noopener">${e[1]}</a>${e[4]==="K"?"<span class='sk' title='Known ransomware campaign use'>☠</span>":""}</td><td>${esc(e[2])}</td><td class="prod" title="${esc(e[3])}">${esc(e[3])}</td><td class="micro">${esc((CAT_LABEL[c]||c).replace(" / ","/"))}</td><td class="vuln" title="${esc(e[6])}">${esc(e[6])}</td><td class="mono">${(e[5]||"").slice(5)}</td></tr>`;}).join(""):`<tr class="empty-row"><td colspan="7">${kf.fresh||kf.old||kf.ransom||cveFilter?"No entry in this week matches the filter — clear it to see all "+all.length+" additions.":"CISA added nothing to the catalog in this week."}</td></tr>`;
+  klist.innerHTML=es.length?es.map(e=>{const c=catOf(e);return `<tr data-cve="${e[1]}"><td class="mono">${e[0].slice(5)}</td><td><a class="pill ${isFresh(e)?"fresh":"old"}" href="https://nvd.nist.gov/vuln/detail/${e[1]}" target="_blank" rel="noopener">${e[1]}</a>${e[4]==="K"?"<span class='sk' title='Known ransomware campaign use'>☠</span>":""}</td><td>${esc(e[2])}</td><td class="prod" title="${esc(e[3])}">${esc(e[3])}</td><td class="micro">${esc((CAT_LABEL[c]||c).replace(" / ","/"))}</td><td class="vuln" title="${esc(e[6])}">${esc(e[6])}</td><td class="mono">${(e[5]||"").slice(5)}</td><td>${epssPill(e[1])}</td><td>${exploitBadges(e[1])}</td><td>${ssvcPill(e[1])}</td></tr>`;}).join(""):`<tr class="empty-row"><td colspan="10">${kf.fresh||kf.old||kf.ransom||cveFilter?"No entry in this week matches the filter — clear it to see all "+all.length+" additions.":"CISA added nothing to the catalog in this week."}</td></tr>`;
   const prevW=KWEEKS[idx-1], prevN=prevW?(byWeek[prevW]||[]).length:null;
   wfoot.textContent=(prevN!=null?`Previous week: ${prevN} added. `:"")+`${y} to date through this week: ${ws.filter(x=>x<=w).reduce((a,x)=>a+(byWeek[x]||[]).length,0)} KEV additions.`+(NOTABLE[w]?` Notable: ${NOTABLE[w]}.`:"");
   el("wkprev").disabled=idx===0; el("wknext").disabled=idx===KWEEKS.length-1;
@@ -2005,6 +2144,8 @@ Object.keys(CNA).forEach(c=>SIDX.push({g:"Vendors",k:c.toLowerCase(),m:c,t:"week
 Object.keys(REPO).forEach(r=>SIDX.push({g:"Framework repos",k:r.toLowerCase(),m:r,t:"advisories per month",d:"",go:()=>{goTab("frameworks");el("repoheat").scrollIntoView({behavior:"smooth",block:"start"});}}));
 FRAMES.forEach(f=>SIDX.push({g:"Framework releases",k:`${f.framework} ${f.vendor} ${f.note}`.toLowerCase(),m:f.framework,t:f.note.slice(0,90)+"…",d:f.date,go:()=>{goTab("frameworks");el("ffacts").scrollIntoView({behavior:"smooth",block:"start"});}}));
 (D.timeline||[]).forEach(t=>SIDX.push({g:"Timeline",k:t.event.toLowerCase(),m:t.date,t:t.event,d:"",go:()=>{goTab("overview");el("tl").scrollIntoView({behavior:"smooth",block:"start"});}}));
+EUVD_ENTRIES.forEach(e=>{const [date,eid,cves,ven,prod,score,desc]=e; SIDX.push({g:"EUVD (Europe)",k:`${eid} ${(cves||[]).join(" ")} ${ven} ${prod} ${desc}`.toLowerCase(),m:eid,t:`${ven} ${prod} — ${desc}`,d:date,go:()=>{goTab("exploited");el("euvdblock").scrollIntoView({behavior:"smooth",block:"start"});}});});
+Object.entries(ADVISORIES).forEach(([sid,rows])=>(rows||[]).forEach(([date,s,title,link])=>SIDX.push({g:"Advisories",k:`${title} ${ADVISORY_NAMES[sid]||sid}`.toLowerCase(),m:ADVISORY_NAMES[sid]||sid,t:title,d:date,go:()=>{goTab("overview");el("advisories").scrollIntoView({behavior:"smooth",block:"start"});}})));
 const q=el("q"), sres=el("sres"); let sel=-1, hits=[];
 function runSearch(){ const v=q.value.trim().toLowerCase(); sres.innerHTML=""; sel=-1; hits=[]; if(v.length<2) return; const terms=v.split(/\s+/);
   const scored=SIDX.filter(x=>terms.every(t=>x.k.includes(t))).slice(0,60); if(!scored.length){sres.innerHTML='<div class="none">No match. Try a CVE id, vendor, product, control reference or framework name.</div>';return;}
@@ -2022,9 +2163,17 @@ el("dlweekly").addEventListener("click",()=>{ const cn=Object.keys(CNA); let s="
   KW.forEach(k=>{const m=MY.find(r=>r[0]===k[0]);s+=[k[0],k[1],k[2],k[3],k[4],m?m[1]+m[2]+m[3]+m[4]+m[5]:"",m?m[6]:"",m?m[7]:"",...cn.map(c=>cval(c,k[0]))].join(",")+"\n";}); dl("zero-project-weekly-series.csv",s); });
 el("dlkev").addEventListener("click",()=>{ let s="dateAdded,cveID,vendor,product,productClass,cveYear,sameYearCVE,ransomwareUse,dueDate,name\n"; KEV_ALL.forEach(e=>{s+=[e[0],e[1],JSON.stringify(e[2]),JSON.stringify(e[3]),catOf(e),e[1].split("-")[1],isFresh(e),e[4]==="K"?"Known":"Unknown",e[5],JSON.stringify(e[6])].join(",")+"\n";}); dl("zero-project-kev-entries.csv",s); });
 
-/* ================= sources + comparison ================= */
-el("srcgrid").innerHTML=Object.entries(D.sources||{}).map(([h,items])=>`<div><h4>${esc(h)}</h4><ul>${items.map(([t,u,n])=>`<li><a href="${esc(u)}" rel="noopener">${esc(t)}</a>${n?` <span>— ${esc(n)}</span>`:""}</li>`).join("")}</ul></div>`).join("")+
-  `<div><h4>Governance mapping</h4><ul><li><a href="https://www.cisa.gov/news-events/directives/bod-26-04-prioritizing-security-updates-based-risk" rel="noopener">CISA BOD 26-04</a> <span>— remediation windows behind every due date</span></li><li><a href="https://digital-strategy.ec.europa.eu/en/policies/cyber-resilience-act" rel="noopener">EU Cyber Resilience Act</a> <span>— Art. 14 reporting cascade from 11 Sep 2026</span></li><li><a href="https://www.nist.gov/cyberframework" rel="noopener">NIST CSF 2.0</a> <span>— ID.RA-08, the disclosure-intake anchor</span></li><li><a href="https://csrc.nist.gov/pubs/ir/8596/iprd" rel="noopener">NIST IR 8596 Cyber AI Profile (draft)</a> <span>— AI for Cybersecurity track</span></li><li><a href="https://www.nist.gov/news-events/news/2026/04/nist-updates-nvd-operations-address-record-cve-growth" rel="noopener">NVD risk-based enrichment</a> <span>— the April 2026 data-quality change</span></li></ul></div>`;
+/* ================= sources directory + comparison ================= */
+const SRC_REGISTRY = D.sources_registry || [];
+const SRC_STATUS = D.source_status || {};
+document.querySelector("#srctable tbody").innerHTML = SRC_REGISTRY.map(s=>{
+  const st = SRC_STATUS[s.id];
+  const wired = s.verdict === "ADD-KEYLESS" || s.verdict === "ADD-WITH-KEY";
+  let statusHtml;
+  if(st){ statusHtml = st.ok ? `<span class="pill final">ok${st.items!=null?` · ${num(st.items)}`:""}</span>` : `<span class="pill draft">failed</span>`; }
+  else statusHtml = wired ? `<span class="pill">not tracked</span>` : `<span class="pill old">${esc(s.verdict||"")}</span>`;
+  return `<tr><td><a href="${esc(s.url||s.endpoint||"#")}" rel="noopener">${esc(s.name)}</a></td><td>${esc(s.org||"")}</td><td class="micro">${esc(s.page_use||"")}</td><td class="mono">${esc(s.cadence||"")}</td><td class="mono">${esc(s.auth||"")}</td><td class="mono">${esc((st&&st.last)||"—")}</td><td>${statusHtml}</td></tr>`;
+}).join("");
 el("compare").innerHTML=(D.similar_trackers||[]).map(s=>`<div class="row"><b><a href="${esc(s.url)}" rel="noopener">${esc(s.name)}</a>${s.extra_url?` <small>(<a href="${esc(s.extra_url)}" rel="noopener">${esc(s.extra_label||"more")}</a>)</small>`:""}</b><span>${esc(s.note)}</span></div>`).join("")+`<div class="row"><b>Zero Project (this page)</b><span>All of the above in one place: exploited-in-the-wild counts by ISO week since the KEV catalog began, every entry browsable and searchable; time to exploit and product-class breakdowns; Mythos discovery, disclosure and patch cadence; per-vendor CVE volume; a product watchlist; Patch Tuesday, Oracle and .NET cycles; package ecosystems and framework repos; a metric-to-framework governance matrix; open JSON/CSV/RSS, rebuilt automatically every Monday.</span></div>`;
 
 /* ================= boot ================= */

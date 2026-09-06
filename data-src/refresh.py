@@ -524,8 +524,326 @@ def build_watchlist(nvd_watchlist, extra_feeds, kev_entries):
         if fi: feed_items[pid] = fi
     return {'products': products, 'monthly': monthly, 'kev_hits': kev_hits, 'latest': latest, 'feed_items': feed_items}
 
+# ---------------------------------------------------------------- 10. ENISA EUVD
+def _euvd_date(raw):
+    if not raw: return ''
+    raw = str(raw)
+    if re.match(r'^\d{4}-\d{2}-\d{2}', raw): return raw[:10]
+    for fmt in ('%b %d, %Y, %I:%M:%S %p', '%b %d, %Y'):
+        try: return dt.datetime.strptime(raw.strip(), fmt).date().isoformat()
+        except Exception: continue
+    m = re.search(r'[A-Za-z]{3}\s+\d{1,2},\s*\d{4}', raw)
+    if m:
+        try: return dt.datetime.strptime(m.group(0), '%b %d, %Y').date().isoformat()
+        except Exception: pass
+    return raw[:10]
+
+def _euvd_entry(v):
+    aliases = v.get('aliases') or ''
+    if isinstance(aliases, str): alias_list = re.split(r'[\s,;]+', aliases)
+    elif isinstance(aliases, list): alias_list = aliases
+    else: alias_list = []
+    cves = sorted({a for a in alias_list if re.fullmatch(r'CVE-\d{4}-\d{4,7}', str(a))})
+    vendor = ''
+    ev = v.get('enisaIdVendor') or v.get('vendors') or []
+    if isinstance(ev, list) and ev:
+        first = ev[0]
+        vendor = first.get('vendor', {}).get('name', '') if isinstance(first, dict) and isinstance(first.get('vendor'), dict) else (first.get('name', '') if isinstance(first, dict) else str(first))
+    vendor = vendor or v.get('vendor', '') or ''
+    product = v.get('product', '') or ''
+    date = _euvd_date(v.get('exploitedSince') or v.get('datePublished') or v.get('dateUpdated') or '')
+    return [date, v.get('id', ''), cves, vendor.strip(), product.strip(), v.get('baseScore'), (v.get('description') or '')[:120]]
+
+@cached('euvd')
+def fetch_euvd():
+    exp = json.loads(http('https://euvdservices.enisa.europa.eu/api/exploitedvulnerabilities', timeout=60))
+    exp = exp if isinstance(exp, list) else (exp.get('items') or exp.get('result') or [])
+    entries = [_euvd_entry(v) for v in exp]
+    entries = [e for e in entries if e[0]]
+    entries.sort(key=lambda r: (r[0], r[1]))
+    return {'entries': entries}
+
+def build_euvd(euvd, kev_entries):
+    entries = (euvd or {}).get('entries') or []
+    weeks = weeks_between(dt.date.fromisoformat(min((e[0] for e in entries), default=TODAY.isoformat())), TODAY) if entries else []
+    counts = {}
+    for e in entries:
+        try: w = monday(e[0]).isoformat()
+        except Exception: continue
+        counts[w] = counts.get(w, 0) + 1
+    weekly = [[w, counts.get(w, 0)] for w in weeks]
+    kev_cves = {e[1] for e in kev_entries}
+    euvd_cves = set()
+    for e in entries: euvd_cves.update(e[2])
+    only_in_euvd = sorted(euvd_cves - kev_cves)
+    only_in_kev = sorted(kev_cves - euvd_cves)
+    return {'weekly': weekly, 'entries': entries, 'only_in_euvd': only_in_euvd, 'only_in_kev': only_in_kev}
+
+# ---------------------------------------------------------------- 11. FIRST EPSS
+@cached('epss')
+def fetch_epss(cves):
+    prev = cache_get('epss') or {}
+    by_cve = dict(prev.get('by_cve') or {})
+    cves = sorted(set(cves))
+    for i in range(0, len(cves), 100):
+        batch = cves[i:i + 100]
+        try:
+            j = json.loads(http('https://api.first.org/data/v1/epss?cve=' + ','.join(batch), timeout=30))
+            for d in j.get('data', []):
+                by_cve[d['cve']] = [float(d['epss']), float(d['percentile'])]
+        except Exception as ex:
+            log(f'[epss] batch {i // 100} FAILED: {ex!r}')
+        time.sleep(0.2)
+    asof = TODAY.isoformat()
+    dist = dict(prev.get('dist') or {'ge50': None, 'ge90': None, 'total': None})
+    for back in range(0, 4):
+        d = TODAY - dt.timedelta(days=back)
+        try:
+            raw = http(f'https://epss.cyentia.com/epss_scores-{d.isoformat()}.csv.gz', timeout=60, raw=True)[0]
+            text = gzip.decompress(raw).decode('utf-8', 'replace')
+            rows = list(csv.reader(io.StringIO(text)))
+            rows = [r for r in rows if r and not r[0].startswith('#') and r[0] != 'cve']
+            scores = [float(r[1]) for r in rows if len(r) > 1]
+            dist = {'ge50': sum(1 for s in scores if s >= 0.5), 'ge90': sum(1 for s in scores if s >= 0.9), 'total': len(scores)}
+            asof = d.isoformat()
+            break
+        except Exception as ex:
+            log(f'[epss] daily CSV {d.isoformat()} FAILED: {ex!r}')
+    return {'by_cve': by_cve, 'asof': asof, 'dist': dist}
+
+# ---------------------------------------------------------------- 12. Google Project Zero 0day In the Wild
+P0_COLS = ['cve', 'vendor', 'product', 'type', 'description', 'date discovered', 'date patched', 'advisory', 'analysis url', 'root cause analysis', 'reported by']
+@cached('p0')
+def fetch_p0():
+    sid = '1lkNJ0uQwbeC1ZTRrxdtuPLCIl7mlUreoKfSIgajnSyY'
+    html_ = http(f'https://docs.google.com/spreadsheets/d/{sid}/htmlview', timeout=30)
+    gids = sorted(set(re.findall(r'gid[=:]"?(\d+)', html_)))
+    entries = []
+    for g in gids:
+        try:
+            text = http(f'https://docs.google.com/spreadsheets/d/{sid}/gviz/tq?tqx=out:csv&gid={g}', timeout=30)
+            rows = list(csv.reader(io.StringIO(text)))
+            if not rows: continue
+            header = [h.strip().lower() for h in rows[0]]
+            if 'cve' not in header: continue
+            idx = {c: header.index(c) for c in P0_COLS if c in header}
+            for r in rows[1:]:
+                if not r or len(r) <= idx.get('cve', 0): continue
+                cve = r[idx['cve']].strip()
+                if not re.fullmatch(r'CVE-\d{4}-\d{4,7}', cve): continue
+                get = lambda k: (r[idx[k]].strip() if k in idx and idx[k] < len(r) else '')
+                entries.append([get('date discovered')[:10], cve, get('vendor'), get('product'), get('type'), get('date patched')[:10]])
+        except Exception as ex:
+            log(f'[p0] gid {g} FAILED: {ex!r}')
+        time.sleep(0.2)
+    seen = {}
+    for e in entries: seen[e[1]] = e
+    entries = sorted(seen.values(), key=lambda r: (r[0] or '', r[1]))
+    yearly = {}
+    for d, cve, *_ in entries:
+        y = d[:4] if re.fullmatch(r'\d{4}', d[:4] or '') else cve.split('-')[1]
+        yearly[y] = yearly.get(y, 0) + 1
+    return {'entries': entries, 'yearly': dict(sorted(yearly.items()))}
+
+def build_p0(p0, kev_cves):
+    entries = (p0 or {}).get('entries') or []
+    out = [[d, cve, ven, prod, typ, cve in kev_cves] for d, cve, ven, prod, typ, patched in entries]
+    return {'yearly': (p0 or {}).get('yearly') or {}, 'entries': out}
+
+# ---------------------------------------------------------------- 13. Exploit availability
+@cached('exploit')
+def fetch_exploit(cves):
+    msf_by_cve = {}
+    try:
+        j = json.loads(http('https://raw.githubusercontent.com/rapid7/metasploit-framework/master/db/modules_metadata_base.json', timeout=180))
+        for mod in j.values():
+            for ref in (mod.get('references') or []):
+                cve = None
+                if isinstance(ref, list) and len(ref) == 2 and str(ref[0]).upper() == 'CVE':
+                    cve = 'CVE-' + str(ref[1])
+                elif isinstance(ref, str) and re.fullmatch(r'CVE-\d{4}-\d{4,7}', ref):
+                    cve = ref
+                if cve:
+                    prev_m = msf_by_cve.get(cve)
+                    if not prev_m or (mod.get('disclosure_date') or '') > (prev_m.get('disclosure_date') or ''):
+                        msf_by_cve[cve] = {'name': mod.get('name'), 'disclosure_date': mod.get('disclosure_date'), 'rank': mod.get('rank')}
+        log(f'[exploit] metasploit: {len(msf_by_cve)} CVEs mapped')
+    except Exception as ex:
+        log(f'[exploit] metasploit FAILED: {ex!r}')
+        prev = cache_get('exploit') or {}
+        msf_by_cve = prev.get('msf_by_cve') or {}
+    edb_cves = set()
+    try:
+        text = http('https://gitlab.com/exploit-database/exploitdb/-/raw/main/files_exploits.csv', timeout=120)
+        for row in csv.reader(io.StringIO(text)):
+            if len(row) > 11:
+                edb_cves.update(re.findall(r'CVE-\d{4}-\d{4,7}', row[11]))
+        log(f'[exploit] exploit-db: {len(edb_cves)} CVEs mapped')
+    except Exception as ex:
+        log(f'[exploit] exploit-db FAILED: {ex!r}')
+        prev = cache_get('exploit') or {}
+        edb_cves = set(prev.get('edb_cves') or [])
+    prev = cache_get('exploit') or {}
+    poc_counts = dict(prev.get('poc_counts') or {})
+    cves = sorted(set(cves))
+    missing = [c for c in cves if c not in poc_counts]
+    log(f'[poc-in-github] {len(missing)} missing of {len(cves)} tracked CVEs')
+    for i, cve in enumerate(missing):
+        m = re.fullmatch(r'CVE-(\d{4})-(\d+)', cve)
+        if not m: poc_counts[cve] = 0; continue
+        url = f'https://raw.githubusercontent.com/nomi-sec/PoC-in-GitHub/master/{m.group(1)}/{cve}.json'
+        try:
+            j = json.loads(http(url, timeout=20))
+            poc_counts[cve] = len(j) if isinstance(j, list) else 0
+        except urllib.error.HTTPError as e:
+            poc_counts[cve] = 0 if e.code == 404 else poc_counts.get(cve, 0)
+        except Exception as ex:
+            if i % 200 == 0: log(f'[poc-in-github] ({i + 1}/{len(missing)}) {cve}: {ex!r}')
+        if (i + 1) % 250 == 0: log(f'[poc-in-github] progress {i + 1}/{len(missing)}')
+        time.sleep(0.12)
+    return {'msf_by_cve': msf_by_cve, 'edb_cves': sorted(edb_cves), 'poc_counts': poc_counts}
+
+def build_exploit(exploit, kev_entries):
+    exploit = exploit or {}
+    msf = exploit.get('msf_by_cve') or {}
+    edb = set(exploit.get('edb_cves') or [])
+    poc = exploit.get('poc_counts') or {}
+    by_cve = {}
+    for cve in {e[1] for e in kev_entries} | set(poc) | set(msf) | edb:
+        by_cve[cve] = {'msf': cve in msf, 'edb': cve in edb, 'poc': poc.get(cve, 0)}
+    weeks = weeks_between(START, TODAY); idx = {w: i for i, w in enumerate(weeks)}
+    tot = [0] * len(weeks); has = [0] * len(weeks)
+    for e in kev_entries:
+        w = monday(e[0]).isoformat()
+        if w not in idx: continue
+        i = idx[w]; tot[i] += 1
+        info = by_cve.get(e[1]) or {}
+        if info.get('msf') or info.get('edb') or info.get('poc'): has[i] += 1
+    weekly_share = [[w, round(has[i] / tot[i], 3) if tot[i] else None] for i, w in enumerate(weeks)]
+    return {'by_cve': by_cve, 'weekly_share': weekly_share}
+
+# ---------------------------------------------------------------- 14. CVE.org (cveawg) SSVC enrichment
+@cached('ssvc')
+def fetch_ssvc(cves):
+    prev = cache_get('ssvc') or {}
+    out = dict(prev)
+    cves = sorted(set(cves))
+    missing = [c for c in cves if c not in out]
+    log(f'[ssvc] {len(missing)} missing of {len(cves)} KEV CVEs')
+    for i, cve in enumerate(missing):
+        try:
+            j = json.loads(http(f'https://cveawg.mitre.org/api/cve/{cve}', timeout=20))
+            rec = {'exploitation': None, 'automatable': None, 'impact': None}
+            for adp in (j.get('containers', {}).get('adp') or []):
+                for met in (adp.get('metrics') or []):
+                    other = met.get('other') or {}
+                    if other.get('type') != 'ssvc': continue
+                    content = other.get('content') or {}
+                    opts = content.get('options') if isinstance(content, dict) else None
+                    combined = {}
+                    if isinstance(opts, list):
+                        for o in opts:
+                            if isinstance(o, dict): combined.update(o)
+                    elif isinstance(content, dict):
+                        combined = content
+                    if combined.get('Exploitation'): rec['exploitation'] = combined.get('Exploitation')
+                    if combined.get('Automatable'): rec['automatable'] = combined.get('Automatable')
+                    if combined.get('Technical Impact'): rec['impact'] = combined.get('Technical Impact')
+            out[cve] = rec
+        except urllib.error.HTTPError as e:
+            out[cve] = out.get(cve) or {'exploitation': None, 'automatable': None, 'impact': None}
+        except Exception as ex:
+            out[cve] = out.get(cve) or {'exploitation': None, 'automatable': None, 'impact': None}
+            if i % 200 == 0: log(f'[ssvc] ({i + 1}/{len(missing)}) {cve}: {ex!r}')
+        if (i + 1) % 250 == 0: log(f'[ssvc] progress {i + 1}/{len(missing)}')
+        time.sleep(0.2)
+    return out
+
+# ---------------------------------------------------------------- 15. Advisory RSS feeds
+ADVISORY_FEEDS = [
+    # (id, name, org, url, is_pure_security_feed) -- ids match data-src/research/sources.md SOURCES_REGISTRY
+    ('zdi-rss', 'ZDI published advisories', 'Trend Micro Zero Day Initiative', 'https://www.zerodayinitiative.com/rss/published/', True),
+    ('ncsc-nl', 'NCSC-NL advisories', 'NCSC-NL', 'https://advisories.ncsc.nl/rss/advisories', True),
+    ('jvn-rss', 'JVN/JPCERT', 'JPCERT/CC + IPA', 'https://jvn.jp/rss/jvn.rdf', True),
+    ('cert-fr', 'CERT-FR (ANSSI)', 'ANSSI', 'https://cert.ssi.gouv.fr/feed/', True),
+    ('cyber-gc-ca', 'Canadian Centre for Cyber Security alerts', 'Canadian Centre for Cyber Security', 'https://www.cyber.gc.ca/api/cccs/rss/v1/get?feed=alerts&lang=en', True),
+    ('cisa-alerts', 'CISA alerts', 'CISA', 'https://www.cisa.gov/cybersecurity-advisories/rss.xml', True),
+    ('talos-blog', 'Cisco Talos vulnerability reports', 'Cisco Talos', 'https://blog.talosintelligence.com/rss/', False),
+    ('msrc-blog', 'Microsoft MSRC blog', 'Microsoft MSRC', 'https://msrc.microsoft.com/blog/rss.xml', False),
+    ('gtig-blog', 'Google Threat Intelligence blog', 'Google Threat Intelligence Group', 'https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v', False),
+    ('rapid7-blog', 'Rapid7 blog', 'Rapid7', 'https://blog.rapid7.com/rss/', False),
+    ('crowdstrike-blog', 'CrowdStrike blog', 'CrowdStrike', 'https://www.crowdstrike.com/blog/feed/', False),
+    ('unit42-blog', 'Unit 42', 'Palo Alto Networks Unit 42', 'https://unit42.paloaltonetworks.com/feed/', False),
+]
+SEC_KEYWORDS = re.compile(r'vulnerab|exploit|advisor|cve-|zero.day|0.day|patch tuesday|security update|rce|remote code|privilege escalation|proof.of.concept|threat|malware|ransomware|breach|attack', re.I)
+
+def _feed_items(xml_text, limit=100):
+    items = []
+    try:
+        root = ET.fromstring(xml_text)
+    except Exception:
+        return items
+    for node in root.iter():
+        tag = node.tag.split('}')[-1]
+        if tag not in ('item', 'entry'): continue
+        title = ''; link = ''; date = ''
+        for child in node:
+            ctag = child.tag.split('}')[-1]
+            if ctag == 'title' and not title: title = (child.text or '').strip()
+            elif ctag == 'link' and not link: link = child.get('href') or (child.text or '').strip()
+            elif ctag in ('pubDate', 'date', 'updated', 'published') and not date: date = (child.text or '').strip()
+        if title: items.append((date, title, link))
+        if len(items) >= limit: break
+    return items
+
+def _rss_date(s):
+    import email.utils
+    s = (s or '').strip()
+    try:
+        d = email.utils.parsedate_to_datetime(s)
+        if d: return d.date().isoformat()
+    except Exception: pass
+    for fmt in ('%Y-%m-%dT%H:%M:%S%z', '%Y-%m-%dT%H:%M:%SZ', '%Y-%m-%d %H:%M:%S'):
+        try: return dt.datetime.strptime(s, fmt).date().isoformat()
+        except Exception: continue
+    m = re.search(r'\d{4}-\d{2}-\d{2}', s)
+    return m.group(0) if m else s[:10]
+
+@cached('advisories')
+def fetch_advisories():
+    out = {}; status = {}
+    prev = cache_get('advisories') or {}
+    for sid, name, org, url, is_pure in ADVISORY_FEEDS:
+        try:
+            text = http(url, headers=BROWSER_UA, timeout=30)
+            items = _feed_items(text)
+            rows = []
+            for date, title, link in items:
+                if not is_pure and not SEC_KEYWORDS.search(title): continue
+                rows.append([_rss_date(date), sid, title[:200], link])
+            rows.sort(key=lambda r: r[0], reverse=True)
+            rows = rows[:100]
+            out[sid] = rows
+            status[sid] = {'ok': True, 'last': rows[0][0] if rows else None, 'items': len(rows), 'note': ''}
+            log(f'[advisories:{sid}] ok, {len(rows)} items')
+        except Exception as ex:
+            cached_rows = (prev.get(sid) if isinstance(prev.get(sid), list) else []) or []
+            out[sid] = cached_rows
+            status[sid] = {'ok': False, 'last': (cached_rows[0][0] if cached_rows else None), 'items': len(cached_rows), 'note': str(ex)[:150]}
+            log(f'[advisories:{sid}] FAILED: {ex!r}')
+        time.sleep(0.3)
+    out['__status__'] = status
+    return out
+
 # ---------------------------------------------------------------- build outputs
-def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_watchlist, extra_feeds):
+def load_sources_registry():
+    text = (HERE / 'research' / 'sources.md').read_text(encoding='utf-8')
+    m = re.search(r'SOURCES_REGISTRY\s*=\s*(\[.*\])', text, re.S)
+    if not m: return []
+    return json.loads(m.group(1))
+
+def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_watchlist, extra_feeds,
+          euvd=None, epss=None, p0=None, exploit=None, ssvc=None, advisories=None):
     data_through = max(e[0] for e in kev['entries']) if kev else TODAY.isoformat()
     cve_pub = cve_pub or {}
     kev_categories = MANUAL.get('kev_categories', {})
@@ -535,6 +853,28 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_wat
         kev_entries.append([d, cve, ven, prod, k, due, name, info.get('pub') or '', categorize(ven, prod, kev_categories), info.get('score'), info.get('sev') or ''])
     kw = kev_weekly(kev_entries) if kev_entries else []
     watchlist = build_watchlist(nvd_watchlist, extra_feeds, kev_entries)
+    kev_cves = {e[1] for e in kev_entries}
+    euvd_built = build_euvd(euvd, kev_entries)
+    p0_built = build_p0(p0, kev_cves)
+    exploit_built = build_exploit(exploit, kev_entries)
+    epss = epss or {}
+    ssvc = ssvc or {}
+    advisories = advisories or {}
+    advisory_status = advisories.get('__status__') or {}
+    advisories_out = {k: v for k, v in advisories.items() if k != '__status__'}
+    sources_registry = load_sources_registry()
+    source_status = {}
+    for sid, status in advisory_status.items(): source_status[sid] = status
+    def _st(sid, ok, items, last=None, note=''):
+        source_status[sid] = {'ok': bool(ok), 'last': last, 'items': items, 'note': note}
+    _st('kev', bool(kev), (kev or {}).get('count'), data_through)
+    _st('enisa-euvd-exploited', bool(euvd), len(euvd_built['entries']), euvd_built['entries'][-1][0] if euvd_built['entries'] else None)
+    _st('epss', bool(epss.get('by_cve')), len(epss.get('by_cve') or {}), epss.get('asof'))
+    _st('p0-0day-sheet', bool(p0), len(p0_built['entries']))
+    _st('metasploit-modules', bool((exploit or {}).get('msf_by_cve')), len((exploit or {}).get('msf_by_cve') or {}))
+    _st('exploitdb-csv', bool((exploit or {}).get('edb_cves')), len((exploit or {}).get('edb_cves') or []))
+    _st('poc-in-github', bool((exploit or {}).get('poc_counts')), len((exploit or {}).get('poc_counts') or {}))
+    _st('cisa-adp-ssvc-kev', bool(ssvc), sum(1 for v in ssvc.values() if v.get('exploitation') or v.get('automatable') or v.get('impact')))
     events = [{'date': e['date'], 'label': e['label'], 'week': monday(e['date']).isoformat(), 'frac': round((dt.date.fromisoformat(e['date']).weekday() + .5) / 7, 2)} for e in MANUAL['events']]
     revealed_manual = []
     for line in (HERE / 'mythos_cves_raw.txt').read_text(encoding='utf-8').splitlines():
@@ -566,6 +906,14 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_wat
         'kev_categories': kev_categories,
         'tte': compute_tte(kev_entries),
         'kev_by_category': kev_by_category(kev_entries),
+        'euvd': euvd_built,
+        'epss': epss,
+        'p0': p0_built,
+        'exploit': exploit_built,
+        'ssvc': ssvc,
+        'advisories': advisories_out,
+        'sources_registry': sources_registry,
+        'source_status': source_status,
     }
     (ROOT / 'zeroweek-data.js').write_text('window.ZW=' + json.dumps(ZW, ensure_ascii=False, separators=(',', ':')) + ';\n', encoding='utf-8')
     (ROOT / 'zeroweek-data.json').write_text(json.dumps(ZW, ensure_ascii=False, indent=1), encoding='utf-8')
@@ -601,6 +949,19 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_wat
     for f in MANUAL['framework_facts']: add('framework_fact', f['date'], f['framework'], '', f['vendor'], '', f['count'], f['note'])
     for t in MANUAL['timeline']: add('timeline', t['date'], 'event', '', '', '', 1, t['event'])
     for c, s in MANUAL['vendor_statements'].items(): add('vendor_statement', '', 'statement', '', c, '', 1, s)
+    for w, n in euvd_built['weekly']: add('euvd_weekly', w, 'exploited_added', '', 'ENISA EUVD', '', n, '')
+    for d, eid, cves, ven, prod, score, desc in euvd_built['entries']: add('euvd_entry', d, 'exploited_in_wild', eid, ven, prod, 1, ('CVE:' + ','.join(cves) if cves else '') + ' | ' + desc)
+    for cve in euvd_built['only_in_euvd']: add('euvd_delta', '', 'only_in_euvd_not_kev', cve, 'ENISA EUVD', '', 1, '')
+    for cve in euvd_built['only_in_kev']: add('euvd_delta', '', 'only_in_kev_not_euvd', cve, 'CISA KEV', '', 1, '')
+    for cve, (score, pct) in epss.get('by_cve', {}).items(): add('epss', epss.get('asof', ''), 'score_percentile', cve, 'FIRST.org', '', score, f'percentile={pct}')
+    for y, n in p0_built['yearly'].items(): add('p0_yearly', y, 'zero_days_itw', '', 'Google Project Zero', '', n, '')
+    for d, cve, ven, prod, typ, in_kev in p0_built['entries']: add('p0_entry', d, 'zero_day_itw', cve, ven, prod, 1, f'type={typ} in_kev={in_kev}')
+    for w, share in exploit_built['weekly_share']: add('exploit_weekly_share', w, 'share_with_public_exploit', '', 'Metasploit/Exploit-DB/PoC-in-GitHub', '', share, '')
+    for cve, info in exploit_built['by_cve'].items(): add('exploit_availability', '', 'msf_edb_poc', cve, '', '', 1, f"msf={info['msf']} edb={info['edb']} poc={info['poc']}")
+    for cve, rec in ssvc.items():
+        if rec.get('exploitation') or rec.get('automatable') or rec.get('impact'): add('ssvc', '', 'decision', cve, 'CISA-ADP', '', 1, f"exploitation={rec.get('exploitation')} automatable={rec.get('automatable')} impact={rec.get('impact')}")
+    for sid, rows_ in advisories_out.items():
+        for d, s, title, link in rows_: add('advisory', d, sid, '', dict((r['id'], r.get('org')) for r in sources_registry).get(sid, sid), '', 1, title)
     with open(ROOT / 'zeroweek-data.csv', 'w', newline='', encoding='utf-8') as f:
         w = csv.writer(f); w.writerow(['dataset', 'period', 'series', 'id', 'vendor_or_project', 'product_or_class', 'value', 'note']); w.writerows(rows)
     write_feed(ZW)
@@ -626,7 +987,7 @@ def write_feed(ZW):
 def main():
     global ARGS
     ap = argparse.ArgumentParser(); ap.add_argument('--offline', action='store_true'); ap.add_argument('--force-eco', action='store_true', help='pull ecosystem counts even without a token (slow, rate-limited)')
-    ap.add_argument('--skip', default='', help='comma list of fetchers to skip: kev,ledger,epoch,msrc,oracle,gh_eco,gh_repos,dotnet,cve_pub,nvd_watchlist,extra_feeds')
+    ap.add_argument('--skip', default='', help='comma list of fetchers to skip: kev,ledger,epoch,msrc,oracle,gh_eco,gh_repos,dotnet,cve_pub,nvd_watchlist,extra_feeds,euvd,epss,p0,exploit,ssvc,advisories')
     ap.add_argument('--watchlist-limit', type=int, default=None, help='only process the first N watchlist products in fetch_nvd_watchlist (first full run is slow: ~51 products x ~18 windows x 6.5s unkeyed)')
     ARGS = ap.parse_args(); skip = set(x.strip() for x in ARGS.skip.split(',') if x.strip())
     run = lambda name, fn, *a: (cache_get(name) if name in skip else fn(*a))
@@ -637,7 +998,17 @@ def main():
     nvd_watchlist = run('nvd_watchlist', fetch_nvd_watchlist)
     extra_feeds = run('extra_feeds', fetch_extra_feeds)
     if not kev: sys.exit('no KEV data (network and cache both unavailable)')
-    build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_watchlist, extra_feeds)
+    euvd = run('euvd', fetch_euvd)
+    kev_cves_for_epss = {e[1] for e in (kev or {}).get('entries', [])}
+    euvd_cves_for_epss = set()
+    for e in (euvd or {}).get('entries', []): euvd_cves_for_epss.update(e[2])
+    epss = run('epss', fetch_epss, sorted(kev_cves_for_epss | euvd_cves_for_epss))
+    p0 = run('p0', fetch_p0)
+    exploit = run('exploit', fetch_exploit, sorted(kev_cves_for_epss))
+    ssvc = run('ssvc', fetch_ssvc, sorted(kev_cves_for_epss))
+    advisories = run('advisories', fetch_advisories)
+    build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_watchlist, extra_feeds,
+          euvd, epss, p0, exploit, ssvc, advisories)
     (CACHE / 'last_run.log').write_text('\n'.join(LOG), encoding='utf-8')
 
 if __name__ == '__main__':
