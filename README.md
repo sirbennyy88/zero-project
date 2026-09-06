@@ -17,6 +17,27 @@ Live at **[zero.peries.ca](https://zero.peries.ca/)**
 
 Browse any week, search any CVE ID, jump to a specific date, download the data, or subscribe to the RSS feed.
 
+## v2: new tabs
+
+- **Products** — a watchlist of ~50 widely-run products/frameworks (Linux kernel, Chrome, OpenSSL, Kubernetes, LiteLLM, LangChain, etc.), matched against NVD via CPE, with per-product monthly CVE counts, severity breakdowns, and KEV hits
+- **Governance** — a matrix mapping the site's ten core metrics to the security, AI, and regulatory frameworks each one evidences (NIST CSF 2.0, ISO/IEC 27001/42001, EU AI Act, MITRE ATLAS, and more)
+- **CISO view** — an eight-number board-reporting summary computed from the same underlying data as the rest of the page
+- **Time-to-exploit** — median days from a CVE's publication to its addition to the CISA KEV catalog, broken out by year
+- **Exploited** tab now also includes a "what kind of thing is being exploited" category breakdown of KEV additions (edge/network appliance, browser & OS, on-prem collaboration, etc.)
+
+### NVD_API_KEY (optional, speeds up the weekly run)
+
+The Products watchlist is built by querying the NVD CPE API once per watched product. Without an API key, NVD rate-limits requests to about one every 6 seconds, so a full run can take 30+ minutes; with a key, that drops roughly 10x. It's optional — the pipeline works fine without one, just slower.
+
+1. Request a free key at https://nvd.nist.gov/developers/request-an-api-key
+2. Add it as a repository secret named `NVD_API_KEY` (Settings → Secrets and variables → Actions)
+
+The workflow picks it up automatically if present, and runs unaffected (just slower) if it isn't set.
+
+### Research notes
+
+`data-src/research/` holds the source research behind the v2 additions — `frameworks.md` documents the framework-to-metric mapping used in the Governance tab, and `ciso-metrics.md` documents the CISO view's eight numbers and how each is derived.
+
 ## Data sources
 
 - **CISA Known Exploited Vulnerabilities (KEV)** — https://www.cisa.gov/known-exploited-vulnerabilities (JSON feed)
@@ -68,6 +89,7 @@ python data-src/refresh.py --offline
 │   ├── manual.json           # Curated facts: events, timeline, ecosystem list, repo list
 │   ├── mythos_cves_raw.txt   # Raw list of Mythos CVE findings
 │   ├── kev_2026_raw.txt      # Raw KEV data (for local testing)
+│   ├── research/              # Source research behind the Governance/CISO tabs
 │   ├── cache/                # Fetched data cached locally (refreshed each run)
 │   └── *.log                  # Refresh run logs
 ├── .github/

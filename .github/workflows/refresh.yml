@@ -28,6 +28,7 @@ jobs:
       - name: Pull every source and rebuild data files
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: python data-src/refresh.py
       - name: Commit refreshed data
         run: |

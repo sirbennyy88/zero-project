@@ -9,7 +9,8 @@ Pulls every primary feed, rebuilds zeroweek-data.js / .json / .csv and feed.xml 
 
 Every fetcher is independent: if one source is down, the previous cached result is used and the run still succeeds.
 """
-import argparse, csv, datetime as dt, gzip, io, json, os, pathlib, re, sys, time, urllib.request, urllib.parse, urllib.error, html as htmlmod
+import argparse, csv, datetime as dt, gzip, io, json, math, os, pathlib, re, statistics, sys, time, urllib.request, urllib.parse, urllib.error, html as htmlmod
+import xml.etree.ElementTree as ET
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -19,6 +20,8 @@ TODAY = dt.date.today()
 START = dt.date(2021, 1, 1)                  # 5-year scope
 UA = {'User-Agent': 'zeroweek-refresh/1.0 (+https://zeroweek.peries.ca)', 'Accept-Encoding': 'gzip'}
 TOKEN = os.environ.get('GITHUB_TOKEN', '')
+NVD_KEY = os.environ.get('NVD_API_KEY', '')
+NVD_SLEEP = 0.7 if NVD_KEY else 6.5
 ARGS = None
 LOG = []
 try:
@@ -74,6 +77,29 @@ def months_between(a, b):
         if m == 13: y, m = y + 1, 1
     return out
 
+def date_windows(a, b, days=120):
+    """List of (start, end) date tuples covering [a, b] in `days`-day windows."""
+    out = []; d = a
+    while d <= b:
+        we = min(d + dt.timedelta(days=days - 1), b)
+        out.append((d, we)); d = we + dt.timedelta(days=1)
+    return out
+
+def pctl(vals, q):
+    """Linear-interpolation percentile (q in 0..100) over a list of numbers."""
+    if not vals: return None
+    v = sorted(vals)
+    if len(v) == 1: return v[0]
+    k = (len(v) - 1) * (q / 100.0); f = math.floor(k); c = math.ceil(k)
+    if f == c: return v[int(k)]
+    return v[f] + (v[c] - v[f]) * (k - f)
+
+def categorize(vendor, product, kev_categories):
+    hay = f'{vendor} {product}'.lower()
+    for key, cat in kev_categories.items():
+        if key in hay: return cat
+    return 'other'
+
 # ---------------------------------------------------------------- 1. CISA KEV
 @cached('kev')
 def fetch_kev():
@@ -87,18 +113,50 @@ def fetch_kev():
     ents.sort(key=lambda r: (r[0], r[1]))
     return {'released': j.get('dateReleased'), 'count': j.get('count'), 'entries': ents}
 
-def kev_weekly(kev):
+def kev_weekly(entries):
+    """entries: enriched KEV rows [date,cve,vendor,product,K/U,due,name,published,category,score,severity]."""
     first = max(START, dt.date(2021, 11, 1))
     weeks = weeks_between(first, TODAY); idx = {w: i for i, w in enumerate(weeks)}
-    rows = [[w, 0, 0, 0, 0] for w in weeks]   # week,total,same-year CVE,older,ransomware
-    for d, cve, *_r in kev['entries']:
+    buckets = [{'total': 0, 'fresh': 0, 'older': 0, 'ransom': 0, 'tte': [], 'edge': 0} for _ in weeks]
+    for d, cve, ven, prod, k, due, name, pub, cat, score, sev in entries:
         w = monday(d).isoformat()
         if w not in idx: continue
-        r = rows[idx[w]]; r[1] += 1
-        if int(cve.split('-')[1]) >= int(d[:4]): r[2] += 1
-        else: r[3] += 1
-        if _r[2] == 'K': r[4] += 1
+        b = buckets[idx[w]]; b['total'] += 1
+        if int(cve.split('-')[1]) >= int(d[:4]): b['fresh'] += 1
+        else: b['older'] += 1
+        if k == 'K': b['ransom'] += 1
+        if cat == 'edge_appliance': b['edge'] += 1
+        if pub:
+            try:
+                delta = (dt.date.fromisoformat(d) - dt.date.fromisoformat(pub)).days
+                if delta >= 0: b['tte'].append(delta)
+            except Exception: pass
+    rows = []
+    for w, b in zip(weeks, buckets):
+        median_tte = round(statistics.median(b['tte']), 1) if b['tte'] else None
+        rows.append([w, b['total'], b['fresh'], b['older'], b['ransom'], median_tte, b['edge']])
     return rows
+
+def compute_tte(entries):
+    by_year, by_month = {}, {}
+    for d, cve, ven, prod, k, due, name, pub, cat, score, sev in entries:
+        if not pub: continue
+        try:
+            delta = (dt.date.fromisoformat(d) - dt.date.fromisoformat(pub)).days
+        except Exception:
+            continue
+        if delta < 0: continue
+        by_year.setdefault(d[:4], []).append(delta); by_month.setdefault(d[:7], []).append(delta)
+    def stats(vals):
+        return {'median': round(statistics.median(vals), 1), 'p25': round(pctl(vals, 25), 1), 'p75': round(pctl(vals, 75), 1), 'n': len(vals)}
+    return {'by_year': {y: stats(v) for y, v in sorted(by_year.items())},
+            'by_month': {m: stats(v) for m, v in sorted(by_month.items())}}
+
+def kev_by_category(entries):
+    out = {}
+    for d, cve, ven, prod, k, due, name, pub, cat, score, sev in entries:
+        y = d[:4]; out.setdefault(y, {}); out[y][cat] = out[y].get(cat, 0) + 1
+    return out
 
 # ---------------------------------------------------------------- 2. Anthropic ledger
 @cached('ledger')
@@ -294,10 +352,189 @@ def fetch_dotnet():
     for d, *_ in items: monthly[d[:7]] = monthly.get(d[:7], 0) + 1
     return {'items': items, 'monthly': monthly}
 
+# ---------------------------------------------------------------- 7. CVE publish dates + CVSS (cvelistV5)
+@cached('cve_pub')
+def fetch_cve_published(kev):
+    prev = cache_get('cve_pub') or {}
+    out = dict(prev)
+    cves = sorted({e[1] for e in (kev or {}).get('entries', [])})
+    missing = [c for c in cves if c not in out]
+    log(f'[cve_pub] {len(missing)} missing of {len(cves)} KEV CVEs')
+    for i, cve in enumerate(missing):
+        m = re.fullmatch(r'CVE-(\d{4})-(\d+)', cve)
+        if not m:
+            out[cve] = {'pub': None, 'score': None, 'sev': None}; continue
+        year, num = m.group(1), m.group(2)
+        bucket = f'{int(num) // 1000}xxx'
+        url = f'https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/{year}/{bucket}/{cve}.json'
+        try:
+            j = json.loads(http(url, timeout=30))
+            pub = ((j.get('cveMetadata') or {}).get('datePublished') or '')[:10] or None
+            score = sev = None
+            for met in (((j.get('containers') or {}).get('cna') or {}).get('metrics') or []):
+                for key in ('cvssV3_1', 'cvssV4_0'):
+                    if key in met:
+                        score = met[key].get('baseScore'); sev = met[key].get('baseSeverity'); break
+                if score is not None: break
+            out[cve] = {'pub': pub, 'score': score, 'sev': sev}
+        except Exception as ex:
+            out[cve] = out.get(cve) or {'pub': None, 'score': None, 'sev': None}
+            if i % 200 == 0: log(f'[cve_pub] ({i+1}/{len(missing)}) {cve}: {ex!r}')
+        if (i + 1) % 250 == 0: log(f'[cve_pub] progress {i+1}/{len(missing)}')
+        time.sleep(0.15)
+    return out
+
+# ---------------------------------------------------------------- 8. NVD watchlist (product CVE history)
+def nvd_query(url, headers):
+    for attempt in range(4):
+        try:
+            return json.loads(http(url, headers=headers, timeout=60))
+        except urllib.error.HTTPError as e:
+            if e.code in (403, 429, 503):
+                wait = (2 ** attempt) * 5
+                log(f'[nvd_watchlist] HTTP {e.code}, backoff {wait}s (attempt {attempt + 1}/4)'); time.sleep(wait); continue
+            raise
+    raise RuntimeError('nvd_watchlist: too many retries')
+
+@cached('nvd_watchlist')
+def fetch_nvd_watchlist():
+    prev = cache_get('nvd_watchlist') or {}
+    products = MANUAL.get('watchlist', [])
+    if ARGS.watchlist_limit: products = products[:ARGS.watchlist_limit]
+    out = dict(prev)
+    cutoff = TODAY - dt.timedelta(days=130)
+    headers = {'apiKey': NVD_KEY} if NVD_KEY else {}
+    windows = date_windows(START, TODAY, 120)
+    for i, prod in enumerate(products):
+        pid = prod['id']
+        if not prod.get('cpes'):
+            log(f'[nvd_watchlist] ({i+1}/{len(products)}) {pid}: no CPEs, skip'); continue
+        prod_cache = dict(prev.get(pid, {}))
+        try:
+            for cpe in prod['cpes']:
+                for ws, we in windows:
+                    wkey = f'{cpe}|{ws.isoformat()}_{we.isoformat()}'
+                    if wkey in prod_cache and we <= cutoff: continue
+                    pstart = ws.strftime('%Y-%m-%dT00:00:00.000'); pend = we.strftime('%Y-%m-%dT23:59:59.999')
+                    url = 'https://services.nvd.nist.gov/rest/json/cves/2.0?' + urllib.parse.urlencode(
+                        {'virtualMatchString': cpe, 'pubStartDate': pstart, 'pubEndDate': pend, 'resultsPerPage': 2000})
+                    j = nvd_query(url, headers)
+                    recs = []
+                    for v in j.get('vulnerabilities', []):
+                        c = v.get('cve', {})
+                        pub = (c.get('published') or '')[:10]; cid = c.get('id')
+                        score = sev = None
+                        metrics = c.get('metrics', {}) or {}
+                        for key in ('cvssMetricV31', 'cvssMetricV40', 'cvssMetricV30', 'cvssMetricV2'):
+                            if metrics.get(key):
+                                cd = metrics[key][0].get('cvssData', {}) or {}
+                                score = cd.get('baseScore')
+                                sev = cd.get('baseSeverity') or metrics[key][0].get('baseSeverity')
+                                break
+                        desc = ''
+                        for d_ in c.get('descriptions', []):
+                            if d_.get('lang') == 'en': desc = d_.get('value', ''); break
+                        recs.append([pub, cid, score, (sev or 'UNKNOWN').upper(), desc[:120]])
+                    prod_cache[wkey] = recs
+                    time.sleep(NVD_SLEEP)
+            out[pid] = prod_cache
+            log(f'[nvd_watchlist] ({i+1}/{len(products)}) {pid}: ok, {sum(len(v) for v in prod_cache.values())} cached records')
+        except Exception as ex:
+            log(f'[nvd_watchlist] ({i+1}/{len(products)}) {pid}: FAILED ({ex!r}), keeping cache')
+            out[pid] = prev.get(pid, prod_cache)
+    return out
+
+# ---------------------------------------------------------------- 9. Extra product feeds (Kubernetes, Node.js, Grafana)
+@cached('extra_feeds')
+def fetch_extra_feeds():
+    out = {}
+    try:
+        j = json.loads(http('https://kubernetes.io/docs/reference/issues-security/official-cve-feed/index.json', timeout=30))
+        items = j if isinstance(j, list) else (j.get('items') or j.get('cves') or [])
+        rows = []
+        for it in items:
+            date = it.get('date_published') or it.get('date_added') or it.get('datePublished') or it.get('published') or ''
+            cid = it.get('id') or it.get('cve_id') or ''
+            title = (it.get('summary') or it.get('title') or '')[:200]
+            link = it.get('url') or it.get('link') or ''
+            if cid: rows.append([str(date)[:10], cid, title, '', link])
+        rows.sort(key=lambda r: r[0], reverse=True)
+        out['kubernetes'] = rows[:100]
+    except Exception as ex:
+        log('[extra_feeds] kubernetes FAILED:', repr(ex))
+    time.sleep(0.3)
+    try:
+        xml_text = http('https://nodejs.org/en/feed/vulnerability.xml', timeout=30)
+        root = ET.fromstring(xml_text)
+        rows = []
+        for item in root.iter('item'):
+            title = (item.findtext('title') or '')[:200]; link = item.findtext('link') or ''
+            pub = item.findtext('pubDate') or ''
+            try: d_ = dt.datetime.strptime(pub[:25].strip(), '%a, %d %b %Y %H:%M:%S').date().isoformat()
+            except Exception: d_ = pub[:10]
+            guid = item.findtext('guid') or link
+            rows.append([d_, guid, title, '', link])
+        rows.sort(key=lambda r: r[0], reverse=True)
+        out['nodejs'] = rows[:100]
+    except Exception as ex:
+        log('[extra_feeds] nodejs FAILED:', repr(ex))
+    time.sleep(0.3)
+    try:
+        page = http('https://grafana.com/security/security-advisories/', headers=BROWSER_UA, timeout=30)
+        rows = []
+        for m in re.finditer(r'<a[^>]+href="(/security/security-advisories/[^"]+)"[^>]*>([^<]{5,150})</a>', page):
+            rows.append(['', '', htmlmod.unescape(m.group(2)).strip(), '', 'https://grafana.com' + m.group(1)])
+        if rows: out['grafana'] = rows[:100]
+        else: log('[extra_feeds] grafana: no machine-readable advisories found, skipping')
+    except Exception as ex:
+        log('[extra_feeds] grafana FAILED (skip):', repr(ex))
+    return out
+
+def build_watchlist(nvd_watchlist, extra_feeds, kev_entries):
+    products = MANUAL.get('watchlist', [])
+    nvd_watchlist = nvd_watchlist or {}; extra_feeds = extra_feeds or {}
+    kev_by_cve = {e[1]: e for e in kev_entries}
+    monthly, latest, kev_hits, feed_items = {}, {}, {}, {}
+    for prod in products:
+        pid = prod['id']; name_words = [w for w in re.split(r'[\s/]+', prod['name'].lower()) if len(w) > 3]
+        recs = {}
+        for rows in (nvd_watchlist.get(pid) or {}).values():
+            for r in rows:
+                pub, cid, score, sev, desc = r
+                if not cid: continue
+                if cid not in recs or (pub and pub > (recs[cid][0] or '')): recs[cid] = r
+        recs_list = sorted(recs.values(), key=lambda r: r[0] or '', reverse=True)
+        m = {}
+        for pub, cid, score, sev, desc in recs_list:
+            if not pub: continue
+            b = m.setdefault(pub[:7], {'total': 0, 'critical': 0, 'high': 0, 'medium': 0, 'low': 0})
+            b['total'] += 1
+            sevl = (sev or '').upper()
+            if sevl in ('CRITICAL', 'HIGH', 'MEDIUM', 'LOW'): b[sevl.lower()] += 1
+        if m: monthly[pid] = m
+        if recs_list: latest[pid] = recs_list[:12]
+        hits = set()
+        for cve, e in kev_by_cve.items():
+            ven_prod = f'{e[2]} {e[3]}'.lower()
+            if any(w in ven_prod for w in name_words): hits.add(cve)
+        for cid in recs:
+            if cid in kev_by_cve: hits.add(cid)
+        if hits: kev_hits[pid] = sorted(hits)
+        fi = extra_feeds.get(pid)
+        if fi: feed_items[pid] = fi
+    return {'products': products, 'monthly': monthly, 'kev_hits': kev_hits, 'latest': latest, 'feed_items': feed_items}
+
 # ---------------------------------------------------------------- build outputs
-def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet):
-    kw = kev_weekly(kev) if kev else []
+def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_watchlist, extra_feeds):
     data_through = max(e[0] for e in kev['entries']) if kev else TODAY.isoformat()
+    cve_pub = cve_pub or {}
+    kev_categories = MANUAL.get('kev_categories', {})
+    kev_entries = []
+    for d, cve, ven, prod, k, due, name in (kev['entries'] if kev else []):
+        info = cve_pub.get(cve) or {}
+        kev_entries.append([d, cve, ven, prod, k, due, name, info.get('pub') or '', categorize(ven, prod, kev_categories), info.get('score'), info.get('sev') or ''])
+    kw = kev_weekly(kev_entries) if kev_entries else []
+    watchlist = build_watchlist(nvd_watchlist, extra_feeds, kev_entries)
     events = [{'date': e['date'], 'label': e['label'], 'week': monday(e['date']).isoformat(), 'frac': round((dt.date.fromisoformat(e['date']).weekday() + .5) / 7, 2)} for e in MANUAL['events']]
     revealed_manual = []
     for line in (HERE / 'mythos_cves_raw.txt').read_text(encoding='utf-8').splitlines():
@@ -310,7 +547,7 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet):
         'events': events,
         'timeline': MANUAL['timeline'],
         'notable_weeks': MANUAL['notable_weeks'],
-        'kev': {'entries': kev['entries'] if kev else [], 'weekly': kw},
+        'kev': {'entries': kev_entries, 'weekly': kw},
         'ledger': ledger or {},
         'ledger_revealed_curated': revealed_manual,
         'cna': {'weeks': epoch['weeks'], 'series': epoch['series']} if epoch else {'weeks': [], 'series': {}},
@@ -323,16 +560,29 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet):
         'vendor_statements': MANUAL['vendor_statements'], 'glasswing_launch_partners': MANUAL['glasswing_launch_partners'], 'glasswing_partners': MANUAL['glasswing_partners'],
         'framework_facts': MANUAL['framework_facts'],
         'similar_trackers': MANUAL['similar_trackers'], 'sources': MANUAL['sources'],
+        'watchlist': watchlist,
+        'frameworks': MANUAL.get('frameworks', []), 'metrics': MANUAL.get('metrics', []),
+        'ciso_kpis': MANUAL.get('ciso_kpis', []), 'bod': MANUAL.get('bod', {}),
+        'kev_categories': kev_categories,
+        'tte': compute_tte(kev_entries),
+        'kev_by_category': kev_by_category(kev_entries),
     }
     (ROOT / 'zeroweek-data.js').write_text('window.ZW=' + json.dumps(ZW, ensure_ascii=False, separators=(',', ':')) + ';\n', encoding='utf-8')
     (ROOT / 'zeroweek-data.json').write_text(json.dumps(ZW, ensure_ascii=False, indent=1), encoding='utf-8')
     # tidy CSV
     rows = []
     add = lambda *r: rows.append(list(r))
-    for d, cve, ven, prod, k, due, name in ZW['kev']['entries']:
-        add('kev_entry', d, 'exploited_in_wild', cve, ven, prod, 1, ('same-year CVE; ' if int(cve.split('-')[1]) >= int(d[:4]) else 'older CVE; ') + ('ransomware; ' if k == 'K' else '') + name)
-    for w, t, f, o, r in kw:
-        for k, v in (('total', t), ('same_year_cve', f), ('older_cve', o), ('ransomware_linked', r)): add('kev_weekly', w, k, '', 'CISA KEV', '', v, '')
+    for d, cve, ven, prod, k, due, name, pub, cat, score, sev in ZW['kev']['entries']:
+        note = ('same-year CVE; ' if int(cve.split('-')[1]) >= int(d[:4]) else 'older CVE; ') + ('ransomware; ' if k == 'K' else '') + name
+        note += f' | published={pub} category={cat} score={score if score is not None else ""} severity={sev}'
+        add('kev_entry', d, 'exploited_in_wild', cve, ven, prod, 1, note)
+    for w, t, f, o, r, tte, edge in kw:
+        for k, v in (('total', t), ('same_year_cve', f), ('older_cve', o), ('ransomware_linked', r), ('median_tte_days', tte), ('edge_appliance_count', edge)): add('kev_weekly', w, k, '', 'CISA KEV', '', v, '')
+    for pid, months in ZW['watchlist']['monthly'].items():
+        for ym, s in sorted(months.items()):
+            for k, v in (('total', s['total']), ('critical', s['critical']), ('high', s['high']), ('medium', s['medium']), ('low', s['low'])): add('watchlist_monthly', ym, k, pid, '', '', v, '')
+    for y, s in sorted(ZW['tte']['by_year'].items()):
+        for k, v in s.items(): add('tte_by_year', y, k, '', '', '', v, '')
     for r in (ledger or {}).get('weekly', []):
         for k, v in zip(['discovered_critical', 'discovered_high', 'discovered_medium', 'discovered_low', 'discovered_unassessed', 'hash_commitments', 'patched_upstream'], r[1:]): add('mythos_ledger_weekly', r[0], k, '', 'Anthropic CVD ledger', '', v, '')
     for m in revealed_manual: add('mythos_revealed_finding', '', 'disclosed_and_revealed', m['id'], m['project'], m['bug_class'], 1, m['severity'] + ': ' + m['title'])
@@ -376,14 +626,18 @@ def write_feed(ZW):
 def main():
     global ARGS
     ap = argparse.ArgumentParser(); ap.add_argument('--offline', action='store_true'); ap.add_argument('--force-eco', action='store_true', help='pull ecosystem counts even without a token (slow, rate-limited)')
-    ap.add_argument('--skip', default='', help='comma list of fetchers to skip: kev,ledger,epoch,msrc,oracle,gh_eco,gh_repos,dotnet')
+    ap.add_argument('--skip', default='', help='comma list of fetchers to skip: kev,ledger,epoch,msrc,oracle,gh_eco,gh_repos,dotnet,cve_pub,nvd_watchlist,extra_feeds')
+    ap.add_argument('--watchlist-limit', type=int, default=None, help='only process the first N watchlist products in fetch_nvd_watchlist (first full run is slow: ~51 products x ~18 windows x 6.5s unkeyed)')
     ARGS = ap.parse_args(); skip = set(x.strip() for x in ARGS.skip.split(',') if x.strip())
-    run = lambda name, fn: (cache_get(name) if name in skip else fn())
+    run = lambda name, fn, *a: (cache_get(name) if name in skip else fn(*a))
     kev = run('kev', fetch_kev); ledger = run('ledger', fetch_ledger); epoch = run('epoch', fetch_epoch)
     msrc = run('msrc', fetch_msrc); oracle = run('oracle', fetch_oracle)
     eco = run('gh_eco', fetch_gh_eco); repos = run('gh_repos', fetch_gh_repos); dotnet = run('dotnet', fetch_dotnet)
+    cve_pub = run('cve_pub', fetch_cve_published, kev)
+    nvd_watchlist = run('nvd_watchlist', fetch_nvd_watchlist)
+    extra_feeds = run('extra_feeds', fetch_extra_feeds)
     if not kev: sys.exit('no KEV data (network and cache both unavailable)')
-    build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet)
+    build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_watchlist, extra_feeds)
     (CACHE / 'last_run.log').write_text('\n'.join(LOG), encoding='utf-8')
 
 if __name__ == '__main__':

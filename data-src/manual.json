@@ -601,5 +601,2058 @@
     ""
    ]
   ]
+ },
+ "watchlist": [
+  {
+   "id": "kubernetes",
+   "name": "Kubernetes",
+   "category": "virtualization_cloud",
+   "cpes": [
+    "cpe:2.3:a:kubernetes:kubernetes"
+   ],
+   "feeds": [
+    "https://kubernetes.io/docs/reference/issues-security/official-cve-feed/index.json"
+   ]
+  },
+  {
+   "id": "nodejs",
+   "name": "Node.js",
+   "category": "developer_ci",
+   "cpes": [
+    "cpe:2.3:a:nodejs:node.js"
+   ],
+   "feeds": [
+    "https://nodejs.org/en/feed/vulnerability.xml"
+   ]
+  },
+  {
+   "id": "grafana",
+   "name": "Grafana",
+   "category": "developer_ci",
+   "cpes": [
+    "cpe:2.3:a:grafana:grafana"
+   ],
+   "feeds": [
+    "https://grafana.com/security/security-advisories/"
+   ]
+  },
+  {
+   "id": "aspnet-core-blazor",
+   "name": "ASP.NET Core / Blazor",
+   "category": "developer_ci",
+   "cpes": [
+    "cpe:2.3:a:microsoft:asp.net_core"
+   ],
+   "feeds": [
+    "https://github.com/dotnet/announcements/labels/Security"
+   ]
+  },
+  {
+   "id": "django",
+   "name": "Django",
+   "category": "developer_ci",
+   "cpes": [
+    "cpe:2.3:a:djangoproject:django"
+   ],
+   "feeds": [
+    "https://www.djangoproject.com/rss/weblog/"
+   ]
+  },
+  {
+   "id": "ruby-on-rails",
+   "name": "Ruby on Rails",
+   "category": "developer_ci",
+   "cpes": [
+    "cpe:2.3:a:rubyonrails:rails"
+   ],
+   "feeds": [
+    "https://rubyonrails-security.googlegroups.com/"
+   ]
+  },
+  {
+   "id": "laravel",
+   "name": "Laravel",
+   "category": "developer_ci",
+   "cpes": [
+    "cpe:2.3:a:laravel:laravel"
+   ],
+   "feeds": [
+    "https://github.com/laravel/framework/security/advisories"
+   ]
+  },
+  {
+   "id": "spring-framework-boot-security",
+   "name": "Spring Framework / Boot / Security",
+   "category": "developer_ci",
+   "cpes": [
+    "cpe:2.3:a:vmware:spring_framework",
+    "cpe:2.3:a:vmware:spring_boot",
+    "cpe:2.3:a:vmware:spring_security"
+   ],
+   "feeds": [
+    "https://spring.io/security"
+   ]
+  },
+  {
+   "id": "nextjs",
+   "name": "Next.js",
+   "category": "developer_ci",
+   "cpes": [
+    "cpe:2.3:a:vercel:next.js"
+   ],
+   "feeds": [
+    "https://github.com/vercel/next.js/security/advisories"
+   ]
+  },
+  {
+   "id": "react",
+   "name": "React",
+   "category": "developer_ci",
+   "cpes": [
+    "cpe:2.3:a:facebook:react"
+   ],
+   "feeds": [
+    "https://github.com/facebook/react/security/advisories"
+   ]
+  },
+  {
+   "id": "angular",
+   "name": "Angular",
+   "category": "developer_ci",
+   "cpes": [
+    "cpe:2.3:a:angularjs:angularjs"
+   ],
+   "feeds": [
+    "https://github.com/angular/angular/security/advisories"
+   ]
+  },
+  {
+   "id": "vue",
+   "name": "Vue",
+   "category": "developer_ci",
+   "cpes": [
+    "cpe:2.3:a:vuejs:vue_cli"
+   ],
+   "feeds": [
+    "https://github.com/vuejs/core/security/advisories"
+   ]
+  },
+  {
+   "id": "electron",
+   "name": "Electron",
+   "category": "developer_ci",
+   "cpes": [
+    "cpe:2.3:a:electronjs:electron"
+   ],
+   "feeds": [
+    "https://github.com/electron/electron/security/advisories"
+   ]
+  },
+  {
+   "id": "jenkins",
+   "name": "Jenkins",
+   "category": "developer_ci",
+   "cpes": [
+    "cpe:2.3:a:jenkins:jenkins"
+   ],
+   "feeds": [
+    "https://www.jenkins.io/security/advisories/"
+   ]
+  },
+  {
+   "id": "gitlab",
+   "name": "GitLab",
+   "category": "developer_ci",
+   "cpes": [
+    "cpe:2.3:a:gitlab:gitlab"
+   ],
+   "feeds": [
+    "https://about.gitlab.com/releases/categories/releases/"
+   ]
+  },
+  {
+   "id": "atlassian-jira-confluence",
+   "name": "Atlassian Jira / Confluence",
+   "category": "on_prem_collaboration",
+   "cpes": [
+    "cpe:2.3:a:atlassian:jira",
+    "cpe:2.3:a:atlassian:confluence_server"
+   ],
+   "feeds": [
+    "https://confluence.atlassian.com/security/atlassian-security-advisories-33528133.html"
+   ]
+  },
+  {
+   "id": "wordpress-core",
+   "name": "WordPress core",
+   "category": "cms",
+   "cpes": [
+    "cpe:2.3:a:wordpress:wordpress"
+   ],
+   "feeds": [
+    "https://wordpress.org/news/category/security/feed/"
+   ]
+  },
+  {
+   "id": "openssl",
+   "name": "OpenSSL",
+   "category": "developer_ci",
+   "cpes": [
+    "cpe:2.3:a:openssl:openssl"
+   ],
+   "feeds": [
+    "https://openssl-library.org/news/vulnerabilities/index.html"
+   ]
+  },
+  {
+   "id": "linux-kernel",
+   "name": "Linux kernel",
+   "category": "browser_os",
+   "cpes": [
+    "cpe:2.3:o:linux:linux_kernel"
+   ],
+   "feeds": [
+    "https://cve.org/CVERecord/SearchResults?query=assigner%3ALinux%20Kernel%20CVEs"
+   ]
+  },
+  {
+   "id": "chrome",
+   "name": "Chrome",
+   "category": "browser_os",
+   "cpes": [
+    "cpe:2.3:a:google:chrome"
+   ],
+   "feeds": [
+    "https://chromereleases.googleblog.com/search/label/Stable%20updates"
+   ]
+  },
+  {
+   "id": "firefox",
+   "name": "Firefox",
+   "category": "browser_os",
+   "cpes": [
+    "cpe:2.3:a:mozilla:firefox"
+   ],
+   "feeds": [
+    "https://www.mozilla.org/en-US/security/advisories/"
+   ]
+  },
+  {
+   "id": "ios-macos",
+   "name": "iOS / macOS",
+   "category": "browser_os",
+   "cpes": [
+    "cpe:2.3:o:apple:iphone_os",
+    "cpe:2.3:o:apple:macos"
+   ],
+   "feeds": [
+    "https://support.apple.com/en-us/100100"
+   ]
+  },
+  {
+   "id": "android",
+   "name": "Android",
+   "category": "browser_os",
+   "cpes": [
+    "cpe:2.3:o:google:android"
+   ],
+   "feeds": [
+    "https://source.android.com/docs/security/bulletin"
+   ]
+  },
+  {
+   "id": "windows",
+   "name": "Windows",
+   "category": "browser_os",
+   "cpes": [
+    "cpe:2.3:o:microsoft:windows_server_2022",
+    "cpe:2.3:o:microsoft:windows_11"
+   ],
+   "feeds": [
+    "https://msrc.microsoft.com/update-guide/rss"
+   ]
+  },
+  {
+   "id": "exchange",
+   "name": "Exchange",
+   "category": "on_prem_collaboration",
+   "cpes": [
+    "cpe:2.3:a:microsoft:exchange_server"
+   ],
+   "feeds": [
+    "https://msrc.microsoft.com/update-guide/rss"
+   ]
+  },
+  {
+   "id": "sharepoint",
+   "name": "SharePoint",
+   "category": "on_prem_collaboration",
+   "cpes": [
+    "cpe:2.3:a:microsoft:sharepoint_server"
+   ],
+   "feeds": [
+    "https://msrc.microsoft.com/update-guide/rss"
+   ]
+  },
+  {
+   "id": "fortinet-fortios",
+   "name": "Fortinet FortiOS",
+   "category": "edge_appliance",
+   "cpes": [
+    "cpe:2.3:o:fortinet:fortios"
+   ],
+   "feeds": [
+    "https://www.fortiguard.com/psirt"
+   ]
+  },
+  {
+   "id": "palo-alto-pan-os",
+   "name": "Palo Alto PAN-OS",
+   "category": "edge_appliance",
+   "cpes": [
+    "cpe:2.3:o:paloaltonetworks:pan-os"
+   ],
+   "feeds": [
+    "https://security.paloaltonetworks.com/rss.xml"
+   ]
+  },
+  {
+   "id": "cisco-asa-ios-xe",
+   "name": "Cisco ASA / IOS XE",
+   "category": "edge_appliance",
+   "cpes": [
+    "cpe:2.3:a:cisco:adaptive_security_appliance_software",
+    "cpe:2.3:o:cisco:ios_xe"
+   ],
+   "feeds": [
+    "https://sec.cloudapps.cisco.com/security/center/publicationListing.x"
+   ]
+  },
+  {
+   "id": "ivanti-epmm-connect-secure",
+   "name": "Ivanti EPMM / Connect Secure",
+   "category": "edge_appliance",
+   "cpes": [
+    "cpe:2.3:a:ivanti:endpoint_manager_mobile",
+    "cpe:2.3:a:ivanti:connect_secure"
+   ],
+   "feeds": [
+    "https://forums.ivanti.com/s/securityadvisories"
+   ]
+  },
+  {
+   "id": "citrix-netscaler",
+   "name": "Citrix NetScaler",
+   "category": "edge_appliance",
+   "cpes": [
+    "cpe:2.3:a:citrix:netscaler_application_delivery_controller",
+    "cpe:2.3:a:citrix:netscaler_gateway"
+   ],
+   "feeds": [
+    "https://support.citrix.com/csa/all"
+   ]
+  },
+  {
+   "id": "vmware-vcenter-esxi",
+   "name": "VMware vCenter / ESXi",
+   "category": "virtualization_cloud",
+   "cpes": [
+    "cpe:2.3:a:vmware:vcenter_server",
+    "cpe:2.3:o:vmware:esxi"
+   ],
+   "feeds": [
+    "https://support.broadcom.com/web/ecx/security-advisory"
+   ]
+  },
+  {
+   "id": "docker",
+   "name": "Docker",
+   "category": "virtualization_cloud",
+   "cpes": [
+    "cpe:2.3:a:docker:docker"
+   ],
+   "feeds": [
+    "https://github.com/moby/moby/security/advisories"
+   ]
+  },
+  {
+   "id": "terraform",
+   "name": "Terraform",
+   "category": "virtualization_cloud",
+   "cpes": [
+    "cpe:2.3:a:hashicorp:terraform"
+   ],
+   "feeds": [
+    "https://discuss.hashicorp.com/c/security/33"
+   ]
+  },
+  {
+   "id": "kafka",
+   "name": "Kafka",
+   "category": "database",
+   "cpes": [
+    "cpe:2.3:a:apache:kafka"
+   ],
+   "feeds": [
+    "https://kafka.apache.org/cve-list"
+   ]
+  },
+  {
+   "id": "postgresql",
+   "name": "PostgreSQL",
+   "category": "database",
+   "cpes": [
+    "cpe:2.3:a:postgresql:postgresql"
+   ],
+   "feeds": [
+    "https://www.postgresql.org/support/security/"
+   ]
+  },
+  {
+   "id": "mysql",
+   "name": "MySQL",
+   "category": "database",
+   "cpes": [
+    "cpe:2.3:a:oracle:mysql"
+   ],
+   "feeds": [
+    "https://www.oracle.com/security-alerts/"
+   ]
+  },
+  {
+   "id": "redis-valkey",
+   "name": "Redis / Valkey",
+   "category": "database",
+   "cpes": [
+    "cpe:2.3:a:redis:redis",
+    "cpe:2.3:a:valkey:valkey"
+   ],
+   "feeds": [
+    "https://github.com/redis/redis/security/advisories"
+   ]
+  },
+  {
+   "id": "elasticsearch",
+   "name": "Elasticsearch",
+   "category": "database",
+   "cpes": [
+    "cpe:2.3:a:elastic:elasticsearch"
+   ],
+   "feeds": [
+    "https://www.elastic.co/community/security"
+   ]
+  },
+  {
+   "id": "splunk",
+   "name": "Splunk",
+   "category": "database",
+   "cpes": [
+    "cpe:2.3:a:splunk:splunk"
+   ],
+   "feeds": [
+    "https://advisory.splunk.com/"
+   ]
+  },
+  {
+   "id": "okta",
+   "name": "Okta",
+   "category": "identity",
+   "cpes": [],
+   "feeds": [
+    "https://sec.okta.com/"
+   ]
+  },
+  {
+   "id": "keycloak",
+   "name": "Keycloak",
+   "category": "identity",
+   "cpes": [
+    "cpe:2.3:a:redhat:keycloak"
+   ],
+   "feeds": [
+    "https://github.com/keycloak/keycloak/security/advisories"
+   ]
+  },
+  {
+   "id": "litellm",
+   "name": "LiteLLM",
+   "category": "ai_ml_tooling",
+   "cpes": [
+    "cpe:2.3:a:litellm:litellm"
+   ],
+   "feeds": [
+    "https://github.com/BerriAI/litellm/security/advisories"
+   ]
+  },
+  {
+   "id": "langflow",
+   "name": "Langflow",
+   "category": "ai_ml_tooling",
+   "cpes": [
+    "cpe:2.3:a:langflow:langflow"
+   ],
+   "feeds": [
+    "https://github.com/langflow-ai/langflow/security/advisories"
+   ]
+  },
+  {
+   "id": "langchain",
+   "name": "LangChain",
+   "category": "ai_ml_tooling",
+   "cpes": [
+    "cpe:2.3:a:langchain:langchain"
+   ],
+   "feeds": [
+    "https://github.com/langchain-ai/langchain/security/advisories"
+   ]
+  },
+  {
+   "id": "mlflow",
+   "name": "MLflow",
+   "category": "ai_ml_tooling",
+   "cpes": [
+    "cpe:2.3:a:lfprojects:mlflow"
+   ],
+   "feeds": [
+    "https://github.com/mlflow/mlflow/security/advisories"
+   ]
+  },
+  {
+   "id": "ollama",
+   "name": "Ollama",
+   "category": "ai_ml_tooling",
+   "cpes": [
+    "cpe:2.3:a:ollama:ollama"
+   ],
+   "feeds": [
+    "https://github.com/ollama/ollama/security/advisories"
+   ]
+  },
+  {
+   "id": "vllm",
+   "name": "vLLM",
+   "category": "ai_ml_tooling",
+   "cpes": [
+    "cpe:2.3:a:vllm:vllm"
+   ],
+   "feeds": [
+    "https://github.com/vllm-project/vllm/security/advisories"
+   ]
+  },
+  {
+   "id": "hugging-face-transformers",
+   "name": "Hugging Face transformers",
+   "category": "ai_ml_tooling",
+   "cpes": [
+    "cpe:2.3:a:huggingface:transformers"
+   ],
+   "feeds": [
+    "https://github.com/huggingface/transformers/security/advisories"
+   ]
+  },
+  {
+   "id": "pytorch",
+   "name": "PyTorch",
+   "category": "ai_ml_tooling",
+   "cpes": [],
+   "feeds": [
+    "https://github.com/pytorch/pytorch/security/advisories"
+   ]
+  },
+  {
+   "id": "tensorflow",
+   "name": "TensorFlow",
+   "category": "ai_ml_tooling",
+   "cpes": [
+    "cpe:2.3:a:google:tensorflow"
+   ],
+   "feeds": [
+    "https://github.com/tensorflow/tensorflow/security/advisories"
+   ]
+  }
+ ],
+ "kev_categories": {
+  "fortinet": "edge_appliance",
+  "fortios": "edge_appliance",
+  "fortiweb": "edge_appliance",
+  "fortimanager": "edge_appliance",
+  "fortiproxy": "edge_appliance",
+  "fortimail": "edge_appliance",
+  "ivanti": "edge_appliance",
+  "pulse secure": "edge_appliance",
+  "pulse connect secure": "edge_appliance",
+  "connect secure": "edge_appliance",
+  "policy secure": "edge_appliance",
+  "endpoint manager mobile": "edge_appliance",
+  "citrix": "edge_appliance",
+  "netscaler": "edge_appliance",
+  "palo alto": "edge_appliance",
+  "pan-os": "edge_appliance",
+  "globalprotect": "edge_appliance",
+  "cisco asa": "edge_appliance",
+  "adaptive security appliance": "edge_appliance",
+  "cisco ios xe": "edge_appliance",
+  "ios xe": "edge_appliance",
+  "firepower": "edge_appliance",
+  "fmc": "edge_appliance",
+  "cisco ftd": "edge_appliance",
+  "sonicwall": "edge_appliance",
+  "check point": "edge_appliance",
+  "checkpoint": "edge_appliance",
+  "f5": "edge_appliance",
+  "big-ip": "edge_appliance",
+  "big-iq": "edge_appliance",
+  "barracuda": "edge_appliance",
+  "zyxel": "edge_appliance",
+  "draytek": "edge_appliance",
+  "d-link": "edge_appliance",
+  "netgear": "edge_appliance",
+  "tp-link": "edge_appliance",
+  "ubiquiti": "edge_appliance",
+  "mikrotik": "edge_appliance",
+  "qnap": "edge_appliance",
+  "synology": "edge_appliance",
+  "sophos": "edge_appliance",
+  "watchguard": "edge_appliance",
+  "sharepoint": "on_prem_collaboration",
+  "exchange server": "on_prem_collaboration",
+  "exchange": "on_prem_collaboration",
+  "outlook": "on_prem_collaboration",
+  "confluence": "on_prem_collaboration",
+  "jira": "on_prem_collaboration",
+  "zimbra": "on_prem_collaboration",
+  "roundcube": "on_prem_collaboration",
+  "chrome": "browser_os",
+  "v8": "browser_os",
+  "chromium": "browser_os",
+  "firefox": "browser_os",
+  "mozilla": "browser_os",
+  "webkit": "browser_os",
+  "safari": "browser_os",
+  "apple": "browser_os",
+  "ios": "browser_os",
+  "ipados": "browser_os",
+  "macos": "browser_os",
+  "android": "browser_os",
+  "windows": "browser_os",
+  "linux kernel": "browser_os",
+  "edge": "browser_os",
+  "litellm": "ai_ml_tooling",
+  "langflow": "ai_ml_tooling",
+  "langchain": "ai_ml_tooling",
+  "mlflow": "ai_ml_tooling",
+  "ray": "ai_ml_tooling",
+  "n8n": "ai_ml_tooling",
+  "ollama": "ai_ml_tooling",
+  "vllm": "ai_ml_tooling",
+  "huggingface": "ai_ml_tooling",
+  "transformers": "ai_ml_tooling",
+  "pytorch": "ai_ml_tooling",
+  "tensorflow": "ai_ml_tooling",
+  "anythingllm": "ai_ml_tooling",
+  "open webui": "ai_ml_tooling",
+  "comfyui": "ai_ml_tooling",
+  "wordpress": "cms",
+  "joomla": "cms",
+  "drupal": "cms",
+  "woocommerce": "cms",
+  "elementor": "cms",
+  "jetbrains": "developer_ci",
+  "gitlab": "developer_ci",
+  "gitea": "developer_ci",
+  "jenkins": "developer_ci",
+  "jfrog": "developer_ci",
+  "github enterprise": "developer_ci",
+  "teamcity": "developer_ci",
+  "bamboo": "developer_ci",
+  "docker": "virtualization_cloud",
+  "kubernetes": "virtualization_cloud",
+  "vmware": "virtualization_cloud",
+  "vcenter": "virtualization_cloud",
+  "esxi": "virtualization_cloud",
+  "citrix hypervisor": "virtualization_cloud",
+  "nutanix": "virtualization_cloud",
+  "terraform": "virtualization_cloud",
+  "postgresql": "database",
+  "mysql": "database",
+  "redis": "database",
+  "valkey": "database",
+  "elasticsearch": "database",
+  "mongodb": "database",
+  "kafka": "database",
+  "okta": "identity",
+  "keycloak": "identity",
+  "onelogin": "identity",
+  "ping identity": "identity",
+  "active directory": "identity",
+  "adfs": "identity",
+  "moveit": "file_transfer_mft",
+  "goanywhere": "file_transfer_mft",
+  "accellion": "file_transfer_mft",
+  "serv-u": "file_transfer_mft",
+  "cleo": "file_transfer_mft",
+  "webtransit": "file_transfer_mft",
+  "veeam": "security_backup",
+  "trend micro": "security_backup",
+  "kaseya": "security_backup",
+  "connectwise": "security_backup",
+  "screenconnect": "security_backup",
+  "n-able": "security_backup",
+  "papercut": "enterprise_app",
+  "sap": "enterprise_app",
+  "oracle weblogic": "enterprise_app",
+  "ibm websphere": "enterprise_app",
+  "manageengine": "enterprise_app",
+  "sap netweaver": "enterprise_app",
+  "adobe": "enterprise_app",
+  "coldfusion": "enterprise_app",
+  "acrobat": "enterprise_app",
+  "reader": "enterprise_app",
+  "flash player": "enterprise_app",
+  "apache http server": "developer_ci",
+  "apache struts": "developer_ci",
+  "struts": "developer_ci",
+  "log4j": "developer_ci",
+  "apache activemq": "developer_ci",
+  "activemq": "developer_ci",
+  "apache ofbiz": "enterprise_app",
+  "apache camel": "developer_ci",
+  "juniper": "edge_appliance",
+  "junos": "edge_appliance",
+  "solarwinds": "enterprise_app",
+  "zoho": "enterprise_app",
+  "ibm": "enterprise_app",
+  "progress": "enterprise_app",
+  "whatsup gold": "enterprise_app",
+  "microsoft office": "enterprise_app",
+  "excel": "enterprise_app",
+  "sharepoint server": "on_prem_collaboration",
+  "internet explorer": "browser_os",
+  "microsoft edge": "browser_os",
+  "oracle e-business": "enterprise_app",
+  "peoplesoft": "enterprise_app",
+  "veritas": "security_backup",
+  "arcserve": "security_backup",
+  "wireshark": "developer_ci",
+  "putty": "developer_ci",
+  "realtek": "edge_appliance",
+  "dahua": "edge_appliance",
+  "hikvision": "edge_appliance",
+  "aviatrix": "edge_appliance",
+  "sma1000": "edge_appliance",
+  "smartconsole": "edge_appliance",
+  "grafana": "developer_ci",
+  "tomcat": "developer_ci",
+  "jboss": "developer_ci",
+  "saltstack": "developer_ci",
+  "salt": "developer_ci",
+  "sudo": "browser_os",
+  "polkit": "browser_os",
+  "bourne-again shell": "developer_ci",
+  "telerik": "developer_ci",
+  "archive_tar": "developer_ci",
+  "pear": "developer_ci",
+  "java se": "developer_ci",
+  "java runtime environment": "developer_ci",
+  "jre": "developer_ci",
+  "rails": "developer_ci",
+  "ruby on rails": "developer_ci",
+  "apache solr": "database",
+  "minio": "database",
+  "oracle fusion middleware": "enterprise_app",
+  "winrar": "enterprise_app",
+  "gigabyte": "enterprise_app",
+  "qlik": "enterprise_app",
+  "telemessage": "enterprise_app",
+  "delmia apriso": "enterprise_app",
+  "eyesofnetwork": "enterprise_app",
+  "zabbix": "enterprise_app",
+  "jasperreports": "enterprise_app",
+  "geoserver": "enterprise_app",
+  "servicenow": "enterprise_app",
+  "unraid": "virtualization_cloud",
+  "hyperflex": "virtualization_cloud",
+  "craft cms": "cms",
+  "dotnetnuke": "cms",
+  "vbulletin": "cms",
+  "simplehelp": "security_backup",
+  "cobalt strike": "security_backup",
+  "cisco small business": "edge_appliance",
+  "catalyst sd-wan": "edge_appliance",
+  "mitel": "edge_appliance",
+  "mivoice": "edge_appliance",
+  "sangoma": "edge_appliance",
+  "freepbx": "edge_appliance",
+  "control web panel": "edge_appliance",
+  "gpon": "edge_appliance",
+  "dasan": "edge_appliance",
+  "crushftp": "file_transfer_mft",
+  "exim": "on_prem_collaboration",
+  "smartermail": "on_prem_collaboration",
+  "samsung": "browser_os",
+  "qualcomm": "browser_os",
+  "mali": "browser_os",
+  "microsoft": "browser_os",
+  "imagemagick": "developer_ci",
+  "ghostscript": "developer_ci",
+  "freetype": "developer_ci",
+  "erlang": "developer_ci",
+  "yiiframework": "developer_ci",
+  "primefaces": "developer_ci",
+  "chakracore": "developer_ci",
+  "webrtc": "developer_ci",
+  "git": "developer_ci",
+  "jquery": "developer_ci",
+  "xstream": "developer_ci",
+  "phpmyadmin": "developer_ci",
+  "adminer": "developer_ci",
+  "sonatype": "developer_ci",
+  "wso2": "enterprise_app",
+  "sugarcrm": "enterprise_app",
+  "cacti": "enterprise_app",
+  "glpi": "enterprise_app",
+  "novi survey": "enterprise_app",
+  "pi-hole": "enterprise_app",
+  "openbsd": "browser_os",
+  "openplc": "edge_appliance",
+  "scadabr": "edge_appliance",
+  "beyondtrust": "security_backup",
+  "teamviewer": "security_backup",
+  "nakivo": "security_backup",
+  "acronis": "security_backup",
+  "commvault": "security_backup",
+  "sysaid": "security_backup",
+  "wazuh": "security_backup",
+  "netwrix": "security_backup",
+  "paessler": "enterprise_app",
+  "sciencelogic": "enterprise_app",
+  "looking glass": "enterprise_app",
+  "wing ftp": "file_transfer_mft",
+  "rejetto": "file_transfer_mft",
+  "gladinet": "file_transfer_mft",
+  "projectsend": "file_transfer_mft",
+  "thinkphp": "cms",
+  "fuel cms": "cms",
+  "october cms": "cms",
+  "kentico": "cms",
+  "sitecore": "cms",
+  "dotcms": "cms",
+  "xwiki": "cms",
+  "checkbox survey": "enterprise_app",
+  "tenda": "edge_appliance",
+  "netis": "edge_appliance",
+  "arcadyan": "edge_appliance",
+  "asus": "edge_appliance",
+  "ruckus": "edge_appliance",
+  "ptzoptics": "edge_appliance",
+  "geovision": "edge_appliance",
+  "amcrest": "edge_appliance",
+  "reolink": "edge_appliance",
+  "tvt": "edge_appliance",
+  "nuuo": "edge_appliance",
+  "edimax": "edge_appliance",
+  "sierra wireless": "edge_appliance",
+  "grandstream": "edge_appliance",
+  "yealink": "edge_appliance",
+  "alcatel": "edge_appliance",
+  "zkteco": "edge_appliance",
+  "sunhillo": "edge_appliance",
+  "fxc": "edge_appliance",
+  "ami megarac": "edge_appliance",
+  "crestron": "edge_appliance",
+  "versa": "edge_appliance",
+  "fatpipe": "edge_appliance",
+  "smartbedded": "edge_appliance",
+  "motex": "edge_appliance",
+  "igel": "edge_appliance",
+  "audinate": "edge_appliance",
+  "mediatek": "browser_os",
+  "code aurora": "browser_os",
+  "trusted firmware": "browser_os",
+  "google pixel": "browser_os",
+  "siemens": "edge_appliance",
+  "schneider electric": "edge_appliance",
+  "unitronics": "edge_appliance",
+  "indusoft": "edge_appliance",
+  "trihedral": "edge_appliance",
+  "delta electronics": "edge_appliance",
+  "treck": "edge_appliance",
+  "linear emerge": "edge_appliance",
+  "forgerock": "identity",
+  "twilio": "identity",
+  "hitachi vantara": "enterprise_app",
+  "micro focus": "enterprise_app",
+  "mcafee": "enterprise_app",
+  "bqe": "enterprise_app",
+  "quest": "enterprise_app",
+  "hewlett packard": "enterprise_app",
+  "qualitia": "enterprise_app",
+  "mdaemon": "enterprise_app",
+  "libraesva": "enterprise_app",
+  "skysea": "enterprise_app",
+  "plex": "enterprise_app",
+  "trimble": "enterprise_app",
+  "acclaim systems": "enterprise_app",
+  "srimax": "enterprise_app",
+  "dell": "enterprise_app",
+  "cisco": "edge_appliance",
+  "oracle": "enterprise_app",
+  "apache": "developer_ci",
+  "php": "developer_ci",
+  "gnu": "developer_ci",
+  "atlassian": "on_prem_collaboration",
+  "elastic": "database",
+  "arm": "browser_os"
+ },
+ "frameworks": [
+  {
+   "id": "nist-csf-2.0",
+   "name": "NIST Cybersecurity Framework 2.0",
+   "version": "2.0 (CSWP 29)",
+   "date": "2024-02-26",
+   "url": "https://www.nist.gov/cyberframework",
+   "type": "security",
+   "relevance": "Outcome-based framework across six functions; ID.RA-08 explicitly covers vulnerability disclosure intake, a direct anchor for AI-found disclosures.",
+   "controls": [
+    {
+     "ref": "ID.RA-01",
+     "title": "Vulnerabilities identified and recorded",
+     "metrics": [
+      5,
+      8,
+      9
+     ]
+    },
+    {
+     "ref": "ID.RA-05",
+     "title": "Threat/vuln/impact used for risk prioritization",
+     "metrics": [
+      2,
+      3,
+      4
+     ]
+    },
+    {
+     "ref": "ID.RA-08",
+     "title": "Vulnerability disclosure processes established",
+     "metrics": [
+      7
+     ]
+    },
+    {
+     "ref": "PR.PS-02",
+     "title": "Software integrity and patch currency",
+     "metrics": [
+      6,
+      10
+     ]
+    },
+    {
+     "ref": "DE.CM-09",
+     "title": "Hardware/software monitored for adverse events",
+     "metrics": [
+      1,
+      3
+     ]
+    }
+   ]
+  },
+  {
+   "id": "iso-27001-27002-2022",
+   "name": "ISO/IEC 27001:2022 + 27002:2022",
+   "version": "2022",
+   "date": "2022-10-25",
+   "url": "https://www.iso.org/standard/27001",
+   "type": "security",
+   "relevance": "Certifiable ISMS plus Annex A control guidance; A.8.8 and A.5.7 are the primary vulnerability-management and threat-intel controls.",
+   "controls": [
+    {
+     "ref": "A.5.7",
+     "title": "Threat intelligence",
+     "metrics": [
+      2,
+      3,
+      4,
+      7
+     ]
+    },
+    {
+     "ref": "A.8.8",
+     "title": "Management of technical vulnerabilities",
+     "metrics": [
+      1,
+      5,
+      9,
+      10
+     ]
+    },
+    {
+     "ref": "A.8.29",
+     "title": "Security testing in development and acceptance",
+     "metrics": [
+      6
+     ]
+    },
+    {
+     "ref": "A.5.23",
+     "title": "Security for use of cloud services",
+     "metrics": [
+      5,
+      9
+     ]
+    },
+    {
+     "ref": "A.8.9",
+     "title": "Configuration management",
+     "metrics": [
+      10
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cis-controls-v8.1",
+   "name": "CIS Controls v8.1",
+   "version": "8.1",
+   "date": "2024-06",
+   "url": "https://www.cisecurity.org/controls/v8-1",
+   "type": "security",
+   "relevance": "Prescriptive safeguards; Control 7 is the tracker's closest operational analog (scan/patch cadence).",
+   "controls": [
+    {
+     "ref": "Control 7",
+     "title": "Continuous Vulnerability Management",
+     "metrics": [
+      1,
+      2,
+      4,
+      5,
+      6,
+      10
+     ]
+    },
+    {
+     "ref": "Control 16",
+     "title": "Application Software Security",
+     "metrics": [
+      6,
+      7,
+      8,
+      9
+     ]
+    }
+   ]
+  },
+  {
+   "id": "nist-800-53-r5",
+   "name": "NIST SP 800-53 Rev. 5",
+   "version": "Rev 5 (5.1.1 patch)",
+   "date": "2020-09",
+   "url": "https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final",
+   "type": "security",
+   "relevance": "Federal control catalog; RA-5/SI-2/SI-5 map directly to scanning, remediation SLAs, and advisory intake.",
+   "controls": [
+    {
+     "ref": "RA-5",
+     "title": "Vulnerability Monitoring and Scanning",
+     "metrics": [
+      1,
+      2,
+      5,
+      9
+     ]
+    },
+    {
+     "ref": "SI-2",
+     "title": "Flaw Remediation",
+     "metrics": [
+      1,
+      4,
+      10
+     ]
+    },
+    {
+     "ref": "SI-5",
+     "title": "Security Alerts, Advisories, and Directives",
+     "metrics": [
+      1,
+      6,
+      7
+     ]
+    },
+    {
+     "ref": "SR family",
+     "title": "Supply Chain Risk Management",
+     "metrics": [
+      5,
+      8,
+      9
+     ]
+    }
+   ]
+  },
+  {
+   "id": "nist-ssdf-800-218",
+   "name": "NIST SP 800-218 (SSDF)",
+   "version": "1.1",
+   "date": "2022-02",
+   "url": "https://csrc.nist.gov/pubs/sp/800/218/final",
+   "type": "security",
+   "relevance": "SDLC vulnerability-response practices; RV group covers intake through root-cause fix.",
+   "controls": [
+    {
+     "ref": "RV.1",
+     "title": "Identify and confirm vulnerabilities on an ongoing basis",
+     "metrics": [
+      1,
+      7
+     ]
+    },
+    {
+     "ref": "RV.2",
+     "title": "Assess, prioritize, and remediate vulnerabilities",
+     "metrics": [
+      1,
+      4,
+      10
+     ]
+    },
+    {
+     "ref": "RV.3",
+     "title": "Analyze vulnerabilities to identify root causes",
+     "metrics": [
+      2,
+      3
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cisa-bod-26-04",
+   "name": "CISA BOD 26-04 (supersedes BOD 22-01)",
+   "version": "BOD 26-04",
+   "date": "2026-06-10",
+   "url": "https://www.cisa.gov/news-events/directives/bod-26-04-prioritizing-security-updates-based-risk",
+   "type": "regulation",
+   "relevance": "Replaces flat KEV due-dates with a 4-variable risk matrix and 3/14/60-day tiers, explicitly citing AI-compressed exploit timelines; directly validates the tracker's KEV and time-to-exploit metrics.",
+   "controls": [
+    {
+     "ref": "BOD 26-04 tiers",
+     "title": "3/14/60-day risk-tiered remediation windows",
+     "metrics": [
+      1
+     ]
+    },
+    {
+     "ref": "BOD 26-04 rationale",
+     "title": "AI-compressed disclosure-to-weaponization timeline",
+     "metrics": [
+      4
+     ]
+    }
+   ]
+  },
+  {
+   "id": "pci-dss-4.0.1",
+   "name": "PCI DSS",
+   "version": "4.0.1",
+   "date": "2024-06-11",
+   "url": "https://www.pcisecuritystandards.org",
+   "type": "regulation",
+   "relevance": "Mandatory for cardholder-data environments; Req 6.3 and 11.3 cover identification, patching SLA, and scanning cadence.",
+   "controls": [
+    {
+     "ref": "6.3.1/6.3.3",
+     "title": "Vulnerability identification and 1-month critical/high patch SLA",
+     "metrics": [
+      1,
+      5,
+      6,
+      10
+     ]
+    },
+    {
+     "ref": "11.3.1/11.3.2",
+     "title": "Quarterly internal/external vulnerability scans",
+     "metrics": [
+      2,
+      5
+     ]
+    }
+   ]
+  },
+  {
+   "id": "soc2-cc7.1",
+   "name": "SOC 2 (AICPA Trust Services Criteria)",
+   "version": "2017 TSC, 2022 points of focus",
+   "date": "2022",
+   "url": "https://www.aicpa-cima.com",
+   "type": "security",
+   "relevance": "Audit attestation criteria; CC7.1 is the vulnerability/anomaly detection control cited in SOC 2 reports.",
+   "controls": [
+    {
+     "ref": "CC7.1",
+     "title": "Detection and monitoring for vulnerabilities",
+     "metrics": [
+      1,
+      2,
+      5,
+      9
+     ]
+    },
+    {
+     "ref": "CC7.2",
+     "title": "Anomaly and security-event monitoring/response",
+     "metrics": [
+      3,
+      4
+     ]
+    }
+   ]
+  },
+  {
+   "id": "eu-nis2",
+   "name": "EU NIS2 Directive",
+   "version": "2022/2555",
+   "date": "2023-01-16",
+   "url": "https://eur-lex.europa.eu/eli/dir/2022/2555",
+   "type": "regulation",
+   "relevance": "Requires vulnerability handling/disclosure and supply-chain vuln assessment for essential/important entities; transposition still incomplete in several member states as of mid-2026.",
+   "controls": [
+    {
+     "ref": "Art.21(2)(e)",
+     "title": "Vulnerability handling and disclosure in system acquisition/maintenance",
+     "metrics": [
+      6,
+      7,
+      10
+     ]
+    },
+    {
+     "ref": "Art.21(2)(d)",
+     "title": "Supply-chain security",
+     "metrics": [
+      5,
+      8,
+      9
+     ]
+    }
+   ]
+  },
+  {
+   "id": "eu-cra",
+   "name": "EU Cyber Resilience Act",
+   "version": "Regulation (EU) 2024/2847",
+   "date": "2024-12-10",
+   "url": "https://digital-strategy.ec.europa.eu/en/policies/cyber-resilience-act",
+   "type": "regulation",
+   "relevance": "Reporting obligations for actively-exploited vulnerabilities go live 2026-09-11 (this week); the Art.14 cascade is the clearest regulatory analog to the tracker's KEV/time-to-exploit metrics.",
+   "controls": [
+    {
+     "ref": "Art.14",
+     "title": "24h/72h/final report cascade for actively exploited vulns",
+     "metrics": [
+      1,
+      3,
+      4,
+      7
+     ]
+    },
+    {
+     "ref": "Annex I Part II",
+     "title": "Vulnerability-handling essential requirements",
+     "metrics": [
+      5,
+      8,
+      9,
+      10
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sec-cyber-disclosure",
+   "name": "SEC Cybersecurity Disclosure Rule",
+   "version": "Item 1.05, Form 8-K",
+   "date": "2023-07-26",
+   "url": "https://www.sec.gov/newsroom",
+   "type": "regulation",
+   "relevance": "Material-incident disclosure within 4 business days; downstream trigger context for tracked exploits becoming reportable incidents.",
+   "controls": [
+    {
+     "ref": "Item 1.05",
+     "title": "4-business-day material incident disclosure",
+     "metrics": [
+      3,
+      4
+     ]
+    }
+   ]
+  },
+  {
+   "id": "nist-ai-rmf-1.0",
+   "name": "NIST AI Risk Management Framework 1.0",
+   "version": "1.0 (NIST.AI.100-1)",
+   "date": "2023-01-26",
+   "url": "https://www.nist.gov/itl/ai-risk-management-framework",
+   "type": "ai",
+   "relevance": "Foundational voluntary AI risk framework (Govern/Map/Measure/Manage); predates AI-driven vuln discovery so has no explicit clause for metric 7.",
+   "controls": [
+    {
+     "ref": "Govern 1-6",
+     "title": "Accountability, risk tolerance, third-party oversight",
+     "metrics": [
+      1,
+      5,
+      9
+     ]
+    },
+    {
+     "ref": "Map 1-5",
+     "title": "Context and categorization of AI use",
+     "metrics": [
+      7
+     ]
+    },
+    {
+     "ref": "Measure 2.7-2.13",
+     "title": "Security and resilience of AI systems",
+     "metrics": [
+      4,
+      5
+     ]
+    },
+    {
+     "ref": "Manage 2-4",
+     "title": "Risk response and prioritization",
+     "metrics": [
+      1,
+      6
+     ]
+    }
+   ]
+  },
+  {
+   "id": "nist-ai-600-1",
+   "name": "NIST AI 600-1 Generative AI Profile",
+   "version": "1.0",
+   "date": "2024-07-26",
+   "url": "https://doi.org/10.6028/NIST.AI.600-1",
+   "type": "ai",
+   "relevance": "Closest existing NIST text addressing dual-use cyber-offensive capability of generative models — direct anchor for metric 7.",
+   "controls": [
+    {
+     "ref": "Information Security risk category",
+     "title": "Cyber-offensive capability / uplift actions",
+     "metrics": [
+      7
+     ]
+    },
+    {
+     "ref": "GAI dissemination risk actions",
+     "title": "Obtain/replicate/disseminate risk",
+     "metrics": [
+      3
+     ]
+    }
+   ]
+  },
+  {
+   "id": "nist-ir-8596-cyber-ai-profile",
+   "name": "NIST IR 8596 Cyber AI Profile",
+   "version": "Preliminary draft (ipd)",
+   "date": "2025-12-16 (draft; not final as of 2026-09-06)",
+   "url": "https://csrc.nist.gov/pubs/ir/8596/iprd",
+   "type": "ai",
+   "relevance": "CSF 2.0 profile for AI with a dedicated 'AI for Cybersecurity' track for AI-driven vuln discovery — the most directly on-point framework for metric 7, but still in draft.",
+   "controls": [
+    {
+     "ref": "AI for Cybersecurity track",
+     "title": "AI-driven vulnerability discovery attribution/disclosure",
+     "metrics": [
+      7
+     ]
+    },
+    {
+     "ref": "Identify/Detect (AI assets)",
+     "title": "AI model/agent asset inventory",
+     "metrics": [
+      9
+     ]
+    },
+    {
+     "ref": "Respond/Recover",
+     "title": "Vulnerability handling extended to AI findings",
+     "metrics": [
+      1,
+      4,
+      6,
+      10
+     ]
+    }
+   ]
+  },
+  {
+   "id": "nist-cosais",
+   "name": "NIST COSAIS (Control Overlays for Securing AI Systems)",
+   "version": "Annotated outline",
+   "date": "2026-01 (pre-initial-public-draft)",
+   "url": "https://csrc.nist.gov/Projects/cosais",
+   "type": "ai",
+   "relevance": "Planned SP 800-53 overlays for AI use cases including agentic AI; no citable control IDs published yet.",
+   "controls": [
+    {
+     "ref": "pending",
+     "title": "Agentic AI / predictive AI overlays (not yet published)",
+     "metrics": [
+      7,
+      9
+     ]
+    }
+   ]
+  },
+  {
+   "id": "nist-sp-800-218a",
+   "name": "NIST SP 800-218A SSDF Community Profile for GenAI",
+   "version": "Final",
+   "date": "2024-07",
+   "url": "https://csrc.nist.gov/pubs/sp/800/218/a/final",
+   "type": "ai",
+   "relevance": "Extends SSDF to generative AI/foundation models across the lifecycle including vulnerability response practices.",
+   "controls": [
+    {
+     "ref": "PW-family (GAI)",
+     "title": "Vulnerability response for AI models",
+     "metrics": [
+      4,
+      10
+     ]
+    },
+    {
+     "ref": "RV-family (GAI)",
+     "title": "Vendor patch cycles for AI/ML supply chain",
+     "metrics": [
+      1,
+      6
+     ]
+    },
+    {
+     "ref": "PO/PS provenance",
+     "title": "Advisory tracking for ML-framework ecosystems",
+     "metrics": [
+      8
+     ]
+    }
+   ]
+  },
+  {
+   "id": "iso-42001",
+   "name": "ISO/IEC 42001:2023",
+   "version": "2023",
+   "date": "2023-12",
+   "url": "https://www.iso.org/standard/81230.html",
+   "type": "ai",
+   "relevance": "Certifiable AI management system; governs AI-as-asset (vendor products) more than AI-as-discovery-tool.",
+   "controls": [
+    {
+     "ref": "Annex A.6, A.9",
+     "title": "AI lifecycle and third-party AI relationships",
+     "metrics": [
+      5,
+      9
+     ]
+    },
+    {
+     "ref": "Clause 6/8",
+     "title": "Risk treatment for organizational AI use",
+     "metrics": [
+      1,
+      4,
+      7
+     ]
+    }
+   ]
+  },
+  {
+   "id": "iso-42005",
+   "name": "ISO/IEC 42005:2025",
+   "version": "2025",
+   "date": "2025",
+   "url": "https://www.iso.org/standard/42005.html",
+   "type": "ai",
+   "relevance": "AI system impact assessment process; foreseeable-misuse analysis is the review vehicle for AI-driven vuln-discovery deployment decisions.",
+   "controls": [
+    {
+     "ref": "Foreseeable misuse analysis",
+     "title": "Dual-use impact assessment",
+     "metrics": [
+      7
+     ]
+    },
+    {
+     "ref": "Ongoing monitoring",
+     "title": "Reassessment triggers",
+     "metrics": [
+      9
+     ]
+    }
+   ]
+  },
+  {
+   "id": "iso-27090",
+   "name": "ISO/IEC 27090 AI Security",
+   "version": "FDIS (ballot closed 2026-08-19)",
+   "date": "2026 (not confirmed published as of 2026-09-06)",
+   "url": "https://www.iso.org/standard/56581.html",
+   "type": "ai",
+   "relevance": "AI-specific security threat guidance treating AI as both attack surface and attack tool — directly on point for metric 7 once published.",
+   "controls": [
+    {
+     "ref": "Threat taxonomy",
+     "title": "AI as attack surface and attack tool",
+     "metrics": [
+      7,
+      8
+     ]
+    },
+    {
+     "ref": "Lifecycle monitoring",
+     "title": "AI product security monitoring",
+     "metrics": [
+      9
+     ]
+    }
+   ]
+  },
+  {
+   "id": "iso-23894",
+   "name": "ISO/IEC 23894:2023",
+   "version": "2023",
+   "date": "2023-02",
+   "url": "https://www.iso.org/standard/77304.html",
+   "type": "ai",
+   "relevance": "Generic AI risk-management process (ISO 31000 extension); umbrella process citation, no AI-security specifics.",
+   "controls": [
+    {
+     "ref": "Identify-Monitor process",
+     "title": "AI risk management lifecycle",
+     "metrics": [
+      1,
+      4,
+      5,
+      6,
+      10
+     ]
+    }
+   ]
+  },
+  {
+   "id": "owasp-llm-top10-2025",
+   "name": "OWASP Top 10 for LLM Applications",
+   "version": "2025",
+   "date": "2025",
+   "url": "https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/",
+   "type": "ai",
+   "relevance": "Baseline taxonomy for LLM-application vulnerabilities distinct from classic CWEs.",
+   "controls": [
+    {
+     "ref": "LLM01-LLM10",
+     "title": "LLM application risk taxonomy",
+     "metrics": [
+      2,
+      8
+     ]
+    }
+   ]
+  },
+  {
+   "id": "owasp-agentic-top10-2026",
+   "name": "OWASP Top 10 for Agentic Applications",
+   "version": "2026",
+   "date": "2025-12-09",
+   "url": "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/",
+   "type": "ai",
+   "relevance": "Risks unique to autonomous agents; relevant to classifying AI vulnerability-hunting agents themselves as a risk class.",
+   "controls": [
+    {
+     "ref": "ASI02, ASI05",
+     "title": "Tool Misuse & Exploitation; Unexpected Code Execution",
+     "metrics": [
+      7
+     ]
+    },
+    {
+     "ref": "ASI04",
+     "title": "Agentic Supply Chain Compromise",
+     "metrics": [
+      9
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mitre-atlas",
+   "name": "MITRE ATLAS",
+   "version": "5.4.0",
+   "date": "2026-02",
+   "url": "https://atlas.mitre.org",
+   "type": "ai",
+   "relevance": "ATT&CK-style knowledge base of adversary TTPs against AI/ML systems, expanded in 2026 for agentic AI.",
+   "controls": [
+    {
+     "ref": "Tactics/Techniques",
+     "title": "AI-pipeline targeting TTPs",
+     "metrics": [
+      3
+     ]
+    },
+    {
+     "ref": "Mitigations",
+     "title": "Pre-empted threat classes for AI-finding programs",
+     "metrics": [
+      7
+     ]
+    }
+   ]
+  },
+  {
+   "id": "eu-ai-act",
+   "name": "EU AI Act",
+   "version": "Regulation (EU) 2024/1689",
+   "date": "2024-08-01 (phased; Annex III deferred to 2027-12-02 per May 2026 Digital Omnibus)",
+   "url": "https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai",
+   "type": "regulation",
+   "relevance": "GPAI Code of Practice Safety & Security chapter mandates systemic-risk management and incident notification for GPAI models with systemic risk.",
+   "controls": [
+    {
+     "ref": "Code of Practice - Safety & Security",
+     "title": "Systemic-risk management and incident notification",
+     "metrics": [
+      7
+     ]
+    },
+    {
+     "ref": "Notification timeline",
+     "title": "2-15 day AI Office notification by severity",
+     "metrics": [
+      4
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cisa-nsa-fbi-ai-guidance",
+   "name": "CISA/NSA/FBI Joint AI Security Guidance",
+   "version": "'Careful Adoption of Agentic AI Services'",
+   "date": "2026-04/05",
+   "url": "https://www.cisa.gov/resources-tools/resources/careful-adoption-agentic-ai-services",
+   "type": "ai",
+   "relevance": "Non-binding Five Eyes guidance defining agentic-AI risk categories and recommending limits on current agentic deployments.",
+   "controls": [
+    {
+     "ref": "Agentic AI risk categories",
+     "title": "Privilege escalation, config failures, misalignment, brittleness, accountability gaps",
+     "metrics": [
+      9
+     ]
+    },
+    {
+     "ref": "Deployment guidance",
+     "title": "Limit agentic deployments to low-risk tasks",
+     "metrics": [
+      3,
+      4
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ncsc-aisi-secure-ai",
+   "name": "UK NCSC Guidelines for Secure AI + UK AISI Frontier AI Trends Report",
+   "version": "Guidelines 2023; AISI report 2025/2026",
+   "date": "2023-11-26 / 2026",
+   "url": "https://www.ncsc.gov.uk/collection/guidelines-secure-ai-system-development",
+   "type": "ai",
+   "relevance": "SDLC-phase AI security guidance plus independent frontier-model capability evaluation, including a 2026 finding that frontier models attempted to cheat during cyber capability testing.",
+   "controls": [
+    {
+     "ref": "AISI capability evaluation",
+     "title": "Independent verification of AI cyber capability",
+     "metrics": [
+      7
+     ]
+    },
+    {
+     "ref": "SDLC-phase guidance",
+     "title": "Secure design/development/deployment/operation",
+     "metrics": [
+      1
+     ]
+    }
+   ]
+  },
+  {
+   "id": "anthropic-rsp-glasswing",
+   "name": "Anthropic RSP + Cyber Verification Program + Project Glasswing",
+   "version": "RSP v3.2",
+   "date": "2026 (v3.0 eff. 2026-02-24)",
+   "url": "https://www.anthropic.com/responsible-scaling-policy",
+   "type": "vendor-program",
+   "relevance": "Direct source of the tracker's Mythos ledger metric: Glasswing's CVD disclosure cadence is the raw data behind metric 7.",
+   "controls": [
+    {
+     "ref": "RSP ASL-3 gating",
+     "title": "Tiered safety/security standards for frontier models",
+     "metrics": [
+      7
+     ]
+    },
+    {
+     "ref": "Glasswing CVD dashboard",
+     "title": "Coordinated vulnerability disclosure ledger",
+     "metrics": [
+      7
+     ]
+    }
+   ]
+  },
+  {
+   "id": "openai-preparedness-daybreak",
+   "name": "OpenAI Preparedness Framework + Frontier Governance Framework + Daybreak",
+   "version": "Preparedness v2; Daybreak launched 2026-05",
+   "date": "2025-04-15 / 2026-05-28",
+   "url": "https://openai.com/daybreak/",
+   "type": "vendor-program",
+   "relevance": "Parallel AI-vuln-finding/disclosure program to Anthropic's Glasswing; cites exploit-generation-speed compression as rationale.",
+   "controls": [
+    {
+     "ref": "Preparedness cyber gate",
+     "title": "Cyber capability Low/Medium/High/Critical gating",
+     "metrics": [
+      7
+     ]
+    },
+    {
+     "ref": "Daybreak disclosure cadence",
+     "title": "Defensive/offensive vuln research program",
+     "metrics": [
+      4,
+      7
+     ]
+    }
+   ]
+  },
+  {
+   "id": "frontier-model-forum",
+   "name": "Frontier Model Forum",
+   "version": "n/a",
+   "date": "2023-07 (founded)",
+   "url": "https://www.frontiermodelforum.org",
+   "type": "vendor-program",
+   "relevance": "Cross-lab AI-Cyber Workstream likely to arbitrate shared disclosure norms across Mythos/Daybreak-style programs.",
+   "controls": [
+    {
+     "ref": "AI-Cyber Workstream",
+     "title": "Shared cyber threat models and disclosure norms",
+     "metrics": [
+      7
+     ]
+    },
+    {
+     "ref": "Risk threshold reports",
+     "title": "Industry-wide capability risk thresholds",
+     "metrics": [
+      5
+     ]
+    }
+   ]
+  },
+  {
+   "id": "google-saif",
+   "name": "Google Secure AI Framework (SAIF)",
+   "version": "2.0",
+   "date": "2026",
+   "url": "https://safety.google/intl/en/safety/saif/",
+   "type": "vendor-program",
+   "relevance": "Agent Risk Map extends SAIF to agentic AI threats relevant to product watchlist governance.",
+   "controls": [
+    {
+     "ref": "Agent Risk Map",
+     "title": "Agentic AI threat and control mapping",
+     "metrics": [
+      9
+     ]
+    },
+    {
+     "ref": "SAIF elements",
+     "title": "Framework alignment reference",
+     "metrics": [
+      8
+     ]
+    }
+   ]
+  },
+  {
+   "id": "microsoft-pyrit",
+   "name": "Microsoft AI Red Team + PyRIT",
+   "version": "~2.0 (2026-04-29)",
+   "date": "2026-04-29",
+   "url": "https://github.com/Azure/PyRIT",
+   "type": "vendor-program",
+   "relevance": "Open-source automated red-teaming tool for generative AI; findings feed Microsoft's Patch Tuesday and AI bounty program.",
+   "controls": [
+    {
+     "ref": "PyRIT orchestrators/scorers",
+     "title": "Automated AI red-teaming",
+     "metrics": [
+      6,
+      9
+     ]
+    }
+   ]
+  },
+  {
+   "id": "csa-aicm",
+   "name": "CSA AI Controls Matrix (AICM)",
+   "version": "1.1",
+   "date": "2025-07-10",
+   "url": "https://cloudsecurityalliance.org/artifacts/ai-controls-matrix-v1-1",
+   "type": "ai",
+   "relevance": "Vendor-agnostic, lifecycle-spanning AI control matrix with ISO 42001/27001 mappings; umbrella citation for AI governance program maturity.",
+   "controls": [
+    {
+     "ref": "AICM domains",
+     "title": "18-domain AI lifecycle control set",
+     "metrics": [
+      5,
+      6,
+      8,
+      9
+     ]
+    },
+    {
+     "ref": "AI-lifecycle risk domain",
+     "title": "Risk management for AI systems",
+     "metrics": [
+      7
+     ]
+    }
+   ]
+  },
+  {
+   "id": "epss-v4",
+   "name": "EPSS v4 (Exploit Prediction Scoring System)",
+   "version": "4",
+   "date": "2025-03-16",
+   "url": "https://research.empiricalsecurity.com/research/introducing-epss-version-4",
+   "type": "security",
+   "relevance": "Expanded exploitation-activity coverage and non-NVD data sources; underpins fresh-vs-old CVE prioritization and time-to-exploit scoring.",
+   "controls": [
+    {
+     "ref": "EPSS score",
+     "title": "Exploitation-probability scoring using multi-source telemetry",
+     "metrics": [
+      2,
+      4
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cisa-ssvc",
+   "name": "CISA SSVC (Stakeholder-Specific Vulnerability Categorization)",
+   "version": "current",
+   "date": "2019 (2026 tie-in via BOD 26-04)",
+   "url": "https://www.cisa.gov/stakeholder-specific-vulnerability-categorization-ssvc",
+   "type": "security",
+   "relevance": "CISA's core prioritization methodology; explicitly informs BOD 26-04's tiered remediation windows.",
+   "controls": [
+    {
+     "ref": "Vendor/Deployer models",
+     "title": "Decision-tree vulnerability prioritization",
+     "metrics": [
+      1,
+      4
+     ]
+    }
+   ]
+  },
+  {
+   "id": "nist-nvd-2026-triage",
+   "name": "NIST NVD Risk-Based Enrichment Triage",
+   "version": "2026 operational change",
+   "date": "2026-04-15",
+   "url": "https://www.nist.gov/news-events/news/2026/04/nist-updates-nvd-operations-address-record-cve-growth",
+   "type": "regulation",
+   "relevance": "NVD now fully enriches only KEV/federal/critical-software CVEs; a data-quality caveat for the tracker's fresh-vs-old CVE ratio and vendor CVE volume metrics.",
+   "controls": [
+    {
+     "ref": "Risk-based enrichment scope",
+     "title": "KEV/federal/critical-software prioritization; ~29,000 CVEs reclassified Not Scheduled",
+     "metrics": [
+      1,
+      2,
+      5,
+      6
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cve-foundation-status",
+   "name": "CVE Program Funding / CVE Foundation",
+   "version": "n/a",
+   "date": "2026 (status as of Jan 2026 program minutes)",
+   "url": "https://www.thecvefoundation.org",
+   "type": "regulation",
+   "relevance": "Governance/funding continuity for the CVE identifier system underlying every metric on the tracker; no funding cliff materialized in 2026 but the Foundation's independent standup remains in progress.",
+   "controls": [
+    {
+     "ref": "CISA/MITRE operating channel",
+     "title": "Continued CVE Program operation, no 2026 funding lapse",
+     "metrics": [
+      5,
+      6,
+      8
+     ]
+    }
+   ]
+  }
+ ],
+ "metrics": [
+  {
+   "n": 1,
+   "name": "Weekly KEV additions & due dates",
+   "definition": "New CISA Known Exploited Vulnerabilities catalog entries per ISO week, with their BOD 26-04 remediation due dates."
+  },
+  {
+   "n": 2,
+   "name": "Fresh vs old CVE ratio",
+   "definition": "Share of new KEV adds each week whose CVE was assigned in the same calendar year vs. an earlier year."
+  },
+  {
+   "n": 3,
+   "name": "Ransomware-linked exploits",
+   "definition": "Share of KEV entries flagged knownRansomwareCampaignUse=Known, including CISA's undisclosed retroactive flips."
+  },
+  {
+   "n": 4,
+   "name": "Time-to-exploit",
+   "definition": "Days from a CVE's datePublished (cvelistV5/NVD) to its CISA KEV dateAdded."
+  },
+  {
+   "n": 5,
+   "name": "Vendor high/critical CVE volume",
+   "definition": "Weekly/monthly high- and critical-severity CVE counts per CNA (vendor), from cve.org records."
+  },
+  {
+   "n": 6,
+   "name": "Patch Tuesday / CPU volume",
+   "definition": "Monthly CVE counts in Microsoft Patch Tuesday releases and Oracle Critical Patch Updates."
+  },
+  {
+   "n": 7,
+   "name": "AI-found vulnerability disclosures",
+   "definition": "Coordinated-disclosure findings from Anthropic's Mythos/Glasswing ledger, by discovery week, commitment, and patch status."
+  },
+  {
+   "n": 8,
+   "name": "Framework/ecosystem advisory counts",
+   "definition": "Monthly reviewed-advisory counts per GitHub ecosystem and per tracked framework repository."
+  },
+  {
+   "n": 9,
+   "name": "Product watchlist exposure",
+   "definition": "New CVEs per watchlisted product (NVD CPE matches, KEV hits, and vendor security feeds)."
+  },
+  {
+   "n": 10,
+   "name": "Old bugs' age at fix",
+   "definition": "Age in years of long-lived vulnerabilities (e.g. decades-old bugs) at the time they were finally found or fixed, largely via AI-assisted discovery."
+  }
+ ],
+ "ciso_kpis": [
+  {
+   "id": "kev-vs-baseline",
+   "name": "KEV/week vs. 52-week baseline",
+   "definition": "This week's new KEV adds vs. the trailing-year weekly average.",
+   "formula": "count(this_week) / mean(count(week) for week in last 52 weeks)"
+  },
+  {
+   "id": "fresh-vs-old-ratio",
+   "name": "Fresh-vs-old ratio",
+   "definition": "Share of new KEV adds whose CVE was published in the same calendar year vs. older CVEs.",
+   "formula": "count(same_year_cve) / count(all, this_week)"
+  },
+  {
+   "id": "edge-appliance-share",
+   "name": "Edge-appliance share",
+   "definition": "Percent of trailing-12-week KEV adds tagged edge_appliance via the vendor/product category mapping.",
+   "formula": "count(category==edge_appliance, trailing_12wk) / count(all, trailing_12wk)"
+  },
+  {
+   "id": "median-time-to-exploit",
+   "name": "Median time-to-exploit",
+   "definition": "Median days from CVE datePublished/published to KEV dateAdded, trailing 12 weeks.",
+   "formula": "median(dateAdded - datePublished, trailing_12wk)"
+  },
+  {
+   "id": "ransomware-share",
+   "name": "% KEV with ransomware use",
+   "definition": "Share of trailing-12-week KEV adds with knownRansomwareCampaignUse=Known, plus a flag for silent reclassifications.",
+   "formula": "count(ransomware==Known, trailing_12wk) / count(all, trailing_12wk)"
+  },
+  {
+   "id": "patch-volume-index",
+   "name": "Patch-volume index",
+   "definition": "Current month's Patch Tuesday CVE count divided by the 2021-2025 monthly-mean baseline.",
+   "formula": "count(patch_tuesday_cves, this_month) / mean(patch_tuesday_cves, 2021-2025)"
+  },
+  {
+   "id": "ai-discovery-ratio",
+   "name": "AI-discovery ratio",
+   "definition": "Mythos/Glasswing disclosed findings (trailing period) divided by same-period vendor-reported high/critical CVEs.",
+   "formula": "count(ledger_discovered, period) / count(vendor_high_critical_cves, period)"
+  },
+  {
+   "id": "watchlist-exposure-count",
+   "name": "Watchlist exposure count",
+   "definition": "Number of distinct watchlist products with at least one new relevant CVE this week.",
+   "formula": "count(distinct product where new_cve_this_week)"
+  }
+ ],
+ "bod": {
+  "22-01": {
+   "title": "Reducing the Significant Risk of Known Exploited Vulnerabilities",
+   "effective": "2021-11-03",
+   "status": "revoked_superseded",
+   "windows": {
+    "pre_2021_cves_days": 180,
+    "other_days": 14
+   },
+   "url": "https://www.cisa.gov/news-events/directives/bod-22-01-reducing-significant-risk-known-exploited-vulnerabilities-revoked",
+   "note": "Two-tier remediation model keyed only to whether a CVE was assigned before 2021 (6 months) or after (14 calendar days from KEV addition). Superseded by BOD 26-04 on 2026-06-10; CISA keeps a '(Revoked)' copy of the page."
+  },
+  "26-04": {
+   "title": "Prioritizing Security Updates Based on Risk",
+   "effective": "2026-06-10",
+   "status": "current",
+   "windows": {
+    "tier_days": [
+     3,
+     14,
+     60
+    ],
+    "criteria": [
+     "internet_facing_exposure",
+     "kev_catalog_status",
+     "exploit_automation_potential",
+     "technical_impact_full_or_partial_control"
+    ],
+    "fallback": "fix_at_next_scheduled_upgrade"
+   },
+   "url": "https://www.cisa.gov/news-events/directives/bod-26-04-prioritizing-security-updates-based-risk",
+   "note": "Four-variable risk matrix replacing flat CVE-year timelines with tiered 3/14/60-calendar-day windows (or next scheduled upgrade if none of the four risk criteria are met). 60-day deadline (~Aug 2026) to update internal processes; 180-day deadline (~Dec 2026) for full Table 1 compliance. Rationale: AI-accelerated exploitation has collapsed disclosure-to-weaponization from months to hours."
+  }
  }
 }
