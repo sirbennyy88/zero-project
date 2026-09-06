@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Live site
+    url: https://zero.peries.ca/
+    about: The published tracker.
+  - name: Download the data
+    url: https://zero.peries.ca/#data
+    about: JSON, CSV and RSS, rebuilt every Monday.

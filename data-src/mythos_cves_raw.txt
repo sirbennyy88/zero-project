@@ -1,0 +1,79 @@
+CVE-2026-12340|wolfssl/wolfssl|heap-buffer-overflow|low|Heap-buffer-overflow in sha.c:733
+CVE-2026-13002|dnsmasq|denial-of-service|medium|DNSSEC NSEC typemap infinite loop hangs daemon
+CVE-2026-13595|util-linux/util-linux|use-after-free|medium|heap-use-after-free in util-linux
+CVE-2026-20213|cisco-talos/clamav|integer-overflow|high|Integer overflow in PE rebuild section size summation in Aspack unpacker
+CVE-2026-20214|cisco-talos/clamav|integer-underflow|high|Unsigned integer underflow in FSG unpacker section loop
+CVE-2026-20215|cisco-talos/clamav|integer-overflow|high|Integer overflow in 7z SubStreams count leading to heap buffer overflow
+CVE-2026-26980|tryghost/ghost|sql-injection|critical|SQLi from unauthenticated user; arbitrary DB reads (CVSS 9.1)
+CVE-2026-27654|nginx/nginx|heap-buffer-overflow|high|Heap buffer overflow in DAV COPY/MOVE with alias directive (size_t underflow in ngx_http_map_uri_to_path)
+CVE-2026-29198|rocketchat/rocket.chat|sql-injection|critical|Complete authentication bypass to admin permissions (CVSS 9.8)
+CVE-2026-31554|torvalds/linux|use-after-free|high|futex: UAF in private-hash teardown via cross-process sys_futex_requeue giving LPE
+CVE-2026-32316|jqlang/jq|heap-buffer-overflow|medium|Integer overflow in string concatenation leading to 1 GB memcpy heap buffer overflow
+CVE-2026-33721|mapserver|heap-buffer-overflow|medium|Heap buffer overflow in SLD categorize threshold parsing
+CVE-2026-33901|imagemagick/imagemagick|heap-buffer-overflow|high|Heap buffer overflow in MVG pattern rendering via CopyMagickString without bounds check
+CVE-2026-34580|randombit/botan|improper-cert-validation|high|certificate_known(): complete x509 bypass
+CVE-2026-35590|libvips/libvips|oob-write|low|Out-of-bounds IFD array access in EXIF metadata processing
+CVE-2026-40033|freerdp/freerdp|heap-buffer-overflow|critical|Heap-buffer-overflow in sanitizer_common_interceptors.inc:827
+CVE-2026-40383|joomla/joomla-cms|path-traversal|high|Path traversal in layout parameter leads to arbitrary PHP file inclusion (LFI to RCE)
+CVE-2026-40384|joomla/joomla-cms|path-traversal|medium|Path traversal via glob injection in com_media search
+CVE-2026-40528|opensc|stack-buffer-overflow|low|Stack buffer overflow in do_key_value profile parsing
+CVE-2026-40685|exim/exim|off-by-one|medium|Exim dewrap() off-by-one OOB read to code execution
+CVE-2026-41401|cesnet/libyang|use-after-free|medium|Heap use-after-free write in metadata list management during XML parsing
+CVE-2026-41579|opencontainers/runc|symlink-following|medium|Host filesystem write via /dev symlink in container image
+CVE-2026-41990|gpg/libgcrypt|stack-buffer-overflow|medium|ML-DSA context string stack buffer overflow
+CVE-2026-43074|torvalds/linux|use-after-free|high|UAF in ep_get_upwards_depth_proc() giving unprivileged LPE
+CVE-2026-44420|freerdp/freerdp|heap-buffer-overflow|critical|Heap-buffer-overflow in cliprdr_main.c:547
+CVE-2026-44421|freerdp/freerdp|heap-buffer-overflow|critical|Heap-buffer-overflow in sanitizer_common_interceptors.inc:827
+CVE-2026-45447|openssl/openssl|use-after-free|critical|PKCS7_verify frees caller-owned indata BIO when digestAlgorithms SET is empty
+CVE-2026-45696|openexr|heap-buffer-overflow|high|Heap-buffer-overflow in internal_ht.cpp:305
+CVE-2026-45700|freerdp/freerdp|heap-buffer-overflow|critical|Heap-buffer-overflow write in planar.c:472 (attacker-controlled offset)
+CVE-2026-46348|mastodon/mastodon|ssrf|high|SSRF bypass via IPv6 unspecified address (::)
+CVE-2026-46349|mastodon/mastodon|signature-bypass|high|LD-Signature bypass via JSON-LD named-graph restructuring
+CVE-2026-46633|twigphp/twig|code-injection|critical|PHP code injection via single quote in {% use %} template name
+CVE-2026-46639|twigphp/twig|auth-bypass|high|Sandbox bypass via object-destructuring assignment
+CVE-2026-47345|typo3|xss|medium|Stored XSS in TYPO3 HTML sanitizer via xmlns namespace URI injection
+CVE-2026-4747|freebsd/freebsd-src|stack-buffer-overflow|high|Unauthenticated remote code execution via svc_rpc_gss_validate stack overflow (17-year-old NFS bug)
+CVE-2026-4890|dnsmasq|denial-of-service|medium|DNSSEC NSEC typemap infinite loop hangs daemon
+CVE-2026-4892|dnsmasq|heap-buffer-overflow|high|Heap overflow in privileged helper via oversized DHCPv6 client identifier
+CVE-2026-48929|rocketchat/rocket.chat|auth-bypass|high|Unauthenticated arbitrary file deletion via deleteFileMessage Meteor method
+CVE-2026-5194|wolfssl/wolfssl|other|critical|Universal ECDSA certificate forgery for arbitrary hosts
+CVE-2026-5199|temporalio/temporal|broken-access-control|low|Cross-namespace manipulation (including deletion) of workflows on the same cluster
+CVE-2026-5295|wolfssl/wolfssl|buffer-overflow|medium|Stack buffer overflow in PKCS#7 OtherRecipientInfo OID copy
+CVE-2026-5398|freebsd/freebsd-src|use-after-free|high|Local privilege escalation via tty_drop_ctty t_session UAF
+CVE-2026-5446|wolfssl/wolfssl|crypto-failure|medium|ARIA-GCM nonce reuse in TLS 1.2 record encryption
+CVE-2026-5447|wolfssl/wolfssl|heap-buffer-overflow|medium|Heap buffer overflow in CertFromX509() from AuthorityKeyIdentifier size mismatch
+CVE-2026-5448|wolfssl/wolfssl|heap-buffer-overflow|low|2-byte heap overflow in wolfSSL_X509_notAfter / notBefore
+CVE-2026-5466|wolfssl/wolfssl|signature-bypass|high|ECCSI universal signature forgery via r=0 s=0
+CVE-2026-5477|wolfssl/wolfssl|integer-overflow|high|CMAC 32-bit totalSz wraparound prefix substitution forgery
+CVE-2026-5479|wolfssl/wolfssl|crypto-failure|high|EVP ChaCha20-Poly1305 tag never verified
+CVE-2026-5500|wolfssl/wolfssl|crypto-failure|high|CMS AuthEnvelopedData AEAD forgery via GCM tag truncation
+CVE-2026-5501|wolfssl/wolfssl|improper-cert-validation|high|X509 verify cert leaf signature verification bypass
+CVE-2026-5503|wolfssl/wolfssl|heap-buffer-overflow|medium|ECH heap buffer overflow via public_name SNI
+CVE-2026-55084|dhis2/dhis2-core|sql-injection|high|SQL injection via unquoted column name in SqlView filter parameter
+CVE-2026-56132|libexpat/libexpat|heap-buffer-overflow|medium|Heap-buffer-overflow write in doProlog (xmlparse.c)
+CVE-2026-5747|firecracker-microvm/firecracker|oob-read|high|Virtio-PCI queue size writable after activation enables host OOB
+CVE-2026-58435|go-gitea/gitea|idor|medium|LFS deploy-key privilege escalation, cross-repository data exfiltration
+CVE-2026-6039|libreoffice|heap-buffer-overflow|medium|Heap buffer overflow in DXF LWPOLYLINE import via integer truncation
+CVE-2026-6040|libreoffice|use-after-free|medium|Heap use-after-free write in number format blank-width parsing
+CVE-2026-6045|libreoffice|heap-buffer-overflow|medium|Heap buffer overflow via integer overflow in EMF+ brush blend point parsing
+CVE-2026-6047|libreoffice|heap-buffer-overflow|medium|Heap buffer overflow via unsafe static_cast in OOXML VML textbox replay
+CVE-2026-63559|open62541|integer-overflow|high|Integer overflow in variant dimension validation allowing wild-address write
+CVE-2026-6386|freebsd/freebsd-src|use-after-free|high|Local privilege escalation via tty_drop_ctty t_session UAF
+CVE-2026-6479|postgres/postgres|denial-of-service|high|Pre-auth unbounded recursion in ProcessStartupPacket (alternating SSL/GSS negotiation)
+CVE-2026-65423|open62541|integer-overflow|high|Integer overflow in variant dimension validation allowing wild-address write
+CVE-2026-66032|libssh2/libssh2|double-free|high|SFTP double-free via server-controlled FXP_STATUS packet length
+CVE-2026-6678|wolfssl/wolfssl|buffer-overflow|medium|Stack buffer overflow in PKCS#7 OtherRecipientInfo OID copy
+CVE-2026-6772|nss|heap-buffer-overflow|high|Off-by-one heap buffer overflow in TLS extension negotiation (SSL_MAX_EXTENSIONS)
+CVE-2026-8356|libreoffice|stack-buffer-overflow|medium|Stack-buffer-overflow in libreoffice
+CVE-2026-8357|libreoffice|heap-buffer-overflow|medium|Heap-buffer-overflow in libreoffice
+CVE-2026-8358|libreoffice|heap-buffer-overflow|medium|Heap-buffer-overflow in libreoffice
+GHSA-589g-qgf8-m6mx|asterisk/asterisk|stack-buffer-overflow|critical|Stack buffer overflow in parse_simple_message_summary via unbounded sscanf (SIP MWI NOTIFY)
+GHSA-59q6-j4w8-8pjx|oisf/suricata|use-after-free|high|heap-use-after-free in suricata
+GHSA-qmc9-vqq2-8mv3|oisf/suricata|use-after-free|high|Use-after-free in mod.rs:547
+GHSA-cc7p-2j3x-x7xf|craftcms/cms|privilege-escalation|high|Privilege escalation/bypass through UsersController->actionImpersonateWithToken()
+GHSA-f26g-jm89-4g65|gitoxidelabs/gitoxide|rce|high|RCE when updating a Git submodule of a malicious repository
+GHSA-j273-m5qq-6825|junrar|path-traversal|medium|Arbitrary file write due to backslash path traversal
+GHSA-pjjp-65r7-ppgm|libass/libass|heap-buffer-overflow|high|heap-buffer-overflow in libass
+GHSA-wc3v-3457-c8cm|openmeterio/openmeter|sql-injection|medium|SQL injection in ClickHouse JSONPath validation
+GHSA-wfx7-g85r-q6vw|libgit2/libgit2|heap-buffer-overflow|medium|Heap buffer overflow in bundled PCRE regex compilation
+GHSA-wj3p-xhqm-pffc|bytecodealliance/wasm-micro-runtime|heap-buffer-overflow|critical|Heap-buffer-overflow in posix.c:2253

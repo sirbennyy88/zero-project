@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zero Project</title>
+<meta name="description" content="Zero Project: zero-days exploited in the wild, vulnerabilities found by Claude Mythos, and what Microsoft, Oracle, Linux, .NET, Next.js and the package ecosystems are shipping — week by week, 2021 to today. Open data, refreshed every Monday.">
+<link rel="canonical" href="https://zero.peries.ca/">
+<link rel="alternate" type="application/rss+xml" title="Zero Project weekly" href="https://zero.peries.ca/feed.xml">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Zero Project">
+<meta property="og:title" content="Zero Project — zero-days per week, before and after Mythos">
+<meta property="og:description" content="Exploited CVEs, AI-found vulnerabilities and vendor patch volumes, one ISO week at a time since 2021. Browse any week, search any CVE, download the data.">
+<meta property="og:url" content="https://zero.peries.ca/">
+<meta property="og:image" content="https://zero.peries.ca/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#F5F4EF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15181C" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%231C2128'/%3E%3Ccircle cx='32' cy='32' r='17' fill='none' stroke='%23E2683F' stroke-width='7'/%3E%3Cpath d='M20 44 44 20' stroke='%23E2683F' stroke-width='7' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#F5F4EF; --panel:#FFFFFF; --ink:#1C2128; --ink-2:#4B5563; --ink-3:#7C8794; --line:#DDDCD4; --grid:#E9E8E1;
+  --kev:#C4471F; --kev-old:#E8B8A6; --kev-ink:#9E3616;
+  --myth:#2F5D8A; --myth-2:#A9C3DB;
+  --crit:#A8231D; --high:#D9822B; --med:#D4B23A; --low:#9AA8B5; --unk:#C9CFD6;
+  --mark:#6B4FBB; --mark-soft:rgba(107,79,187,.12);
+  --patched:#2E8B57;
+  --shadow:0 1px 2px rgba(28,33,40,.06),0 8px 24px rgba(28,33,40,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15181C; --panel:#1D2126; --ink:#ECEDE8; --ink-2:#B4BAC2; --ink-3:#7F8792; --line:#2C3138; --grid:#262B31;
+    --kev:#E2683F; --kev-old:#5A3A2E; --kev-ink:#F08A64;
+    --myth:#7FAAD6; --myth-2:#2E4A64;
+    --crit:#E0524A; --high:#E89A48; --med:#D8BC4E; --low:#7C8A98; --unk:#3B434C;
+    --mark:#A08CE0; --mark-soft:rgba(160,140,224,.14);
+    --patched:#5FC08A;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15181C; --panel:#1D2126; --ink:#ECEDE8; --ink-2:#B4BAC2; --ink-3:#7F8792; --line:#2C3138; --grid:#262B31;
+  --kev:#E2683F; --kev-old:#5A3A2E; --kev-ink:#F08A64;
+  --myth:#7FAAD6; --myth-2:#2E4A64;
+  --crit:#E0524A; --high:#E89A48; --med:#D8BC4E; --low:#7C8A98; --unk:#3B434C;
+  --mark:#A08CE0; --mark-soft:rgba(160,140,224,.14);
+  --patched:#5FC08A;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.5;margin:0;overflow-x:hidden}
+.kpis>*,.two>*,.multi>*,.timeline>*,.panel,.chart-wrap,.glance>*{min-width:0}
+canvas{max-width:100%}
+th{white-space:nowrap}
+.wrap{max-width:1180px;margin:0 auto;padding:30px 24px 64px}
+h1,h2,h3{font-family:"IBM Plex Sans Condensed","Arial Narrow",sans-serif;text-wrap:balance;margin:0;line-height:1.1}
+h1{font-size:clamp(30px,4.2vw,46px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:22px;font-weight:600}
+h3{font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2);margin-bottom:10px}
+.eyebrow{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.lede{max-width:70ch;color:var(--ink-2);margin:14px 0 0;font-size:16px}
+.lede strong{color:var(--ink);font-weight:600}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+header{display:flex;flex-direction:column;gap:8px;padding-bottom:24px;border-bottom:1px solid var(--line)}
+a{color:var(--myth)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:22px 0}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--stripe,var(--ink-3))}
+.kpi .lab{font-size:12.5px;color:var(--ink-2);letter-spacing:.02em;min-height:36px}
+.kpi .val{font-family:"IBM Plex Sans Condensed",sans-serif;font-size:38px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.kpi .val small{font-size:16px;font-weight:600;color:var(--ink-2);margin-left:4px}
+.kpi .sub{font-size:12.5px;color:var(--ink-3)}
+.kpi .delta{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:12px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--ink-2);width:max-content;max-width:100%}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:20px 22px 16px;margin-top:22px;box-shadow:var(--shadow)}
+.panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+.panel-head p{margin:4px 0 0;color:var(--ink-2);font-size:13.5px;max-width:80ch}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toggle{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.toggle button{background:transparent;border:0;color:var(--ink-2);font:inherit;font-size:12.5px;padding:6px 11px;cursor:pointer}
+.toggle button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.toggle button:disabled{opacity:.4;cursor:default}
+.toggle button:focus-visible{outline:2px solid var(--mark);outline-offset:-2px}
+.chart-wrap{position:relative;height:380px;margin-top:8px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:2px;display:inline-block}
+.sw.line{height:2px;width:18px;border-radius:0}
+.sw.dash{height:0;width:18px;border-top:2px dashed var(--mark)}
+.two{display:grid;grid-template-columns:1.15fr .85fr;gap:22px;margin-top:22px}
+.two .panel{margin-top:0}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--grid);text-align:left;vertical-align:top}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:500}
+td.num,th.num{text-align:right;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+tr.hl td{background:var(--mark-soft)}
+.pill{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:11px;padding:1px 6px;border-radius:3px;border:1px solid var(--line);color:var(--ink-2);white-space:nowrap;text-decoration:none}
+.pill.fresh{border-color:var(--kev);color:var(--kev-ink)}
+.tbl-scroll{overflow-x:auto}
+.timeline{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:22px}
+.tl{border-top:3px solid var(--mark);padding-top:10px}
+.tl .d{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--mark)}
+.tl .t{font-weight:600;font-size:14px;margin-top:2px;line-height:1.3}
+.tl .s{font-size:12.5px;color:var(--ink-2);margin-top:2px}
+.notes{margin-top:28px;font-size:13.5px;color:var(--ink-2);max-width:80ch}
+.notes p{margin:0 0 10px}
+.notes strong{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:3px 10px 3px 7px;font-size:12.5px;color:var(--ink-2);background:transparent;cursor:pointer;font-family:inherit}
+.chip i{width:10px;height:10px;border-radius:2px;background:var(--c);display:inline-block;opacity:.35}
+.chip[aria-pressed="true"]{color:var(--ink);border-color:var(--c)}
+.chip[aria-pressed="true"] i{opacity:1}
+.chip:focus-visible{outline:2px solid var(--mark);outline-offset:1px}
+.multi{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:14px}
+.mini{border:1px solid var(--grid);border-radius:4px;padding:10px 12px 6px;position:relative}
+.mini .h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.mini .n{font-family:"IBM Plex Sans Condensed",sans-serif;font-weight:600;font-size:15px}
+.mini .x{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-3)}
+.mini .x b{color:var(--ink);font-weight:500}
+.mini .cw{position:relative;height:96px;margin-top:6px}
+.mini .gw{position:absolute;top:8px;right:10px;font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--mark);border:1px solid var(--mark);border-radius:3px;padding:0 4px;opacity:.85}
+.score td.mult{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;text-align:right}
+.score .bar{display:inline-block;height:8px;background:var(--myth);border-radius:2px;vertical-align:middle;margin-right:6px}
+.score td.said{font-size:12.5px;color:var(--ink-2);max-width:34ch}
+.heat td.c{text-align:center;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;min-width:44px;color:var(--ink)}
+.heat td.c span{display:inline-block;min-width:34px;padding:2px 4px;border-radius:3px}
+.heat td.nm{white-space:nowrap}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:8px}
+.fact{border:1px solid var(--grid);border-radius:4px;padding:12px 14px}
+.fact .fh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.fact .fn{font-family:"IBM Plex Sans Condensed",sans-serif;font-weight:600;font-size:16px}
+.fact .fv{font-family:"IBM Plex Sans Condensed",sans-serif;font-weight:700;font-size:26px;line-height:1;color:var(--myth)}
+.fact p{margin:6px 0 0;font-size:12.5px;color:var(--ink-2)}
+.wksel{font:inherit;font-size:12.5px;font-family:"IBM Plex Mono",monospace;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 8px;max-width:100%}
+.wksel:focus-visible{outline:2px solid var(--mark);outline-offset:1px}
+.wkstrip{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;margin:12px 0 6px;align-items:end;height:44px}
+.wkstrip button{border:0;background:var(--kev-old);height:var(--h);min-height:4px;border-radius:2px 2px 0 0;cursor:pointer;padding:0;position:relative}
+.wkstrip button.fresh{background:var(--kev)}
+.wkstrip button[aria-current="true"]{outline:2px solid var(--mark);outline-offset:1px}
+.wkstrip button.mk::after{content:"";position:absolute;left:50%;bottom:-6px;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:5px solid var(--mark);transform:translateX(-50%)}
+.wkstrip button:focus-visible{outline:2px solid var(--mark)}
+.wkhead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin:10px 0 6px}
+.wkhead .t{font-family:"IBM Plex Sans Condensed",sans-serif;font-weight:600;font-size:20px}
+.wkhead .s{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-3)}
+.wkhead .s b{color:var(--ink);font-weight:500}
+.kevlist td{font-size:13px}
+.kevlist .pill.old{color:var(--ink-3)}
+.kevlist .sk{font-size:12px;margin-left:4px}
+.kevlist tr.flash td{animation:flash 2s ease-out}
+@keyframes flash{from{background:var(--mark-soft)}to{background:transparent}}
+.wkfoot{font-size:12.5px;color:var(--ink-3);margin-top:8px}
+.dl{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.dl a,.dl button{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:6px;padding:8px 12px;font:inherit;font-size:13px;color:var(--ink);background:var(--panel);text-decoration:none;cursor:pointer}
+.dl a:hover,.dl button:hover{border-color:var(--myth)}
+.dl .k{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-3)}
+/* site chrome */
+.nav{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.nav .in{max-width:1180px;margin:0 auto;padding:10px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-family:"IBM Plex Sans Condensed",sans-serif;font-weight:700;font-size:20px;letter-spacing:-.01em}
+.brand i{width:26px;height:26px;border-radius:6px;background:var(--ink);display:inline-grid;place-items:center;color:#E2683F;font-style:normal;font-size:15px;font-weight:700}
+.nav nav{display:flex;gap:2px;flex-wrap:wrap}
+.nav nav a{color:var(--ink-2);text-decoration:none;font-size:13px;padding:6px 9px;border-radius:5px}
+.nav nav a:hover,.nav nav a:focus-visible{color:var(--ink);background:var(--mark-soft);outline:none}
+.search{margin-left:auto;position:relative;flex:0 1 340px;min-width:200px}
+.search input{width:100%;font:inherit;font-size:13.5px;padding:8px 12px 8px 34px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+.search input:focus{outline:2px solid var(--mark);outline-offset:1px}
+.search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--ink-3)}
+.search kbd{position:absolute;right:9px;top:50%;transform:translateY(-50%);font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink-3);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+.sres{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);max-height:440px;overflow:auto;z-index:30}
+.sres:empty{display:none}
+.sres .g{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:8px 12px 2px}
+.sres a{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:baseline;padding:7px 12px;text-decoration:none;color:var(--ink);font-size:13px;border-top:1px solid var(--grid)}
+.sres a:hover,.sres a[aria-selected="true"]{background:var(--mark-soft)}
+.sres a .m{font-family:"IBM Plex Mono",monospace;font-size:12px}
+.sres a .d{color:var(--ink-3);font-family:"IBM Plex Mono",monospace;font-size:11px}
+.sres .none{padding:12px;color:var(--ink-3);font-size:13px}
+.glance{display:grid;grid-template-columns:1.2fr .8fr;gap:22px;margin-top:22px}
+.glance .panel{margin-top:0}
+.glance ul{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:6px}
+.glance li{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:baseline;font-size:13.5px}
+.glance li .m{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-3)}
+.glance .big{font-family:"IBM Plex Sans Condensed",sans-serif;font-weight:700;font-size:44px;line-height:1;margin:6px 0 2px}
+.glance .big small{font-size:15px;font-weight:600;color:var(--ink-2)}
+.follow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.follow a{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:12.5px;color:var(--ink);text-decoration:none;background:var(--panel)}
+.follow a:hover{border-color:var(--myth)}
+.yrs{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-top:10px}
+.yr{border:1px solid var(--grid);border-radius:4px;padding:10px 12px}
+.yr .y{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-3)}
+.yr .n{font-family:"IBM Plex Sans Condensed",sans-serif;font-size:28px;font-weight:700;line-height:1.1}
+.yr .s{font-size:11.5px;color:var(--ink-2)}
+.agebars{display:grid;gap:4px;margin-top:8px}
+.agebars .r{display:grid;grid-template-columns:52px 1fr 40px;gap:8px;align-items:center;font-size:12.5px}
+.agebars .r .b{height:12px;background:var(--kev-old);border-radius:2px}
+.agebars .r.cur .b{background:var(--kev)}
+.agebars .r .y{font-family:"IBM Plex Mono",monospace;color:var(--ink-3)}
+.agebars .r .n{font-family:"IBM Plex Mono",monospace;text-align:right}
+.srcgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:12px}
+.srcgrid h4{margin:0 0 6px;font-family:"IBM Plex Sans Condensed",sans-serif;font-size:15px;font-weight:600}
+.srcgrid ul{list-style:none;padding:0;margin:0;display:grid;gap:5px;font-size:13px}
+.srcgrid a{color:var(--myth);text-decoration:none}
+.srcgrid a:hover{text-decoration:underline}
+.srcgrid li span{color:var(--ink-3)}
+.compare{margin-top:14px;display:grid;gap:0}
+.compare .row{display:grid;grid-template-columns:260px 1fr;gap:12px;font-size:13px;padding:8px 0;border-top:1px solid var(--grid)}
+.compare .row b a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line)}
+.compare .row b small a{color:var(--myth);border:0;font-weight:400}
+.compare .row span{color:var(--ink-2)}
+footer{margin-top:40px;padding:22px 0 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-3)}
+footer a{color:var(--ink-2);text-decoration:none}
+section[id],div[id]{scroll-margin-top:70px}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}.two,.glance{grid-template-columns:1fr}.timeline{grid-template-columns:repeat(2,1fr)}.chart-wrap{height:320px}.multi{grid-template-columns:repeat(2,1fr)}.facts,.srcgrid{grid-template-columns:1fr}.compare .row{grid-template-columns:1fr}.search{flex-basis:100%;margin-left:0}.yrs{grid-template-columns:repeat(3,1fr)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="nav"><div class="in">
+  <a class="brand" href="#top"><i>Ø</i>Zero Project</a>
+  <nav aria-label="Sections"><a href="#glance">This week</a><a href="#exploited">Exploited</a><a href="#years">5 years</a><a href="#mythos">Mythos</a><a href="#companies">Vendors</a><a href="#frameworks">Frameworks</a><a href="#oldbugs">Old bugs</a><a href="#kevbrowser">Browse weeks</a><a href="#data">Data</a><a href="#sources">Sources</a></nav>
+  <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search CVE, vendor, product, project…" autocomplete="off" aria-label="Search"><kbd>/</kbd><div class="sres" id="sres" role="listbox"></div></div>
+</div></div>
+
+<div class="wrap" id="top">
+<header>
+  <div class="eyebrow">Zero Project · ISO weeks (Mon–Sun) · data through <span id="dataThrough">—</span> · refreshed every Monday</div>
+  <h1>How many zero-days per week — before and after Mythos?</h1>
+  <p class="lede">Two very different numbers answer this question. <strong>Exploited in the wild</strong> (CISA KEV additions) has run at about <strong id="k_post">—</strong> per week since Claude Mythos Preview shipped on 7 Apr 2026, against <strong id="k_pre">—</strong> in the 22 weeks before and a five-year average of <strong id="k_5y">—</strong>. <strong>Found by Mythos</strong> is a different order of magnitude: Anthropic's public disclosure ledger shows <strong id="k_ledger">—</strong> open-source findings dated after 7 Apr, and Glasswing partners reported <strong>10,000+</strong> high/critical bugs in the first six weeks. Below: where the flood is landing — Microsoft's Patch Tuesday, Oracle's CPU, the Linux kernel — and what it looks like for .NET, Next.js, Spring and the npm / PyPI / NuGet ecosystems. Every week since the KEV catalog began in November 2021 is browsable, every CVE is searchable, every record is downloadable, and the whole thing re-sources itself from the primary feeds each Monday.</p>
+  <div class="follow"><a href="feed.xml">RSS · weekly digest</a><a href="#kevbrowser">Browse any week</a><a href="#data">Get the data</a><a id="repolink" href="#" rel="noopener">Source &amp; pipeline</a></div>
+</header>
+
+<div class="glance" id="glance">
+  <section class="panel">
+    <h3>This week at a glance</h3>
+    <div class="big" id="g_count">—</div>
+    <div class="mono" id="g_sub" style="font-size:12.5px;color:var(--ink-3)"></div>
+    <ul id="g_list"></ul>
+  </section>
+  <section class="panel">
+    <h3>Week over week</h3>
+    <ul id="g_wow"></ul>
+    <p style="font-size:12.5px;color:var(--ink-3);margin:12px 0 0">Counts are CISA KEV additions (confirmed exploited in the wild). "Fresh" = CVE issued in the same year it was added; "older" = a bug from an earlier year newly seen exploited.</p>
+  </section>
+</div>
+
+<section class="kpis">
+  <div class="kpi" style="--stripe:var(--kev)"><div class="lab">Exploited in the wild · since Mythos Preview</div><div class="val" id="kpi1">—</div><div class="delta" id="kpi1d"></div><div class="sub" id="kpi1s"></div></div>
+  <div class="kpi" style="--stripe:var(--kev)"><div class="lab">…of which fresh CVEs (issued this year)</div><div class="val" id="kpi2">—</div><div class="delta" id="kpi2d"></div><div class="sub" id="kpi2s"></div></div>
+  <div class="kpi" style="--stripe:var(--mark)"><div class="lab" id="kpi3l">Latest week</div><div class="val" id="kpi3">—</div><div class="delta" id="kpi3d"></div><div class="sub" id="kpi3s"></div></div>
+  <div class="kpi" style="--stripe:var(--myth)"><div class="lab">Found by Mythos · public ledger, discovered after 7 Apr</div><div class="val" id="kpi4">—</div><div class="delta" id="kpi4d"></div><div class="sub" id="kpi4s"></div></div>
+</section>
+
+<section class="panel" id="exploited">
+  <div class="panel-head">
+    <div><h2>Exploited in the wild, by week</h2><p>Vulnerabilities CISA added to its Known Exploited Vulnerabilities catalog each week — the closest public proxy for "zero-days confirmed under attack". Bars split by whether the CVE was issued in the same year (fresh) or earlier (old bugs newly seen exploited). Solid line is the 4-week average; dashed markers are Anthropic model events. Click a bar to open that week below.</p></div>
+    <div class="controls"><div class="toggle" role="group" aria-label="Range"><button aria-pressed="false" data-krange="mythos">Since Mythos</button><button aria-pressed="true" data-krange="2026">2026</button><button aria-pressed="false" data-krange="12m">12 months</button><button aria-pressed="false" data-krange="all">Since Nov 2021</button></div><div class="toggle" role="group" aria-label="Series"><button aria-pressed="true" data-kev="split">Fresh vs old</button><button aria-pressed="false" data-kev="total">Total</button><button aria-pressed="false" data-kev="ransom">Ransomware</button></div></div>
+  </div>
+  <div class="chart-wrap"><canvas id="kev"></canvas></div>
+  <div class="legend"><span><i class="sw" style="background:var(--kev)"></i>CVE issued same year</span><span><i class="sw" style="background:var(--kev-old)"></i>CVE issued earlier</span><span><i class="sw line" style="background:var(--ink)"></i>4-week moving average</span><span><i class="sw dash"></i>Model release / access event</span><span id="partialnote"></span></div>
+</section>
+
+<section class="panel" id="years">
+  <div class="panel-head">
+    <div><h2>Five years in one row</h2><p>KEV additions per year (CISA), Google Threat Intelligence's count of zero-days exploited in the wild, and Microsoft's Patch Tuesday CVE total. KEV started on 3 Nov 2021, so 2021 is two months; the current year is year-to-date.</p></div>
+  </div>
+  <div class="yrs" id="yrs"></div>
+</section>
+
+<section class="panel" id="mythos">
+  <div class="panel-head">
+    <div><h2>Found by Mythos, by week</h2><p>Anthropic's coordinated-disclosure ledger for open-source software. Bars: findings by the week the model <em>discovered</em> them, stacked by the external triage firm's severity (falling back to the maintainer's, then Claude's own rating). Blue line: weekly hash commitments, i.e. disclosure cadence. Green: patched upstream. Recent weeks are undercounted — a finding only appears once it has cleared triage and been reported, which lags discovery by weeks to months.</p></div>
+    <div class="controls"><div class="toggle" role="group" aria-label="Scale"><button aria-pressed="true" data-scale="linear">Linear</button><button aria-pressed="false" data-scale="logarithmic">Log</button></div></div>
+  </div>
+  <div class="chart-wrap"><canvas id="myth"></canvas></div>
+  <div class="legend"><span><i class="sw" style="background:var(--crit)"></i>Critical</span><span><i class="sw" style="background:var(--high)"></i>High</span><span><i class="sw" style="background:var(--med)"></i>Medium</span><span><i class="sw" style="background:var(--low)"></i>Low</span><span><i class="sw" style="background:var(--unk)"></i>Not yet assessed</span><span><i class="sw line" style="background:var(--myth)"></i>Hash commitments (disclosed)</span><span><i class="sw line" style="background:var(--patched)"></i>Patched upstream</span></div>
+  <p id="ledgertotals" style="font-size:12.5px;color:var(--ink-3);margin:10px 0 0"></p>
+</section>
+
+<section class="panel" id="companies">
+  <div class="panel-head">
+    <div><h2>Major vendors: high &amp; critical CVEs published per week</h2><p>What the big companies are actually disclosing. Each week's bar stacks the high- and critical-severity CVEs published by that vendor's own CVE Numbering Authority (cve.org records, via Epoch AI's explorer). This is the public tail of Glasswing: Mythos-found bugs only show up here once the vendor ships a patch and files the CVE, typically 45–90 days after discovery. Across the 21 notable CNAs, monthly high/critical CVEs went from a pre-Mythos record of ~490 to <span id="epochpeak">—</span>. Toggle vendors below; hover a bar for the split.</p></div>
+    <div class="controls"><div class="toggle" role="group" aria-label="Range"><button aria-pressed="true" data-crange="1y">Since Sep 2025</button><button aria-pressed="false" data-crange="all">Since 2021</button></div><div class="toggle" role="group" aria-label="Scale"><button aria-pressed="true" data-cscale="linear">Linear</button><button aria-pressed="false" data-cscale="logarithmic">Log</button></div><div class="toggle" role="group" aria-label="Other CNAs"><button aria-pressed="false" data-other="1">+ all other CNAs</button></div></div>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div class="chart-wrap" style="height:400px"><canvas id="cochart"></canvas></div>
+  <div class="legend"><span><i class="sw dash"></i>Model release / access event</span><span>Latest week is partial</span><span>Notable-CNA total shown in tooltip</span></div>
+  <h3 style="margin-top:26px">Vendor by vendor · pre vs post Mythos Preview</h3>
+  <div class="multi" id="multi"></div>
+  <h3 style="margin-top:26px">Scorecard · what each Glasswing partner has published or said</h3>
+  <div class="tbl-scroll"><table class="score" id="score"><thead><tr><th>Vendor</th><th>Glasswing</th><th class="num">Pre / wk</th><th class="num">Post / wk</th><th class="mult">×</th><th class="num">Peak week</th><th>Disclosed numbers &amp; statements</th></tr></thead><tbody></tbody></table></div>
+  <p style="font-size:12.5px;color:var(--ink-3);margin:10px 0 0">Pre = 13 weeks, 5 Jan – 30 Mar 2026. Post = full weeks from 6 Apr 2026 to the last complete week. Linux and Oracle bars mostly reflect their own CVE-assignment practice (kernel backports; quarterly-to-monthly patch cycle), not only Mythos. Google's counts are dominated by Android bulletins.</p>
+</section>
+
+<section class="panel" id="patch">
+  <div class="panel-head">
+    <div><h2>Patch-cycle volume: Microsoft Patch Tuesday, Oracle CPU, .NET</h2><p>Microsoft CVEs per monthly release (MSRC CVRF API, Chromium/Edge entries excluded), Oracle patches per Critical Patch Update (oracle.com advisories), and .NET security advisories (dotnet/announcements). Microsoft's June 2026 (198) broke a 20-year record, July (570) nearly tripled it; Microsoft attributes the surge to its own AI harness (MDASH) plus Glasswing. Oracle moved from quarterly to monthly releases and July 2026 carried 1,448 patches against a 2021–2025 range of 309–520.</p></div>
+    <div class="controls"><div class="toggle" role="group" aria-label="Range"><button aria-pressed="true" data-prange="2026">2026</button><button aria-pressed="false" data-prange="all">Since 2021</button></div></div>
+  </div>
+  <div class="chart-wrap" style="height:300px"><canvas id="patchchart"></canvas></div>
+  <div class="legend"><span><i class="sw" style="background:var(--kev)"></i>Microsoft Patch Tuesday CVEs</span><span><i class="sw" style="background:var(--myth)"></i>Oracle CPU patches</span><span><i class="sw" style="background:var(--mark)"></i>.NET security advisories (right axis)</span><span><i class="sw dash"></i>Mythos Preview (7 Apr 2026)</span></div>
+</section>
+
+<section class="panel" id="frameworks">
+  <div class="panel-head">
+    <div><h2>Frameworks &amp; package ecosystems: .NET, Next.js, Spring, npm, PyPI…</h2><p>Where application developers feel it. Top: GitHub-reviewed security advisories published per month for each package ecosystem (GitHub Advisory Database, all severities). Below: advisories published per month by the framework's own GitHub repository, then the headline facts from each vendor's own security releases. The latest month is undercounted everywhere — GitHub review lag runs 2–6 weeks.</p></div>
+    <div class="controls"><div class="toggle" role="group" aria-label="Range"><button aria-pressed="true" data-erange="2026">2026</button><button aria-pressed="false" data-erange="all">Since 2021</button></div></div>
+  </div>
+  <div class="chart-wrap" style="height:320px"><canvas id="ecochart"></canvas></div>
+  <div class="legend" id="ecolegend"></div>
+  <p id="econote" style="font-size:12.5px;color:var(--ink-3);margin:8px 0 0"></p>
+  <h3 style="margin-top:26px">Framework repositories · advisories published per month</h3>
+  <div class="controls" style="margin-bottom:8px"><div class="toggle" role="group" aria-label="Year" id="heatyears"></div></div>
+  <div class="tbl-scroll"><table class="heat" id="heat"><thead><tr><th>Repository</th><th class="c">Jan</th><th class="c">Feb</th><th class="c">Mar</th><th class="c">Apr</th><th class="c">May</th><th class="c">Jun</th><th class="c">Jul</th><th class="c">Aug</th><th class="c">Sep</th><th class="c">Oct</th><th class="c">Nov</th><th class="c">Dec</th><th class="num">Year</th><th>Severity split</th></tr></thead><tbody></tbody></table></div>
+  <p style="font-size:12.5px;color:var(--ink-3);margin:8px 0 0">Repos that don't publish through GitHub advisories (django, kubernetes, nodejs, grafana) show nothing here — see the facts below for those. .NET advisories live in dotnet/announcements and were <em>not</em> ingested into the global GitHub Advisory Database in July (github/advisory-database #8717), so NuGet undercounts .NET.</p>
+  <h3 style="margin-top:26px">What the framework teams themselves reported</h3>
+  <div class="facts" id="facts"></div>
+</section>
+
+<section class="panel" id="oldbugs">
+  <div class="panel-head">
+    <div><h2>Old bugs, new fixes: vulnerabilities from past years exploited or fixed this year</h2><p>Two views of the backlog. Left: KEV additions this year broken down by the year the CVE was originally assigned — every bar except the top one is a vulnerability that existed for years before attackers (re)discovered it. Right: the oldest bugs surfaced by Mythos and by this year's exploitation, with their age at fix.</p></div>
+    <div class="controls"><div class="toggle" role="group" aria-label="Year" id="oldyears"></div></div>
+  </div>
+  <div class="two" style="margin-top:10px">
+    <div>
+      <div class="wkhead"><span class="t" id="old_t"></span><span class="s" id="old_s"></span></div>
+      <div class="agebars" id="agebars"></div>
+    </div>
+    <div>
+      <h3>Age at fix</h3>
+      <div class="tbl-scroll"><table id="longlived"><thead><tr><th>Bug</th><th>Project</th><th class="num">Age</th><th>Note</th></tr></thead><tbody></tbody></table></div>
+      <p id="oldledger" style="font-size:12.5px;color:var(--ink-3);margin:10px 0 0"></p>
+    </div>
+  </div>
+</section>
+
+<section class="panel" id="kevbrowser">
+  <div class="panel-head">
+    <div><h2>Browse exploited CVEs week by week</h2><p>Every CISA KEV addition since the catalog began (3 Nov 2021), one ISO week at a time. Use the arrows, ← → keys, the dropdown, the week strip, or click a bar in the first chart. Red pills are CVEs issued the same year (fresh zero-days); grey pills are older bugs newly confirmed exploited; the skull marks known ransomware use. Each week has a permalink.</p></div>
+    <div class="controls">
+      <div class="toggle" role="group" aria-label="Year" id="wkyears"></div>
+      <div class="toggle" role="group" aria-label="Week navigation"><button type="button" id="wkprev" title="Previous week">‹ prev</button><button type="button" id="wknext" title="Next week">next ›</button></div>
+      <select id="wksel" class="wksel" aria-label="Week"></select>
+      <div class="toggle" role="group" aria-label="Filter"><button aria-pressed="false" data-kf="fresh">Fresh only</button><button aria-pressed="false" data-kf="old">Older only</button><button aria-pressed="false" data-kf="ransom">Ransomware only</button></div>
+    </div>
+  </div>
+  <div class="wkstrip" id="wkstrip" aria-label="Weeks of the selected year"></div>
+  <div class="wkhead" id="wkhead"></div>
+  <div class="tbl-scroll"><table class="kevlist" id="kevlist"><thead><tr><th>Added</th><th>CVE</th><th>Vendor</th><th>Product</th><th>Vulnerability</th><th>Patch due</th></tr></thead><tbody></tbody></table></div>
+  <div class="wkfoot" id="wkfoot"></div>
+</section>
+
+<section class="timeline" aria-label="Model release timeline" id="tl"></section>
+
+<section class="panel" id="data">
+  <div class="panel-head">
+    <div><h2>Download the dataset</h2><p>Everything on this page plus the entry-level records behind it: every CISA KEV addition since November 2021, every Mythos finding Anthropic has publicly revealed, all .NET advisories, weekly vendor CVE counts for 22 CNAs since 2021, the Mythos ledger by week, ecosystem and framework advisory counts, Patch Tuesday and Oracle CPU volumes since 2021, the release timeline and vendor statements. The JSON is nested by dataset; the CSV is one tidy long table (<code class="mono">dataset, period, series, id, vendor_or_project, product_or_class, value, note</code>). Regenerated every Monday by the open pipeline.</p></div>
+  </div>
+  <div class="dl">
+    <a href="zeroweek-data.json" download>zeroweek-data.json <span class="k">nested · all datasets</span></a>
+    <a href="zeroweek-data.csv" download>zeroweek-data.csv <span class="k">tidy long table</span></a>
+    <a href="feed.xml">feed.xml <span class="k">RSS · last 12 weeks</span></a>
+    <button type="button" id="dlkev">KEV entries (.csv) <span class="k">generated in-page</span></button>
+    <button type="button" id="dlweekly">Weekly series (.csv) <span class="k">generated in-page</span></button>
+  </div>
+  <p id="datastamp" style="font-size:12.5px;color:var(--ink-3);margin:10px 0 0"></p>
+</section>
+
+<section class="notes" id="sources">
+  <h3>How to read this</h3>
+  <p><strong>No one publishes a "zero-days per week" series.</strong> The two closest public, weekly-resolvable datasets are used here. CISA KEV counts vulnerabilities with confirmed in-the-wild exploitation; it includes old CVEs newly seen exploited, so the same-year split is the better proxy for fresh zero-days. It is US-government-curated and lags vendor confirmation by days. Google TIG's yearly count is the other widely cited number and is shown in the five-year row.</p>
+  <p><strong>Mythos findings are not exploits.</strong> The ledger counts vulnerabilities the model found and Anthropic disclosed under its 90-day policy — most were never exploited by anyone. The discovery spike in the week of 30 Mar 2026 reflects a pre-launch scanning run over 1,000+ open-source projects, and the ledger covers only Anthropic's own open-source work, not the 10,000+ partner findings (Microsoft, Apple, Cisco, Mozilla's 271 Firefox bugs, Cloudflare's 2,000, etc.), which are reported only as aggregates.</p>
+  <p><strong>Vendor CVE counts</strong> come from cve.org records grouped by the assigning CNA, as processed by Epoch AI's Cyber Vulnerabilities explorer; severity is the CNA's own CVSS rating with ADP fallback. They measure what vendors <em>published</em>, which mixes Mythos findings, other AI scanners (OpenAI's GPT-5.5/5.6-Cyber and Daybreak, Microsoft's MDASH), changed CVE-assignment policies (the Linux kernel became its own CNA in Feb 2024), and ordinary bug-finding.</p>
+  <p><strong>Ecosystem and framework counts</strong> are GitHub-reviewed advisories by publication month and advisories published by each repository. Projects that disclose outside GitHub show as zero there. Patch Tuesday counts come straight from Microsoft's CVRF feed, so they can differ by a few from Tenable's write-ups (which also exclude some third-party CVEs).</p>
+  <p><strong>Week boundaries</strong> are ISO Mondays. The latest week is partial until the next Monday refresh.</p>
+
+  <h3 style="margin-top:22px">Where every number comes from</h3>
+  <div class="srcgrid" id="srcgrid"></div>
+
+  <h3 style="margin-top:22px">Similar trackers, and how this one differs</h3>
+  <div class="compare" id="compare"></div>
+</section>
+
+<footer>
+  <span><b>Zero Project</b> · <a href="https://zero.peries.ca/">zero.peries.ca</a> · built by <a href="https://peries.ca/">Ben Peries</a> · data <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a></span>
+  <span id="footstamp"></span>
+</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="zeroweek-data.js"></script>
+<script>
+/* ================= data binding ================= */
+const D = window.ZW || {};
+const SITE = (D.meta && D.meta.site) || {name:"Zero Project", url:"https://zero.peries.ca/"};
+if (SITE.repo) document.getElementById("repolink").href = SITE.repo;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmtWk = w => new Date(w+"T00:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short",timeZone:"UTC"});
+const fmtWkY = w => new Date(w+"T00:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"2-digit",timeZone:"UTC"});
+const fmtLong = s => new Date(s+"T00:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});
+const isoMon = s => {const d=new Date(s+"T00:00:00Z");d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7));return d.toISOString().slice(0,10);};
+const endOf = w => {const d=new Date(w+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+6);return d.toISOString().slice(0,10);};
+const num = n => (n==null?"—":Number(n).toLocaleString("en-GB"));
+const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const KEV_ALL = (D.kev && D.kev.entries) || [];           // [date,cve,vendor,product,K/U,due,name]
+const KW = (D.kev && D.kev.weekly) || [];                  // [week,total,fresh,older,ransom]
+const KWEEKS = KW.map(r=>r[0]);
+const DATA_THROUGH = (D.meta && D.meta.data_through) || (KEV_ALL.length? KEV_ALL[KEV_ALL.length-1][0] : "");
+const LATEST_WEEK = KWEEKS[KWEEKS.length-1];
+const LATEST_PARTIAL = DATA_THROUGH < endOf(LATEST_WEEK);
+const EVENTS = D.events || [];
+const NOTABLE = D.notable_weeks || {};
+const MY = (D.ledger && D.ledger.weekly) || [];
+const CNA = (D.cna && D.cna.series) || {};
+const CNA_WEEKS = (D.cna && D.cna.weeks) || [];
+const MSRC = (D.patch && D.patch.msrc) || {};
+const ORACLE = (D.patch && D.patch.oracle) || {};
+const DOTNET = (D.patch && D.patch.dotnet) || {};
+const DOTNET_ITEMS = (D.patch && D.patch.dotnet_items) || [];
+const ECO = D.eco || {};
+const REPO = D.repos || {};
+const SAID = D.vendor_statements || {};
+const FRAMES = D.framework_facts || [];
+const THIS_YEAR = +(DATA_THROUGH||"2026").slice(0,4);
+const MYTHOS_WEEK = "2026-04-06";
+document.getElementById("dataThrough").textContent = DATA_THROUGH ? fmtLong(DATA_THROUGH) : "—";
+document.getElementById("footstamp").textContent = D.meta ? `Last refresh ${(D.meta.generated||"").slice(0,16).replace("T"," ")} UTC · KEV feed ${(D.meta.kev_released||"").slice(0,10)} · ledger rev ${(D.ledger&&D.ledger.totals&&D.ledger.totals.as_of)||"—"}` : "";
+document.getElementById("datastamp").textContent = D.meta ? `Generated ${(D.meta.generated||"").slice(0,16).replace("T"," ")} UTC · ${num(KEV_ALL.length)} KEV entries · ${num(KWEEKS.length)} weeks · KEV catalog ${num(D.meta.kev_catalog_size)} entries · ledger ${num(D.meta.ledger_entries)} entries.` : "";
+
+Chart.defaults.font.family = '"IBM Plex Sans", system-ui, sans-serif';
+Chart.defaults.font.size = 12;
+function theme(){ return {ink:css("--ink"),ink2:css("--ink-2"),ink3:css("--ink-3"),grid:css("--grid"),panel:css("--panel")}; }
+function baseOpts(yTitle, labelsAreWeeks=true){
+  const t=theme();
+  return {
+    responsive:true, maintainAspectRatio:false, animation:{duration:250},
+    interaction:{mode:"index",intersect:false},
+    layout:{padding:{top:30,right:8}},
+    scales:{
+      x:{stacked:true,grid:{display:false},border:{color:t.grid},ticks:{color:t.ink3,maxRotation:0,autoSkip:true,maxTicksLimit:14,callback(v){const l=this.getLabelForValue(v);return labelsAreWeeks?(/^\d{4}-\d{2}-\d{2}$/.test(l)?fmtWkY(l):l):l;}}},
+      y:{stacked:true,beginAtZero:true,grid:{color:t.grid},border:{display:false},ticks:{color:t.ink3,precision:0},title:{display:true,text:yTitle,color:t.ink3,font:{size:11}}}
+    },
+    plugins:{legend:{display:false},tooltip:{
+      backgroundColor:t.panel,titleColor:t.ink,bodyColor:t.ink2,borderColor:t.grid,borderWidth:1,padding:10,
+      titleFont:{family:'"IBM Plex Mono", monospace',size:12},
+      callbacks:{title:items=>(/^\d{4}-\d{2}-\d{2}$/.test(items[0].label)?"Week of "+items[0].label:items[0].label)}
+    }}
+  };
+}
+// event markers plugin (works on any chart whose labels are ISO weeks)
+const markers = { id:"markers", afterDatasetsDraw(chart){
+  const {ctx, chartArea:{top,bottom,right}, scales:{x}} = chart; const labels=chart.data.labels; if(!labels.length) return;
+  ctx.save();
+  EVENTS.forEach((ev,k)=>{ const i=labels.indexOf(ev.week); if(i<0) return;
+    const w=labels.length>1?(x.getPixelForValue(1)-x.getPixelForValue(0)):40; const px=x.getPixelForValue(i)-w/2+w*(ev.frac||.14);
+    ctx.strokeStyle=css("--mark"); ctx.lineWidth=1.5; ctx.setLineDash([5,4]); ctx.beginPath(); ctx.moveTo(px,top); ctx.lineTo(px,bottom); ctx.stroke(); ctx.setLineDash([]);
+    if(labels.length<=120){ ctx.fillStyle=css("--mark"); ctx.font='500 11px "IBM Plex Mono", monospace'; ctx.textBaseline="top"; const tw=ctx.measureText(ev.label).width; const flip=px+6+tw>right; ctx.textAlign=flip?"right":"left"; ctx.fillText(ev.label, flip?px-6:px+6, top+4+(k%2)*14); }
+  });
+  ctx.restore();
+}};
+
+/* ================= glance + KPIs ================= */
+const byWeek={}; KEV_ALL.forEach(e=>{(byWeek[isoMon(e[0])]=byWeek[isoMon(e[0])]||[]).push(e);});
+const isFresh = e => +e[1].split("-")[1] >= +e[0].slice(0,4);
+(function glance(){
+  const w=LATEST_WEEK; const es=(byWeek[w]||[]).slice().sort((a,b)=>a[0]<b[0]?1:-1); const fresh=es.filter(isFresh).length;
+  document.getElementById("g_count").innerHTML = `${es.length}<small> exploited CVEs added · week of ${fmtWk(w)}${LATEST_PARTIAL?" (so far)":""}</small>`;
+  document.getElementById("g_sub").textContent = `${fresh} fresh · ${es.length-fresh} older · ${es.filter(e=>e[4]==="K").length} ransomware-linked · ${fmtLong(w)} – ${fmtLong(endOf(w))}`;
+  document.getElementById("g_list").innerHTML = es.slice(0,8).map(e=>`<li><span class="m">${e[0].slice(5)}</span><span><a class="pill ${isFresh(e)?"fresh":"old"}" href="#cve=${e[1]}">${e[1]}</a> ${esc(e[2])} · ${esc(e[3])}</span></li>`).join("") + (es.length>8?`<li><span class="m"></span><a href="#week=${w}">…and ${es.length-8} more this week</a></li>`:"");
+  const last8=KW.slice(-9); const rows=[];
+  for(let i=last8.length-1;i>=Math.max(0,last8.length-6);i--){ const r=last8[i]; const p=last8[i-1]; const d=p?r[1]-p[1]:0; rows.push(`<li><span class="m">${fmtWk(r[0])}</span><span><a href="#week=${r[0]}">${r[1]} added</a> · ${r[2]} fresh, ${r[3]} older${r[4]?`, ${r[4]} ransomware`:""}${p?` <span class="m">${d>0?"+":""}${d} vs prior</span>`:""}${NOTABLE[r[0]]?` — ${esc(NOTABLE[r[0]])}`:""}</span></li>`); }
+  document.getElementById("g_wow").innerHTML=rows.join("");
+})();
+(function kpis(){
+  const idx=w=>KWEEKS.indexOf(w);
+  const post=KW.filter(r=>r[0]>=MYTHOS_WEEK && (r[0]!==LATEST_WEEK||!LATEST_PARTIAL));
+  const preStart=KWEEKS[Math.max(0,idx(MYTHOS_WEEK)-22)]; const pre=KW.filter(r=>r[0]>=preStart&&r[0]<MYTHOS_WEEK);
+  const avg=a=>a.length?a.reduce((s,r)=>s+r[1],0)/a.length:0; const avgF=a=>a.length?a.reduce((s,r)=>s+r[2],0)/a.length:0;
+  const all=KW.filter(r=>r[0]!==LATEST_WEEK||!LATEST_PARTIAL);
+  const pa=avg(post), pr=avg(pre), a5=avg(all);
+  document.getElementById("k_post").textContent=pa.toFixed(1); document.getElementById("k_pre").textContent=pr.toFixed(1); document.getElementById("k_5y").textContent=a5.toFixed(1);
+  document.getElementById("kpi1").innerHTML=`${pa.toFixed(1)}<small>/ wk</small>`; document.getElementById("kpi1d").textContent=`${pr?((pa/pr-1)*100).toFixed(0):"—"}% vs prior 22 wks (${pr.toFixed(1)}) · 5-yr avg ${a5.toFixed(1)}`;
+  document.getElementById("kpi1s").textContent=`${post.reduce((s,r)=>s+r[1],0)} CISA KEV additions over ${post.length} full weeks from 6 Apr 2026`;
+  const pf=avgF(post), prf=avgF(pre);
+  document.getElementById("kpi2").innerHTML=`${pf.toFixed(1)}<small>/ wk</small>`; document.getElementById("kpi2d").textContent=`vs ${prf.toFixed(1)} / wk in the 22 weeks before`;
+  document.getElementById("kpi2s").textContent=`${post.reduce((s,r)=>s+r[2],0)} of ${post.reduce((s,r)=>s+r[1],0)} carry a CVE-${THIS_YEAR} id`;
+  const lw=KW[KW.length-1]; const rank=KW.filter(r=>r[0].startsWith(String(THIS_YEAR))).sort((a,b)=>b[2]-a[2]).findIndex(r=>r[0]===lw[0])+1;
+  document.getElementById("kpi3l").textContent=`Latest week · ${fmtWk(lw[0])} – ${fmtWk(endOf(lw[0]))}${LATEST_PARTIAL?" (partial)":""}`;
+  document.getElementById("kpi3").textContent=lw[1]; document.getElementById("kpi3d").textContent=rank===1?`highest fresh-CVE week of ${THIS_YEAR}`:`#${rank} fresh-CVE week of ${THIS_YEAR}`;
+  const ev=EVENTS.filter(e=>e.week===lw[0]).map(e=>e.label).join(", "); document.getElementById("kpi3s").textContent=`${lw[2]} fresh, ${lw[3]} older${ev?` · ${ev}`:""}`;
+  const disc=MY.filter(r=>r[0]>=MYTHOS_WEEK).reduce((s,r)=>s+r[1]+r[2]+r[3]+r[4]+r[5],0);
+  const peak=MY.slice().sort((a,b)=>(b[1]+b[2]+b[3]+b[4]+b[5])-(a[1]+a[2]+a[3]+a[4]+a[5]))[0];
+  const commits=MY.filter(r=>r[0]>=MYTHOS_WEEK).reduce((s,r)=>s+r[6],0);
+  document.getElementById("k_ledger").textContent=num(disc); document.getElementById("kpi4").textContent=num(disc);
+  document.getElementById("kpi4d").textContent=peak?`peak week ${fmtWk(peak[0])}: ${num(peak[1]+peak[2]+peak[3]+peak[4]+peak[5])}`:"";
+  document.getElementById("kpi4s").textContent=`Disclosed subset only; ${num(commits)} hash commitments since 6 Apr`;
+  const T=(D.ledger&&D.ledger.totals)||{};
+  document.getElementById("ledgertotals").textContent=`Ledger totals as of ${T.as_of||"—"}: ${num(T.entries)} entries · ${num(T.disclosed_to_maintainers||T.total_disclosed)} disclosed to maintainers · ${num(T.patched_upstream)} patched upstream · ${num(T.cves||T.total_cves)} CVEs and ${num(T.ghsas||T.total_ghsas)} GHSAs assigned · ${num(T.candidates_found)} candidates found · ${num(T.confirmed_valid)} confirmed valid (${T.true_positive_rate?Math.round(T.true_positive_rate*100)+"%":"—"} true positives).`;
+})();
+
+/* ================= KEV chart ================= */
+let kevMode="split", kevRange="2026";
+function kevRows(){
+  if(kevRange==="2026") return KW.filter(r=>r[0]>=`${THIS_YEAR}-01-01`);
+  if(kevRange==="mythos") return KW.filter(r=>r[0]>=KWEEKS[Math.max(0,KWEEKS.indexOf(MYTHOS_WEEK)-8)]);
+  if(kevRange==="12m") return KW.slice(-53);
+  return KW;
+}
+function ma4(i){ const s=KW.slice(Math.max(0,i-3),i+1); return +(s.reduce((a,r)=>a+r[1],0)/s.length).toFixed(2); }
+const kevCtx=document.getElementById("kev");
+function kevDatasets(){
+  const rows=kevRows(); const idx0=KWEEKS.indexOf(rows[0]?rows[0][0]:KWEEKS[0]);
+  const bar=(label,data,color)=>({type:"bar",label,data,backgroundColor:color,borderRadius:rows.length>80?0:2,stack:"a",order:2,barPercentage:rows.length>80?1:.82,categoryPercentage:rows.length>80?.95:.9});
+  const line={type:"line",label:"4-wk avg",data:rows.map((r,i)=>ma4(idx0+i)),borderColor:theme().ink,borderWidth:1.5,pointRadius:0,tension:.35,order:1,stack:"ma"};
+  if(kevMode==="split") return [bar("CVE issued same year",rows.map(r=>r[2]),css("--kev")),bar("CVE issued earlier",rows.map(r=>r[3]),css("--kev-old")),line];
+  if(kevMode==="total") return [bar("KEV additions",rows.map(r=>r[1]),css("--kev")),line];
+  return [bar("Ransomware-linked",rows.map(r=>r[4]),css("--crit")),bar("Other",rows.map(r=>r[1]-r[4]),css("--kev-old")),line];
+}
+function kevOpts(){
+  const o=baseOpts("KEV additions / week");
+  o.plugins.tooltip.callbacks.title=items=>"Week of "+items[0].label+(items[0].label===LATEST_WEEK&&LATEST_PARTIAL?" (partial)":"");
+  o.plugins.tooltip.callbacks.afterBody=items=>{const r=KW.find(x=>x[0]===items[0].label)||[]; const n=NOTABLE[r[0]]; return [`Total ${r[1]} · ransomware-linked ${r[4]}`,"click to browse this week"].concat(n?["— "+n]:[]);};
+  o.onClick=(evt,els)=>{ if(els.length){ const w=kevChart.data.labels[els[0].index]; showWeek(w,true); } };
+  o.onHover=(evt,els)=>{evt.native.target.style.cursor=els.length?"pointer":"default";};
+  return o;
+}
+let kevChart=new Chart(kevCtx,{data:{labels:kevRows().map(r=>r[0]),datasets:kevDatasets()},options:kevOpts(),plugins:[markers]});
+function kevRedraw(){ kevChart.data.labels=kevRows().map(r=>r[0]); kevChart.data.datasets=kevDatasets(); kevChart.update(); }
+document.querySelectorAll("[data-kev]").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("[data-kev]").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");kevMode=b.dataset.kev;kevRedraw();}));
+document.querySelectorAll("[data-krange]").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("[data-krange]").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");kevRange=b.dataset.krange;kevRedraw();}));
+document.getElementById("partialnote").textContent=LATEST_PARTIAL?`Week of ${fmtWk(LATEST_WEEK)} is partial (data to ${fmtWk(DATA_THROUGH)})`:"";
+
+/* ================= five years ================= */
+(function years(){
+  const G=D.gtig_zero_days_by_year||{}; const el=document.getElementById("yrs"); const yrs=[]; for(let y=2021;y<=THIS_YEAR;y++) yrs.push(y);
+  el.innerHTML=yrs.map(y=>{ const es=KEV_ALL.filter(e=>e[0].startsWith(y+"")); const fresh=es.filter(isFresh).length; const pt=Object.entries(MSRC).filter(([m])=>m.startsWith(y+"")).reduce((s,[,v])=>s+v,0);
+    const wk=KW.filter(r=>r[0].startsWith(y+"")&&(r[0]!==LATEST_WEEK||!LATEST_PARTIAL)); const perwk=wk.length?(wk.reduce((s,r)=>s+r[1],0)/wk.length).toFixed(1):"—";
+    return `<div class="yr"><div class="y">${y}${y===THIS_YEAR?" ytd":""}${y===2021?" (Nov–Dec)":""}</div><div class="n">${es.length}</div><div class="s">KEV additions · ${perwk}/wk<br>${fresh} fresh · ${es.length-fresh} older<br>GTIG zero-days: <b>${G[y]??"—"}</b><br>Patch Tuesday CVEs: <b>${pt?num(pt):"—"}</b></div></div>`; }).join("");
+})();
+
+/* ================= Mythos ledger chart ================= */
+let myScale="linear"; const myLabels=MY.map(r=>r[0]); const myCtx=document.getElementById("myth");
+function myDatasets(){ const bar=(label,idx,color)=>({type:"bar",label,data:MY.map(r=>r[idx]),backgroundColor:color,stack:"sev",order:3,borderRadius:1,barPercentage:.82,categoryPercentage:.9});
+  return [bar("Critical",1,css("--crit")),bar("High",2,css("--high")),bar("Medium",3,css("--med")),bar("Low",4,css("--low")),bar("Not yet assessed",5,css("--unk")),
+    {type:"line",label:"Hash commitments",data:MY.map(r=>r[6]),borderColor:css("--myth"),backgroundColor:css("--myth"),borderWidth:2,pointRadius:2.5,pointHoverRadius:4,tension:.3,order:1,stack:"c"},
+    {type:"line",label:"Patched upstream",data:MY.map(r=>r[7]),borderColor:css("--patched"),backgroundColor:css("--patched"),borderWidth:1.5,pointRadius:0,tension:.3,order:2,stack:"p"}]; }
+function myOpts(){ const o=baseOpts("findings / week"); o.scales.y.type=myScale; if(myScale==="logarithmic"){o.scales.y.beginAtZero=false;o.scales.y.min=1;o.scales.y.ticks.callback=v=>[1,10,100,1000].includes(v)?v.toLocaleString():"";}
+  o.plugins.tooltip.callbacks.afterBody=items=>{const r=MY[items[0].dataIndex]; return [`Discovered this week: ${r[1]+r[2]+r[3]+r[4]+r[5]}`];}; o.plugins.tooltip.filter=i=>i.raw>0; return o; }
+let myChart=new Chart(myCtx,{data:{labels:myLabels,datasets:myDatasets()},options:myOpts(),plugins:[markers]});
+document.querySelectorAll("[data-scale]").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("[data-scale]").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");myScale=b.dataset.scale;myChart.options=myOpts();myChart.update();}));
+
+/* ================= vendors ================= */
+const CCOL={"Microsoft":"#2F5D8A","Google":"#D9822B","Apple":"#7C8794","Linux":"#C9A227","Oracle":"#B3261E","Cisco":"#2E8B57","Mozilla":"#E2683F","NVIDIA":"#6DAA3A","VMware":"#6B4FBB","AWS":"#C77DBA","Red Hat":"#9E3616","Apache":"#8A6D3B","IBM":"#3A7CA5","Adobe":"#C4471F","Intel":"#4B5563","AMD":"#A8231D","Qualcomm":"#1F8A8A","Samsung":"#5B7BD5","SAP":"#3C6E71","OpenSSL":"#8E44AD","GitHub":"#555","Other CNAs":"#C9CFD6"};
+const cval=(c,w)=>((CNA[c]||{})[w]||0);
+const CNA_LAST = CNA_WEEKS[CNA_WEEKS.length-1];
+const CNA_LAST_PARTIAL = CNA_LAST && DATA_THROUGH < endOf(CNA_LAST);
+const PRE_W=CNA_WEEKS.filter(w=>w>="2026-01-05"&&w<="2026-03-30"), POST_W=CNA_WEEKS.filter(w=>w>=MYTHOS_WEEK&&(w!==CNA_LAST||!CNA_LAST_PARTIAL));
+const avgc=(c,ws)=>ws.length?ws.reduce((a,w)=>a+cval(c,w),0)/ws.length:0;
+const peakc=c=>CNA_WEEKS.reduce((b,w)=>cval(c,w)>cval(c,b)?w:b,CNA_WEEKS[0]);
+let coScale="linear", coRange="1y", showOther=false;
+const selected=new Set(["Microsoft","Google","Apple","Linux","Oracle","Cisco","Mozilla","NVIDIA","VMware","AWS"]);
+const coWeeks=()=>coRange==="1y"?CNA_WEEKS.filter(w=>w>="2025-09-01"):CNA_WEEKS;
+const chipsEl=document.getElementById("chips");
+Object.keys(CNA).filter(c=>c!=="Other CNAs").sort((a,b)=>Object.values(CNA[b]).reduce((s,v)=>s+v,0)-Object.values(CNA[a]).reduce((s,v)=>s+v,0)).forEach(c=>{ const b=document.createElement("button"); b.className="chip"; b.type="button"; b.style.setProperty("--c",CCOL[c]||"#888"); b.setAttribute("aria-pressed",selected.has(c)?"true":"false"); b.innerHTML=`<i></i>${esc(c)}`; b.addEventListener("click",()=>{ if(selected.has(c)) selected.delete(c); else selected.add(c); b.setAttribute("aria-pressed",selected.has(c)?"true":"false"); coRedraw(); }); chipsEl.appendChild(b); });
+function coDatasets(){ const ws=coWeeks(); return Object.keys(CNA).filter(c=>selected.has(c)||(showOther&&c==="Other CNAs")).map(c=>({type:"bar",label:c,data:ws.map(w=>cval(c,w)),backgroundColor:CCOL[c]||"#888",stack:"s",barPercentage:ws.length>80?1:.85,categoryPercentage:ws.length>80?.95:.92,borderRadius:0})); }
+function coOpts(){ const o=baseOpts("high + critical CVEs / week"); o.scales.y.type=coScale; if(coScale==="logarithmic"){o.scales.y.beginAtZero=false;o.scales.y.min=1;o.scales.y.ticks.callback=v=>[1,10,100,1000,10000].includes(v)?v.toLocaleString():"";}
+  o.plugins.tooltip.filter=i=>i.raw>0; o.plugins.tooltip.callbacks.afterBody=items=>{const w=items[0].label; const notable=Object.keys(CNA).filter(c=>c!=="Other CNAs").reduce((a,c)=>a+cval(c,w),0); return [`All notable CNAs: ${notable.toLocaleString()} · other CNAs: ${cval("Other CNAs",w).toLocaleString()}`];}; return o; }
+let coChart=new Chart(document.getElementById("cochart"),{data:{labels:coWeeks(),datasets:coDatasets()},options:coOpts(),plugins:[markers]});
+function coRedraw(){ coChart.data.labels=coWeeks(); coChart.data.datasets=coDatasets(); coChart.update(); }
+document.querySelectorAll("[data-cscale]").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("[data-cscale]").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");coScale=b.dataset.cscale;coChart.options=coOpts();coChart.update();}));
+document.querySelectorAll("[data-crange]").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("[data-crange]").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");coRange=b.dataset.crange;coRedraw();}));
+document.querySelector("[data-other]").addEventListener("click",e=>{showOther=!showOther;e.currentTarget.setAttribute("aria-pressed",showOther?"true":"false");coRedraw();});
+(function epochPeak(){ const m=(D.epoch_monthly||[]).filter(r=>r[0]>="2026-04"&&r[0]<DATA_THROUGH.slice(0,7)); if(!m.length) return; const best=m.slice().sort((a,b)=>(b[1]+b[2])-(a[1]+a[2]))[0]; document.getElementById("epochpeak").textContent=`~${num(best[1]+best[2])} in ${new Date(best[0]+"-01T00:00:00Z").toLocaleDateString("en-GB",{month:"long",year:"numeric",timeZone:"UTC"})}`; })();
+// small multiples
+const MULTI=["Microsoft","Google","Apple","Linux","Oracle","Cisco","Mozilla","NVIDIA","VMware","AWS","Red Hat","Apache"].filter(c=>CNA[c]);
+const multiEl=document.getElementById("multi"); const MW=CNA_WEEKS.filter(w=>w>="2025-09-01");
+MULTI.forEach(c=>{ const pre=avgc(c,PRE_W), post=avgc(c,POST_W), m=pre>0?post/pre:null; const d=document.createElement("div"); d.className="mini";
+  d.innerHTML=`<div class="h"><span class="n">${esc(c)}</span><span class="x">pre <b>${pre.toFixed(1)}</b> → post <b>${post.toFixed(1)}</b> /wk</span></div><div class="cw"><span class="gw">${m?("×"+m.toFixed(1)):"n/a"}</span><canvas></canvas></div>`; multiEl.appendChild(d); const t=theme();
+  new Chart(d.querySelector("canvas"),{type:"bar",data:{labels:MW,datasets:[{data:MW.map(w=>cval(c,w)),backgroundColor:MW.map(w=>w>=MYTHOS_WEEK?(CCOL[c]||"#888"):css("--unk")),barPercentage:1,categoryPercentage:.8}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:{top:4}},scales:{x:{display:false},y:{display:true,beginAtZero:true,grid:{display:false},border:{display:false},ticks:{color:t.ink3,font:{size:9},maxTicksLimit:3,precision:0}}},plugins:{legend:{display:false},tooltip:{enabled:true,backgroundColor:t.panel,titleColor:t.ink,bodyColor:t.ink2,borderColor:t.grid,borderWidth:1,displayColors:false,callbacks:{title:i=>"Week of "+i[0].label,label:i=>i.raw+" high/critical CVEs"}}}},
+    plugins:[{id:"mm",afterDatasetsDraw(ch){const {ctx,chartArea:{top,bottom},scales:{x}}=ch;const i=MW.indexOf(MYTHOS_WEEK);if(i<0)return;const w=x.getPixelForValue(1)-x.getPixelForValue(0);const px=x.getPixelForValue(i)-w/2+w*.14;ctx.save();ctx.strokeStyle=css("--mark");ctx.setLineDash([3,3]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(px,top);ctx.lineTo(px,bottom);ctx.stroke();ctx.restore();}}]}); });
+// scorecard
+const GL=new Set(D.glasswing_launch_partners||[]), GP=new Set(D.glasswing_partners||[]);
+const SCORE=["Microsoft","Google","Apple","Linux","Oracle","Cisco","Mozilla","NVIDIA","VMware","AWS","Cloudflare","Palo Alto Networks"];
+const sb=document.querySelector("#score tbody"); const maxMult=Math.max(1,...SCORE.filter(c=>CNA[c]).map(c=>{const p=avgc(c,PRE_W);return p?avgc(c,POST_W)/p:0;}));
+SCORE.forEach(c=>{ const has=!!CNA[c]; const pre=has?avgc(c,PRE_W):null, post=has?avgc(c,POST_W):null, m=(has&&pre>0)?post/pre:null; const pk=has?peakc(c):null; const gw=GL.has(c)?"launch partner":GP.has(c)?"partner":"—"; const tr=document.createElement("tr");
+  tr.innerHTML=`<td><b>${esc(c)}</b></td><td><span class="pill">${gw}</span></td><td class="num">${has?pre.toFixed(1):"—"}</td><td class="num">${has?post.toFixed(1):"—"}</td><td class="mult">${m?`<span class="bar" style="width:${Math.max(4,Math.round(60*m/maxMult))}px"></span>×${m.toFixed(1)}`:"—"}</td><td class="num">${has?`${cval(c,pk)} <span class="pill">${pk}</span>`:"—"}</td><td class="said">${esc(SAID[c]||"")}</td>`; sb.appendChild(tr); });
+
+/* ================= patch cycles ================= */
+let pRange="2026"; const MONS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const allMonths=(()=>{const s=new Set([...Object.keys(MSRC),...Object.keys(ORACLE),...Object.keys(DOTNET)]);return [...s].filter(m=>m>="2021-01").sort();})();
+const pMonths=()=>pRange==="2026"?allMonths.filter(m=>m.startsWith(THIS_YEAR+"")):allMonths;
+const mlabel=m=>pRange==="2026"?MONS[+m.slice(5,7)-1]:(m.endsWith("-01")?m.slice(0,4):MONS[+m.slice(5,7)-1].slice(0,1));
+function pcDatasets(){ const ms=pMonths(); return [
+  {type:"bar",label:"Microsoft Patch Tuesday",data:ms.map(m=>MSRC[m]??null),backgroundColor:css("--kev"),borderRadius:2,barPercentage:.75,categoryPercentage:.85,stack:"ms"},
+  {type:"bar",label:"Oracle CPU patches",data:ms.map(m=>ORACLE[m]?ORACLE[m].patches:null),backgroundColor:css("--myth"),borderRadius:2,barPercentage:.75,categoryPercentage:.85,stack:"or"},
+  {type:"line",label:".NET security advisories",data:ms.map(m=>DOTNET[m]??0),borderColor:css("--mark"),backgroundColor:css("--mark"),pointRadius:pRange==="2026"?3:0,borderWidth:2,tension:.3,yAxisID:"y2"}]; }
+function pcOpts(){ const o=baseOpts("CVEs / patches per release",false); o.scales.x.stacked=true; o.scales.y.stacked=false; o.scales.x.ticks.callback=function(v){return mlabel(this.getLabelForValue(v));}; o.scales.x.ticks.maxTicksLimit=pRange==="2026"?12:24; o.plugins.tooltip.callbacks.title=i=>i[0].label; o.plugins.tooltip.filter=i=>i.raw!=null; o.layout.padding.top=26;
+  o.scales.y2={position:"right",beginAtZero:true,grid:{display:false},border:{display:false},ticks:{color:css("--mark"),precision:0},title:{display:true,text:".NET advisories",color:css("--mark"),font:{size:11}}}; return o; }
+const pcMark={id:"pm",afterDatasetsDraw(ch){const ms=pMonths();const i=ms.indexOf("2026-04");if(i<0)return;const {ctx,chartArea:{top,bottom},scales:{x}}=ch;const w=x.getPixelForValue(1)-x.getPixelForValue(0);const px=x.getPixelForValue(i)-w/2+w*.2;ctx.save();ctx.strokeStyle=css("--mark");ctx.setLineDash([5,4]);ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(px,top);ctx.lineTo(px,bottom);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=css("--mark");ctx.font='500 11px "IBM Plex Mono", monospace';ctx.textBaseline="top";ctx.fillText("Mythos Preview · 7 Apr 2026",px+6,top+2);ctx.restore();}};
+let pcChart=new Chart(document.getElementById("patchchart"),{data:{labels:pMonths(),datasets:pcDatasets()},options:pcOpts(),plugins:[pcMark]});
+document.querySelectorAll("[data-prange]").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("[data-prange]").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");pRange=b.dataset.prange;pcChart.data.labels=pMonths();pcChart.data.datasets=pcDatasets();pcChart.options=pcOpts();pcChart.update();}));
+
+/* ================= ecosystems ================= */
+const ECOL={"npm":"#C4471F","pip":"#2F5D8A","go":"#1F8A8A","composer":"#6B4FBB","maven":"#D9822B","rust":"#8A6D3B","nuget":"#5B7BD5","rubygems":"#A8231D"};
+const ECON={"npm":"npm (JavaScript)","pip":"PyPI (Python)","go":"Go","composer":"Composer (PHP)","maven":"Maven (Java)","rust":"crates.io (Rust)","nuget":"NuGet (.NET)","rubygems":"RubyGems"};
+let eRange="2026"; const ecoKeys=Object.keys(ECO);
+const ecoMonthsAll=(()=>{const s=new Set(); ecoKeys.forEach(e=>Object.keys(ECO[e]).forEach(m=>s.add(m))); return [...s].sort();})();
+const eMonths=()=>eRange==="2026"?ecoMonthsAll.filter(m=>m.startsWith(THIS_YEAR+"")):ecoMonthsAll;
+function ecoDatasets(){ const ms=eMonths(); return ecoKeys.map(e=>({type:"bar",label:ECON[e]||e,data:ms.map(m=>ECO[e][m]??null),backgroundColor:ECOL[e]||"#888",stack:"e",barPercentage:.75,categoryPercentage:.85})); }
+function ecoOpts(){ const o=baseOpts("reviewed advisories / month",false); o.scales.x.ticks.callback=function(v){const m=this.getLabelForValue(v);return eRange==="2026"?MONS[+m.slice(5,7)-1]:(m.endsWith("-01")?m.slice(0,4):"");}; o.scales.x.ticks.maxTicksLimit=24; o.plugins.tooltip.callbacks.title=i=>i[0].label; o.plugins.tooltip.callbacks.afterBody=i=>{const m=i[0].label;return ["All ecosystems: "+ecoKeys.reduce((a,e)=>a+(ECO[e][m]||0),0).toLocaleString()];}; o.layout.padding.top=26; return o; }
+const ecoMark={id:"em",afterDatasetsDraw(ch){const ms=eMonths();const i=ms.indexOf("2026-04");if(i<0)return;const {ctx,chartArea:{top,bottom},scales:{x}}=ch;const w=x.getPixelForValue(1)-x.getPixelForValue(0);const px=x.getPixelForValue(i)-w/2+w*.2;ctx.save();ctx.strokeStyle=css("--mark");ctx.setLineDash([5,4]);ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(px,top);ctx.lineTo(px,bottom);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=css("--mark");ctx.font='500 11px "IBM Plex Mono", monospace';ctx.textBaseline="top";ctx.fillText("Mythos Preview · 7 Apr 2026",px+6,top+2);ctx.restore();}};
+let ecoChart=null;
+if(ecoKeys.length){ ecoChart=new Chart(document.getElementById("ecochart"),{data:{labels:eMonths(),datasets:ecoDatasets()},options:ecoOpts(),plugins:[ecoMark]});
+  document.getElementById("ecolegend").innerHTML=ecoKeys.map(e=>`<span><i class="sw" style="background:${ECOL[e]||"#888"}"></i>${ECON[e]||e}</span>`).join("");
+  const pre=m=>m>=`${THIS_YEAR}-01`&&m<="2026-03", post=m=>m>="2026-04"&&m<DATA_THROUGH.slice(0,7);
+  document.getElementById("econote").textContent="Jan–Mar 2026 avg → Apr onward avg (complete months): "+ecoKeys.map(e=>{const a=Object.entries(ECO[e]).filter(([m])=>pre(m)).map(([,v])=>v), b=Object.entries(ECO[e]).filter(([m])=>post(m)).map(([,v])=>v); const av=x=>x.length?Math.round(x.reduce((s,v)=>s+v,0)/x.length):"—"; return `${ECON[e]||e} ${av(a)}→${av(b)}`;}).join(" · ");
+} else { document.getElementById("ecochart").parentElement.innerHTML='<p style="color:var(--ink-3);font-size:13px">Ecosystem counts need a GitHub token in the refresh pipeline (see README); not available in this build.</p>'; }
+document.querySelectorAll("[data-erange]").forEach(b=>b.addEventListener("click",()=>{if(!ecoChart)return;document.querySelectorAll("[data-erange]").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");eRange=b.dataset.erange;ecoChart.data.labels=eMonths();ecoChart.data.datasets=ecoDatasets();ecoChart.options=ecoOpts();ecoChart.update();}));
+// repo heat table
+const hb=document.querySelector("#heat tbody"); const hy=document.getElementById("heatyears"); let heatYear=THIS_YEAR;
+function heatDraw(){ hb.innerHTML=""; const rows=Object.keys(REPO).map(rp=>{const r=REPO[rp]; const tot=Object.entries(r.months||{}).filter(([m])=>m.startsWith(heatYear+"")).reduce((s,[,v])=>s+v,0); return [rp,tot];}).sort((a,b)=>b[1]-a[1]);
+  const hmax=Math.max(1,...rows.map(([rp])=>Math.max(0,...Object.entries(REPO[rp].months||{}).filter(([m])=>m.startsWith(heatYear+"")).map(([,v])=>v))));
+  rows.forEach(([rp,tot])=>{ const r=REPO[rp]; const sev=(r.severity_by_year||{})[heatYear]||{}; const tr=document.createElement("tr");
+    const cells=MONS.map((mn,i)=>{const k=`${heatYear}-${String(i+1).padStart(2,"0")}`; const v=(r.months||{})[k]||0; const a=v?Math.min(1,.15+Math.log10(v+1)/Math.log10(hmax+1)):0; return `<td class="c"><span style="background:${v?`color-mix(in srgb, var(--myth) ${Math.round(a*100)}%, transparent)`:"transparent"}">${v||"·"}</span></td>`;}).join("");
+    const sv=["critical","high","medium","low"].filter(s=>sev[s]).map(s=>`<span class="pill" style="border-color:var(--${s==="critical"?"crit":s==="high"?"high":s==="medium"?"med":"low"})">${sev[s]} ${s}</span>`).join(" ");
+    tr.innerHTML=`<td class="nm"><b>${esc(rp)}</b></td>${cells}<td class="num"><b>${r.capped?"≥":""}${tot}</b></td><td>${sv}</td>`; hb.appendChild(tr); }); }
+if(Object.keys(REPO).length){ for(let y=2021;y<=THIS_YEAR;y++){ const b=document.createElement("button"); b.textContent=y; b.setAttribute("aria-pressed",y===heatYear?"true":"false"); b.addEventListener("click",()=>{heatYear=y;[...hy.children].forEach(x=>x.setAttribute("aria-pressed",x.textContent==String(y)?"true":"false"));heatDraw();}); hy.appendChild(b);} heatDraw(); }
+else { hb.innerHTML='<tr><td colspan="15" style="color:var(--ink-3)">Repository advisory counts not available in this build (GitHub API rate limit during refresh) — they appear after the next scheduled run.</td></tr>'; }
+// facts
+document.getElementById("facts").innerHTML=FRAMES.map(f=>`<div class="fact"><div class="fh"><span class="fn">${esc(f.framework)}</span><span class="fv">${Number(f.count).toLocaleString()}</span></div><p>${esc(f.note)}</p><p style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;font-size:11px">${esc(f.vendor)} · ${esc(f.date)}</p></div>`).join("");
+
+/* ================= old bugs ================= */
+let oldYear=THIS_YEAR; const oy=document.getElementById("oldyears");
+function oldDraw(){ const es=KEV_ALL.filter(e=>e[0].startsWith(oldYear+"")); const byY={}; es.forEach(e=>{const y=+e[1].split("-")[1]; byY[y]=(byY[y]||0)+1;}); const ys=Object.keys(byY).map(Number).sort((a,b)=>b-a); const mx=Math.max(1,...Object.values(byY));
+  const older=es.filter(e=>+e[1].split("-")[1]<oldYear); const oldest=older.slice().sort((a,b)=>a[1].split("-")[1]-b[1].split("-")[1])[0];
+  document.getElementById("old_t").textContent=`${oldYear}: ${es.length} KEV additions, ${older.length} of them CVEs from earlier years`;
+  document.getElementById("old_s").textContent=oldest?`oldest: ${oldest[1]} (${oldYear-(+oldest[1].split("-")[1])} years old at exploitation) · ${oldest[2]} ${oldest[3]}`:"";
+  document.getElementById("agebars").innerHTML=ys.map(y=>`<div class="r ${y===oldYear?"cur":""}"><span class="y">CVE-${y}</span><span class="b" style="width:${Math.max(2,Math.round(100*byY[y]/mx))}%"></span><span class="n"><a href="#cveyear=${y}&year=${oldYear}" title="show these in the browser">${byY[y]}</a></span></div>`).join("");
+  const L=D.ledger||{}; document.getElementById("oldledger").textContent=L.old_found_patched_this_year!=null?`Mythos ledger: ${L.old_found_patched_this_year} findings discovered before ${THIS_YEAR} were patched upstream in ${THIS_YEAR}; ${(L.weekly||[]).filter(r=>r[0]<`${THIS_YEAR}-01-01`).reduce((s,r)=>s+r[1]+r[2]+r[3]+r[4]+r[5],0)} disclosed findings carry a ${THIS_YEAR-1} discovery date.`:""; }
+for(let y=2021;y<=THIS_YEAR;y++){ const b=document.createElement("button"); b.textContent=y; b.setAttribute("aria-pressed",y===oldYear?"true":"false"); b.addEventListener("click",()=>{oldYear=y;[...oy.children].forEach(x=>x.setAttribute("aria-pressed",x.textContent==String(y)?"true":"false"));oldDraw();}); oy.appendChild(b); }
+oldDraw();
+document.querySelector("#longlived tbody").innerHTML=(D.long_lived_bugs||[]).map(b=>`<tr><td><a class="pill" href="${esc(b.source)}" target="_blank" rel="noopener">${esc(b.id)}</a></td><td>${esc(b.project)}</td><td class="num">${b.age_years} y</td><td style="font-size:12.5px;color:var(--ink-2)">${esc(b.note)}</td></tr>`).join("");
+
+/* ================= week browser ================= */
+let curWeek=LATEST_WEEK, browseYear=+LATEST_WEEK.slice(0,4); const kf={fresh:false,old:false,ransom:false}; let cveFilter=null;
+const wksel=document.getElementById("wksel"), strip=document.getElementById("wkstrip"), klist=document.querySelector("#kevlist tbody"), whead=document.getElementById("wkhead"), wfoot=document.getElementById("wkfoot"), wy=document.getElementById("wkyears");
+const yearWeeks=y=>KWEEKS.filter(w=>w.startsWith(y+""));
+for(let y=2021;y<=THIS_YEAR;y++){ const b=document.createElement("button"); b.textContent=y; b.dataset.y=y; b.addEventListener("click",()=>{const ws=yearWeeks(y); showWeek(y===THIS_YEAR?ws[ws.length-1]:ws[0]);}); wy.appendChild(b); }
+function buildYear(y){ browseYear=y; [...wy.children].forEach(b=>b.setAttribute("aria-pressed",+b.dataset.y===y?"true":"false"));
+  wksel.innerHTML=""; const ws=yearWeeks(y); ws.forEach((w,i)=>{const n=(byWeek[w]||[]).length;const o=document.createElement("option");o.value=w;o.textContent=`${y} W${String(i+1).padStart(2,"0")} · ${fmtWk(w)} – ${fmtWk(endOf(w))} · ${n}`;wksel.appendChild(o);});
+  strip.innerHTML=""; const mx=Math.max(1,...ws.map(w=>(byWeek[w]||[]).length)); ws.forEach(w=>{const es=byWeek[w]||[];const fresh=es.filter(isFresh).length;const b=document.createElement("button");b.type="button";b.style.setProperty("--h",Math.round(40*es.length/mx)+"px");if(fresh>es.length/2)b.className="fresh";if(EVENTS.some(ev=>ev.week===w))b.classList.add("mk");b.title=`Week of ${fmtWk(w)}: ${es.length} added (${fresh} fresh)`;b.addEventListener("click",()=>showWeek(w));strip.appendChild(b);}); }
+function showWeek(w, scroll){
+  if(!KWEEKS.includes(w)) return; const y=+w.slice(0,4); if(y!==browseYear||!strip.children.length) buildYear(y);
+  curWeek=w; wksel.value=w; const ws=yearWeeks(y); [...strip.children].forEach((b,i)=>b.setAttribute("aria-current",ws[i]===w?"true":"false"));
+  const all=(byWeek[w]||[]).slice().sort((a,b)=>a[0]<b[0]?1:-1);
+  const es=all.filter(e=>(!kf.fresh||isFresh(e))&&(!kf.old||!isFresh(e))&&(!kf.ransom||e[4]==="K")&&(!cveFilter||cveFilter(e)));
+  const fresh=all.filter(isFresh).length, rans=all.filter(e=>e[4]==="K").length; const idx=KWEEKS.indexOf(w); const ev=EVENTS.find(x=>x.week===w);
+  whead.innerHTML=`<span class="t">Week ${ws.indexOf(w)+1} of ${y} · ${fmtLong(w)} – ${fmtLong(endOf(w))}${w===LATEST_WEEK&&LATEST_PARTIAL?` <span class='pill'>partial · data to ${fmtWk(DATA_THROUGH)}</span>`:""} <a class="pill" href="#week=${w}" title="permalink">#</a></span><span class="s"><b>${all.length}</b> added · <b>${fresh}</b> fresh · <b>${all.length-fresh}</b> older · <b>${rans}</b> ransomware${ev?` · <span style="color:var(--mark)">◆ ${esc(ev.label)}</span>`:""}</span>`;
+  klist.innerHTML=es.length?es.map(e=>`<tr data-cve="${e[1]}"><td class="mono">${e[0].slice(5)}</td><td><a class="pill ${isFresh(e)?"fresh":"old"}" href="https://nvd.nist.gov/vuln/detail/${e[1]}" target="_blank" rel="noopener">${e[1]}</a>${e[4]==="K"?"<span class='sk' title='Known ransomware campaign use'>☠</span>":""}</td><td>${esc(e[2])}</td><td>${esc(e[3])}</td><td>${esc(e[6])}</td><td class="mono">${(e[5]||"").slice(5)}</td></tr>`).join(""):`<tr><td colspan="6" style="color:var(--ink-3)">Nothing matched${kf.fresh||kf.old||kf.ransom||cveFilter?" the filter":""} this week.</td></tr>`;
+  const prevW=KWEEKS[idx-1], prevN=prevW?(byWeek[prevW]||[]).length:null;
+  wfoot.textContent=(prevN!=null?`Previous week: ${prevN} added. `:"")+`${y} to date through this week: ${ws.filter(x=>x<=w).reduce((a,x)=>a+(byWeek[x]||[]).length,0)} KEV additions.`+(NOTABLE[w]?` Notable: ${NOTABLE[w]}.`:"");
+  document.getElementById("wkprev").disabled=idx===0; document.getElementById("wknext").disabled=idx===KWEEKS.length-1;
+  if(scroll){ document.getElementById("kevbrowser").scrollIntoView({behavior:"smooth",block:"start"}); }
+  if(location.hash.startsWith("#week=")||scroll) history.replaceState(null,"","#week="+w);
+}
+document.getElementById("wkprev").addEventListener("click",()=>{const i=KWEEKS.indexOf(curWeek);if(i>0)showWeek(KWEEKS[i-1]);});
+document.getElementById("wknext").addEventListener("click",()=>{const i=KWEEKS.indexOf(curWeek);if(i<KWEEKS.length-1)showWeek(KWEEKS[i+1]);});
+wksel.addEventListener("change",()=>showWeek(wksel.value));
+document.querySelectorAll("[data-kf]").forEach(b=>b.addEventListener("click",()=>{kf[b.dataset.kf]=!kf[b.dataset.kf];if(b.dataset.kf==="fresh"&&kf.fresh)kf.old=false;if(b.dataset.kf==="old"&&kf.old)kf.fresh=false;document.querySelectorAll("[data-kf]").forEach(x=>x.setAttribute("aria-pressed",kf[x.dataset.kf]?"true":"false"));cveFilter=null;showWeek(curWeek);}));
+document.addEventListener("keydown",e=>{ if(e.target.tagName==="SELECT"||e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA") return; if(e.key==="/"){e.preventDefault();document.getElementById("q").focus();return;} if(e.key==="ArrowLeft")document.getElementById("wkprev").click(); if(e.key==="ArrowRight")document.getElementById("wknext").click(); });
+function openCVE(cve){ const e=KEV_ALL.find(x=>x[1]===cve); if(!e) return; cveFilter=null; showWeek(isoMon(e[0]),true); const tr=klist.querySelector(`tr[data-cve="${cve}"]`); if(tr){tr.classList.add("flash");} }
+function routeHash(){ const h=location.hash.slice(1); const p=new URLSearchParams(h.replace(/^\?/,""));
+  if(p.get("week")&&KWEEKS.includes(p.get("week"))){ showWeek(p.get("week"),true); return true; }
+  if(p.get("cve")){ openCVE(p.get("cve").toUpperCase()); return true; }
+  if(p.get("cveyear")){ const cy=p.get("cveyear"), yy=+(p.get("year")||THIS_YEAR); cveFilter=e=>e[1].split("-")[1]===cy; const first=KEV_ALL.find(e=>e[0].startsWith(yy+"")&&e[1].split("-")[1]===cy); if(first) showWeek(isoMon(first[0]),true); return true; }
+  return false; }
+window.addEventListener("hashchange",routeHash);
+if(!routeHash()) showWeek(LATEST_WEEK);
+
+/* ================= timeline ================= */
+document.getElementById("tl").innerHTML=(D.timeline||[]).filter(t=>t.date>="2026-01-01").slice(-10).map(t=>`<div class="tl"><div class="d">${t.date}</div><div class="s">${esc(t.event)}</div></div>`).join("");
+
+/* ================= sources + comparison ================= */
+document.getElementById("srcgrid").innerHTML=Object.entries(D.sources||{}).map(([h,items])=>`<div><h4>${esc(h)}</h4><ul>${items.map(([t,u,n])=>`<li><a href="${esc(u)}" rel="noopener">${esc(t)}</a>${n?` <span>— ${esc(n)}</span>`:""}</li>`).join("")}</ul></div>`).join("");
+document.getElementById("compare").innerHTML=(D.similar_trackers||[]).map(s=>`<div class="row"><b><a href="${esc(s.url)}" rel="noopener">${esc(s.name)}</a>${s.extra_url?` <small>(<a href="${esc(s.extra_url)}" rel="noopener">${esc(s.extra_label||"more")}</a>)</small>`:""}</b><span>${esc(s.note)}</span></div>`).join("")+`<div class="row"><b>Zero Project (this page)</b><span>All of the above in one place: exploited-in-the-wild counts by ISO week since the KEV catalog began, every entry browsable and searchable; Mythos discovery, disclosure and patch cadence; per-vendor CVE volume; Patch Tuesday, Oracle and .NET cycles; package ecosystems and framework repos; old bugs by age; a five-year row; open JSON/CSV/RSS, rebuilt automatically every Monday.</span></div>`;
+
+/* ================= search ================= */
+const SIDX=[];
+KEV_ALL.forEach(e=>SIDX.push({g:"Exploited (KEV)",k:`${e[1]} ${e[2]} ${e[3]} ${e[6]}`.toLowerCase(),m:e[1],t:`${e[2]} · ${e[3]} — ${e[6]}`,d:e[0],go:()=>openCVE(e[1])}));
+(D.ledger_revealed_curated||[]).forEach(m=>SIDX.push({g:"Found by Mythos (revealed)",k:`${m.id} ${m.project} ${m.bug_class} ${m.title}`.toLowerCase(),m:m.id,t:`${m.project} · ${m.bug_class} — ${m.title}`,d:m.severity,go:()=>document.getElementById("mythos").scrollIntoView({behavior:"smooth"})}));
+DOTNET_ITEMS.forEach(([d,c,t])=>SIDX.push({g:".NET advisories",k:`${c} ${t}`.toLowerCase(),m:c,t:t,d:d,go:()=>document.getElementById("patch").scrollIntoView({behavior:"smooth"})}));
+Object.keys(CNA).forEach(c=>SIDX.push({g:"Vendors",k:c.toLowerCase(),m:c,t:"weekly high/critical CVEs",d:"",go:()=>{if(!selected.has(c)){selected.add(c);[...chipsEl.children].forEach(b=>{if(b.textContent===c)b.setAttribute("aria-pressed","true");});coRedraw();}document.getElementById("companies").scrollIntoView({behavior:"smooth"});}}));
+Object.keys(REPO).forEach(r=>SIDX.push({g:"Framework repos",k:r.toLowerCase(),m:r,t:"advisories per month",d:"",go:()=>document.getElementById("frameworks").scrollIntoView({behavior:"smooth"})}));
+FRAMES.forEach(f=>SIDX.push({g:"Frameworks",k:`${f.framework} ${f.vendor} ${f.note}`.toLowerCase(),m:f.framework,t:f.note.slice(0,90)+"…",d:f.date,go:()=>document.getElementById("frameworks").scrollIntoView({behavior:"smooth"})}));
+(D.timeline||[]).forEach(t=>SIDX.push({g:"Timeline",k:t.event.toLowerCase(),m:t.date,t:t.event,d:"",go:()=>document.getElementById("tl").scrollIntoView({behavior:"smooth"})}));
+const q=document.getElementById("q"), sres=document.getElementById("sres"); let sel=-1, hits=[];
+function runSearch(){ const v=q.value.trim().toLowerCase(); sres.innerHTML=""; sel=-1; hits=[]; if(v.length<2) return; const terms=v.split(/\s+/);
+  const scored=SIDX.filter(x=>terms.every(t=>x.k.includes(t))).slice(0,60); if(!scored.length){sres.innerHTML='<div class="none">No match. Try a CVE id, vendor, product or project name.</div>';return;}
+  const groups={}; scored.forEach(x=>(groups[x.g]=groups[x.g]||[]).push(x)); let i=0;
+  sres.innerHTML=Object.entries(groups).map(([g,xs])=>`<div class="g">${g} · ${xs.length}</div>`+xs.slice(0,12).map(x=>{hits.push(x);return `<a href="#" data-i="${i++}"><span class="m">${esc(x.m)}</span><span>${esc(x.t)}</span><span class="d">${esc(x.d)}</span></a>`;}).join("")).join("");
+  sres.querySelectorAll("a").forEach(a=>a.addEventListener("click",ev=>{ev.preventDefault();pick(+a.dataset.i);})); }
+function pick(i){ const h=hits[i]; if(!h) return; sres.innerHTML=""; q.blur(); h.go(); }
+q.addEventListener("input",runSearch); q.addEventListener("focus",runSearch);
+q.addEventListener("keydown",e=>{ const as=sres.querySelectorAll("a"); if(e.key==="ArrowDown"){e.preventDefault();sel=Math.min(as.length-1,sel+1);} else if(e.key==="ArrowUp"){e.preventDefault();sel=Math.max(0,sel-1);} else if(e.key==="Enter"){e.preventDefault();if(sel>=0)pick(sel);else if(as.length)pick(0);return;} else if(e.key==="Escape"){sres.innerHTML="";q.blur();return;} else return; as.forEach((a,i)=>a.setAttribute("aria-selected",i===sel?"true":"false")); if(as[sel]) as[sel].scrollIntoView({block:"nearest"}); });
+document.addEventListener("click",e=>{ if(!e.target.closest(".search")) sres.innerHTML=""; });
+
+/* ================= downloads ================= */
+function dl(name,text){const b=new Blob([text],{type:"text/csv"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();}
+document.getElementById("dlweekly").addEventListener("click",()=>{ const cn=Object.keys(CNA); let s="week,kev_total,kev_same_year_cve,kev_older,kev_ransomware,mythos_discovered,mythos_commitments,mythos_patched,"+cn.map(c=>"hc_cves_"+c.replace(/\W+/g,"_")).join(",")+"\n";
+  KW.forEach(k=>{const m=MY.find(r=>r[0]===k[0]);s+=[k[0],k[1],k[2],k[3],k[4],m?m[1]+m[2]+m[3]+m[4]+m[5]:"",m?m[6]:"",m?m[7]:"",...cn.map(c=>cval(c,k[0]))].join(",")+"\n";}); dl("zero-project-weekly-series.csv",s); });
+document.getElementById("dlkev").addEventListener("click",()=>{ let s="dateAdded,cveID,vendor,product,cveYear,sameYearCVE,ransomwareUse,dueDate,name\n"; KEV_ALL.forEach(e=>{s+=[e[0],e[1],JSON.stringify(e[2]),JSON.stringify(e[3]),e[1].split("-")[1],isFresh(e),e[4]==="K"?"Known":"Unknown",e[5],JSON.stringify(e[6])].join(",")+"\n";}); dl("zero-project-kev-entries.csv",s); });
+</script>
+</body>
+</html>

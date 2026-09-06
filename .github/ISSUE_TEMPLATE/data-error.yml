@@ -1,0 +1,23 @@
+name: Data error
+description: A number, date or attribution on the page looks wrong.
+title: "[data] "
+labels: ["data-error"]
+body:
+  - type: input
+    id: where
+    attributes:
+      label: Where on the page?
+      description: Section name and, if relevant, the week / CVE / vendor.
+    validations:
+      required: true
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What's wrong, and what should it be?
+    validations:
+      required: true
+  - type: input
+    id: evidence
+    attributes:
+      label: Evidence (URL)
+      description: Vendor advisory, CISA entry, cve.org record, etc.

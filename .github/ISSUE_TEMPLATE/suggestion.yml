@@ -1,0 +1,34 @@
+name: Suggestion or new thing to track
+description: Propose a data source, a vendor/framework/tool to add, a new view, or a correction.
+title: "[idea] "
+labels: ["suggestion"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of suggestion?
+      options:
+        - New tool / vendor / framework / ecosystem to track
+        - New data source or feed
+        - New chart or view
+        - Correction to a number or statement
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What should Zero Project track or change?
+      description: Be concrete — name the project, the feed URL, the metric you'd want per week.
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Primary source (URL)
+      description: A feed, API, advisory page or dataset the numbers can be pulled from every week.
+  - type: textarea
+    id: why
+    attributes:
+      label: Why does it matter?
+      description: Who would look at it, and what decision does it inform?

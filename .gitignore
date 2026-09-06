@@ -1,0 +1,10 @@
+data-src/cache/*.log
+data-src/cache/*.err
+__pycache__/
+*.pyc
+zero-day-2026-data.*
+kev_2026_raw.txt
+build_data.py
+inject_kev.py
+.DS_Store
+Thumbs.db
