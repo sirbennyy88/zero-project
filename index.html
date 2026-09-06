@@ -639,6 +639,16 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
 
 <!-- ============ OVERVIEW ============ -->
 <div class="tp" id="tab-overview" role="tabpanel" aria-labelledby="t-overview" tabindex="0">
+<section class="panel" id="exploited">
+  <div class="panel-head">
+    <div><h2>Exploited in the wild, by week</h2><p>Vulnerabilities CISA added to its Known Exploited Vulnerabilities catalog each week — the closest public proxy for "zero-days confirmed under attack". Bars split by whether the CVE was issued in the same year (fresh) or earlier (old bugs newly seen exploited). Solid line is the 4-week average; dashed markers are Anthropic model events. Click a bar to open that week in Browse.</p></div>
+    <div class="controls"><div class="toggle" role="group" aria-label="Range"><button type="button" aria-pressed="false" data-krange="mythos">Since Mythos</button><button type="button" aria-pressed="true" data-krange="2026">2026</button><button type="button" aria-pressed="false" data-krange="12m">12 months</button><button type="button" aria-pressed="false" data-krange="all">Since Nov 2021</button></div><div class="toggle" role="group" aria-label="Series"><button type="button" aria-pressed="true" data-kev="split">Fresh vs old</button><button type="button" aria-pressed="false" data-kev="total">Total</button><button type="button" aria-pressed="false" data-kev="ransom">Ransomware</button></div></div>
+  </div>
+  <div class="chart-wrap"><canvas id="kev"></canvas></div>
+  <div class="legend"><span><i class="sw" style="background:var(--kev)"></i>CVE issued same year</span><span><i class="sw" style="background:var(--kev-old)"></i>CVE issued earlier</span><span><i class="sw line" style="background:var(--ink)"></i>4-week moving average</span><span><i class="sw dash"></i>Model release / access event</span><span id="partialnote"></span></div>
+  <p class="note" id="chartCap"></p>
+</section>
+
 <div class="glance" id="glance">
   <section class="panel panel--lead">
     <h3>This week at a glance</h3>
@@ -684,13 +694,10 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
 
 <!-- ============ EXPLOITED ============ -->
 <div class="tp" id="tab-exploited" role="tabpanel" aria-labelledby="t-exploited" tabindex="0" hidden>
-<section class="panel" id="exploited">
+<section class="panel" id="exploited-note">
   <div class="panel-head">
-    <div><h2>Exploited in the wild, by week</h2><p>Vulnerabilities CISA added to its Known Exploited Vulnerabilities catalog each week — the closest public proxy for "zero-days confirmed under attack". Bars split by whether the CVE was issued in the same year (fresh) or earlier (old bugs newly seen exploited). Solid line is the 4-week average; dashed markers are Anthropic model events. Click a bar to open that week in Browse.</p></div>
-    <div class="controls"><div class="toggle" role="group" aria-label="Range"><button type="button" aria-pressed="false" data-krange="mythos">Since Mythos</button><button type="button" aria-pressed="true" data-krange="2026">2026</button><button type="button" aria-pressed="false" data-krange="12m">12 months</button><button type="button" aria-pressed="false" data-krange="all">Since Nov 2021</button></div><div class="toggle" role="group" aria-label="Series"><button type="button" aria-pressed="true" data-kev="split">Fresh vs old</button><button type="button" aria-pressed="false" data-kev="total">Total</button><button type="button" aria-pressed="false" data-kev="ransom">Ransomware</button></div></div>
+    <div><h2>Exploited in the wild, by week</h2><p>Vulnerabilities CISA added to its Known Exploited Vulnerabilities catalog each week — the closest public proxy for "zero-days confirmed under attack". This chart now leads the <a href="#tab=overview">Overview tab</a>, with the same range and series toggles — click through to see it, or jump straight to <a href="#tab=browse">Browse weeks</a> for a single week's detail.</p></div>
   </div>
-  <div class="chart-wrap"><canvas id="kev"></canvas></div>
-  <div class="legend"><span><i class="sw" style="background:var(--kev)"></i>CVE issued same year</span><span><i class="sw" style="background:var(--kev-old)"></i>CVE issued earlier</span><span><i class="sw line" style="background:var(--ink)"></i>4-week moving average</span><span><i class="sw dash"></i>Model release / access event</span><span id="partialnote"></span></div>
 </section>
 
 <div class="two">
@@ -1360,6 +1367,7 @@ const HAS_TTE = !!TTE_PIPE || TTE_ENTRY_DAYS.length>0;
   const w=LATEST_WEEK; const es=(byWeek[w]||[]).slice().sort((a,b)=>a[0]<b[0]?1:-1); const fresh=es.filter(isFresh).length;
   el("g_count").innerHTML = `${es.length}<small> exploited CVEs added · week of ${fmtWk(w)}${LATEST_PARTIAL?" (so far)":""}</small>`;
   el("g_sub").textContent = `${fresh} fresh · ${es.length-fresh} older · ${es.filter(e=>e[4]==="K").length} ransomware-linked · ${fmtLong(w)} – ${fmtLong(endOf(w))}`;
+  if(el("chartCap")) el("chartCap").textContent = `This week: ${es.length} added (${fresh} fresh)`;
   el("g_list").innerHTML = es.slice(0,8).map(e=>`<li><span class="m">${e[0].slice(5)}</span><span><a class="pill ${isFresh(e)?"fresh":"old"}" href="#tab=browse&cve=${e[1]}">${e[1]}</a> ${esc(e[2])} · ${esc(e[3])}</span></li>`).join("") + (es.length>8?`<li><span class="m"></span><a href="#tab=browse&week=${w}">…and ${es.length-8} more this week</a></li>`:"");
   const last8=KW.slice(-9); const rows=[];
   for(let i=last8.length-1;i>=Math.max(0,last8.length-6);i--){ const r=last8[i]; const p=last8[i-1]; const d=p?r[1]-p[1]:0; rows.push(`<li><span class="m">${fmtWk(r[0])}</span><span><a href="#tab=browse&week=${r[0]}">${r[1]} added</a> · ${r[2]} fresh, ${r[3]} older${r[4]?`, ${r[4]} ransomware`:""}${p?` <span class="m">${d>0?"+":""}${d} vs prior</span>`:""}${NOTABLE[r[0]]?` — ${esc(NOTABLE[r[0]])}`:""}</span></li>`); }
@@ -1519,6 +1527,8 @@ function kevRedraw(){ if(!kevChart) return; kevChart.data.labels=kevRows().map(r
 document.querySelectorAll("[data-kev]").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("[data-kev]").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");kevMode=b.dataset.kev;kevRedraw();}));
 document.querySelectorAll("[data-krange]").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("[data-krange]").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");kevRange=b.dataset.krange;kevRedraw();}));
 el("partialnote").textContent=LATEST_PARTIAL?`Week of ${fmtWk(LATEST_WEEK)} is partial (data to ${fmtWk(DATA_THROUGH)})`:"";
+/* chart lives on the Overview tab (which builds eagerly, not via BUILDERS), so create it here rather than in BUILDERS.exploited */
+kevChart=new Chart(el("kev"),{data:{labels:kevRows().map(r=>r[0]),datasets:kevDatasets()},options:kevOpts(),plugins:[markers]});
 
 /* --- time to exploit --- */
 function drawTTE(){
@@ -1626,7 +1636,6 @@ function oldDraw(){ const es=KEV_ALL.filter(e=>e[0].startsWith(oldYear+"")); con
   const L=D.ledger||{}; el("oldledger").textContent=L.old_found_patched_this_year!=null?`Mythos ledger: ${L.old_found_patched_this_year} findings discovered before ${THIS_YEAR} were patched upstream in ${THIS_YEAR}; ${(L.weekly||[]).filter(r=>r[0]<`${THIS_YEAR}-01-01`).reduce((s,r)=>s+r[1]+r[2]+r[3]+r[4]+r[5],0)} disclosed findings carry a ${THIS_YEAR-1} discovery date.`:""; }
 
 BUILDERS.exploited=function(){
-  kevChart=new Chart(el("kev"),{data:{labels:kevRows().map(r=>r[0]),datasets:kevDatasets()},options:kevOpts(),plugins:[markers]});
   drawTTE(); drawDue(); drawCats(); drawBOD();
   const oy=el("oldyears");
   for(let y=2021;y<=THIS_YEAR;y++){ const b=document.createElement("button"); b.type="button"; b.textContent=y; b.setAttribute("aria-pressed",y===oldYear?"true":"false"); b.addEventListener("click",()=>{oldYear=y;[...oy.children].forEach(x=>x.setAttribute("aria-pressed",x.textContent==String(y)?"true":"false"));oldDraw();}); oy.appendChild(b); }

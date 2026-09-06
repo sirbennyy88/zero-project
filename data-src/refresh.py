@@ -18,7 +18,7 @@ CACHE = HERE / 'cache'; CACHE.mkdir(exist_ok=True)
 MANUAL = json.loads((HERE / 'manual.json').read_text(encoding='utf-8'))
 TODAY = dt.date.today()
 START = dt.date(2021, 1, 1)                  # 5-year scope
-UA = {'User-Agent': 'zeroweek-refresh/1.0 (+https://zeroweek.peries.ca)', 'Accept-Encoding': 'gzip'}
+UA = {'User-Agent': 'zeroweek-refresh/1.0 (+https://zero.peries.ca)', 'Accept-Encoding': 'gzip'}
 TOKEN = os.environ.get('GITHUB_TOKEN', '')
 NVD_KEY = os.environ.get('NVD_API_KEY', '')
 NVD_SLEEP = 0.7 if NVD_KEY else 6.5
