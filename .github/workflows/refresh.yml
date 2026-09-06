@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["index.html", "data-src/manual.json", "data-src/refresh.py"]
+    paths-ignore: ["zeroweek-data.*", "feed.xml", "data-src/cache/**"]
 
 permissions:
   contents: write
