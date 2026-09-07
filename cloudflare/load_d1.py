@@ -1,20 +1,42 @@
 #!/usr/bin/env python3
 """
-Zero Project — D1 loader.
+Zero Project — D1 loader (incremental).
 
-Reads ../zeroweek-data.json, converts every dataset into batched
-"INSERT OR REPLACE" SQL files (<=500 rows / statement, ~1MB / file) under
-cloudflare/out/*.sql, then runs each file sequentially with:
+Reads ../zeroweek-data.json and diffs it against cloudflare/d1_manifest.json
+(committed; maps table -> {primary_key: sha1(row values)}). Only rows that
+are new or changed get an INSERT ... ON CONFLICT DO UPDATE, and (for a
+handful of small tables) rows whose key disappeared get a DELETE. Unchanged
+rows are never re-written, so unchanged indexes are never re-written either.
 
+This exists because Cloudflare D1's free tier caps rows_written at
+100,000/day, and every index write also counts as a row write. The previous
+loader did "INSERT OR REPLACE" for the *entire* dataset on every run
+(REPLACE == DELETE + INSERT), so a couple of runs in a day was enough to
+exhaust the daily budget.
+
+Applies with:
     wrangler d1 execute zero-project --remote --file <file>
 
-Idempotent: safe to re-run; every row is (re)written by primary key.
-
 Usage:
-    python cloudflare/load_d1.py            # generate + apply
-    python cloudflare/load_d1.py --dry-run  # generate only, do not apply
+    python cloudflare/load_d1.py                  # diff + apply
+    python cloudflare/load_d1.py --dry-run         # diff + print planned counts only;
+                                                    # no wrangler calls, manifest untouched
+    python cloudflare/load_d1.py --max-writes N    # override the daily write budget
+                                                    # (default 60000; leaves headroom under
+                                                    # the 100k/day cap for other jobs/retries)
+
+Budget guard: tables are processed in a fixed order (small/high-value first
+-- see TABLE_ORDER). Once the running total of planned writes would exceed
+--max-writes, remaining tables are deferred whole (never split mid-table)
+and reported; the script exits 0 so the weekly workflow doesn't fail, and
+the next run picks up exactly where this one left off (via the manifest).
+
+The manifest is only updated for rows a SQL file was actually confirmed
+applied for (wrangler exit code checked per file), so a failed apply never
+marks rows as synced that D1 doesn't actually have.
 """
 from __future__ import annotations
+import hashlib
 import json
 import os
 import subprocess
@@ -24,10 +46,56 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 DATA_FILE = ROOT / "zeroweek-data.json"
+MANIFEST_FILE = HERE / "d1_manifest.json"
 OUT_DIR = HERE / "out"
 DB_NAME = "zero-project"
 MAX_ROWS_PER_STMT = 500
 MAX_BYTES_PER_FILE = 1_000_000
+DEFAULT_MAX_WRITES = 60_000
+
+# Processing order: small/important tables first, so a budget cutoff always
+# finishes the cheap, high-value tables before the big ones (exploit_signals
+# alone is ~27k rows). A cold load (empty manifest) that doesn't fit in one
+# run's budget naturally spreads over the next 2-3 weekly runs, in this order.
+TABLE_ORDER = [
+    "meta", "kev_weekly", "kev_entries", "ledger_weekly", "epss",
+    "exploit_signals", "ssvc", "euvd_exploited", "patch_monthly",
+    "watchlist_monthly", "vendor_weekly", "eco_monthly", "repo_monthly",
+    "advisories", "p0_itw",
+]
+
+# Primary key columns per table -- must match cloudflare/schema.sql.
+# p0_itw has no natural PK in the schema, so it's handled as content-
+# addressed (see diff_table): its "key" is the row's own hash.
+TABLE_PK = {
+    "kev_entries": ["cve"],
+    "kev_weekly": ["week"],
+    "ledger_weekly": ["week"],
+    "vendor_weekly": ["week", "cna"],
+    "watchlist_monthly": ["product_id", "month"],
+    "patch_monthly": ["month"],
+    "eco_monthly": ["ecosystem", "month"],
+    "repo_monthly": ["repo", "month"],
+    "euvd_exploited": ["euvd_id"],
+    "epss": ["cve"],
+    "exploit_signals": ["cve"],
+    "ssvc": ["cve"],
+    "p0_itw": None,
+    "advisories": ["source", "url"],
+    "meta": ["key"],
+}
+
+# Tables that never get a DELETE pass, even when a key drops out of the
+# source data: p0_itw has no natural PK (content-addressed, append-only by
+# construction), and KEV/advisories/EUVD are upstream feeds that in practice
+# only grow -- diffing them for deletions every run would cost rows_written
+# for a case that essentially never happens.
+NO_DELETE_TABLES = {"p0_itw", "kev_entries", "advisories", "euvd_exploited"}
+
+# Separator used to join composite primary-key values into one manifest
+# string key. All PK columns in schema.sql are TEXT, so the round-trip
+# through str() and back is exact.
+PK_SEP = "\x1f"
 
 
 def sql_quote(v):
@@ -41,59 +109,140 @@ def sql_quote(v):
     return "'" + s.replace("'", "''") + "'"
 
 
-def rows_to_statements(table, columns, rows):
-    """Yield full INSERT OR REPLACE statements, batched by row/byte limits."""
-    stmts = []
-    batch = []
-    batch_bytes = 0
-    col_list = ", ".join(columns)
+def row_hash(row):
+    h = hashlib.sha1()
+    for v in row:
+        h.update(repr(v).encode("utf-8"))
+        h.update(b"\x00")
+    return h.hexdigest()
 
-    def flush():
-        nonlocal batch, batch_bytes
-        if not batch:
-            return
-        stmt = f"INSERT OR REPLACE INTO {table} ({col_list}) VALUES\n" + ",\n".join(batch) + ";"
-        stmts.append(stmt)
-        batch = []
-        batch_bytes = 0
+
+def pk_key(columns, row, pk_cols):
+    idx = [columns.index(c) for c in pk_cols]
+    return PK_SEP.join(str(row[i]) for i in idx)
+
+
+def diff_table(table, columns, rows, manifest):
+    """Compare current rows against the manifest's last-known hashes.
+
+    Returns (upserts, deletes, current_hashes):
+      upserts: list of (manifest_key, row, row_hash) for new/changed rows
+      deletes: list of manifest_key strings for keys that disappeared
+                (empty for NO_DELETE_TABLES)
+      current_hashes: {manifest_key: row_hash} for every row in the current
+                data -- becomes the new manifest entry for this table once
+                the corresponding SQL is confirmed applied
+    """
+    pk_cols = TABLE_PK.get(table)
+    old = manifest.get(table, {})
+    current = {}
+    upserts = []
+
+    if pk_cols is None:
+        # Content-addressed, append-only (p0_itw): the key IS the hash, so
+        # "changed" is impossible -- a row is either already synced or new.
+        for row in rows:
+            h = row_hash(row)
+            current[h] = h
+            if h not in old:
+                upserts.append((h, row, h))
+        return upserts, [], current
 
     for row in rows:
-        vals = "(" + ", ".join(sql_quote(v) for v in row) + ")"
-        if len(batch) >= MAX_ROWS_PER_STMT:
-            flush()
-        batch.append(vals)
-        batch_bytes += len(vals)
-    flush()
-    return stmts
+        key = pk_key(columns, row, pk_cols)
+        h = row_hash(row)
+        current[key] = h
+        if old.get(key) != h:
+            upserts.append((key, row, h))
+
+    if table in NO_DELETE_TABLES:
+        deletes = []
+    else:
+        deletes = [key for key in old if key not in current]
+
+    return upserts, deletes, current
 
 
-def write_out_files(all_statements, prefix):
-    """Split a list of SQL statements into files under MAX_BYTES_PER_FILE."""
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    files = []
-    buf = []
-    buf_bytes = 0
-    idx = 0
+def build_upsert_statements(table, columns, pk_cols, upserts):
+    """Batch (key, row, hash) upserts into INSERT ... ON CONFLICT statements.
+
+    Returns a list of (sql_statement, [(key, hash), ...]) so the caller can
+    update the manifest only for the keys actually included in a given
+    statement/file.
+    """
+    if not upserts:
+        return []
+
+    col_list = ", ".join(columns)
+    if pk_cols:
+        conflict_cols = ", ".join(pk_cols)
+        update_cols = [c for c in columns if c not in pk_cols]
+        if update_cols:
+            set_clause = ", ".join(f"{c}=excluded.{c}" for c in update_cols)
+            conflict_clause = f"ON CONFLICT({conflict_cols}) DO UPDATE SET {set_clause}"
+        else:
+            conflict_clause = f"ON CONFLICT({conflict_cols}) DO NOTHING"
+    else:
+        # p0_itw: no PK/unique constraint to conflict on -- plain insert.
+        conflict_clause = ""
+
+    out = []
+    batch = []
+    batch_keys = []
 
     def flush():
-        nonlocal buf, buf_bytes, idx
-        if not buf:
+        if not batch:
             return
-        idx += 1
-        path = OUT_DIR / f"{prefix}_{idx:03d}.sql"
-        path.write_text("\n".join(buf) + "\n", encoding="utf-8")
-        files.append(path)
-        buf = []
-        buf_bytes = 0
+        stmt = f"INSERT INTO {table} ({col_list}) VALUES\n" + ",\n".join(batch)
+        if conflict_clause:
+            stmt += f"\n{conflict_clause}"
+        stmt += ";"
+        out.append((stmt, list(batch_keys)))
+        batch.clear()
+        batch_keys.clear()
 
-    for stmt in all_statements:
-        b = len(stmt.encode("utf-8"))
-        if buf and buf_bytes + b > MAX_BYTES_PER_FILE:
+    for key, row, h in upserts:
+        if len(batch) >= MAX_ROWS_PER_STMT:
             flush()
-        buf.append(stmt)
-        buf_bytes += b
+        batch.append("(" + ", ".join(sql_quote(v) for v in row) + ")")
+        batch_keys.append((key, h))
     flush()
-    return files
+    return out
+
+
+def build_delete_statements(table, pk_cols, delete_keys):
+    """Batch manifest keys that disappeared into DELETE statements.
+
+    Returns a list of (sql_statement, [key, ...]).
+    """
+    if not delete_keys or not pk_cols:
+        return []
+
+    out = []
+    batch = []
+
+    def flush():
+        if not batch:
+            return
+        if len(pk_cols) == 1:
+            vals = ", ".join(sql_quote(k) for k in batch)
+            stmt = f"DELETE FROM {table} WHERE {pk_cols[0]} IN ({vals});"
+        else:
+            col_list = ", ".join(pk_cols)
+            rows = []
+            for k in batch:
+                parts = k.split(PK_SEP)
+                rows.append("(" + ", ".join(sql_quote(p) for p in parts) + ")")
+            stmt = f"DELETE FROM {table} WHERE ({col_list}) IN (VALUES {', '.join(rows)});"
+        out.append((stmt, list(batch)))
+        batch.clear()
+
+    for key in delete_keys:
+        if len(batch) >= MAX_ROWS_PER_STMT:
+            flush()
+        batch.append(key)
+    flush()
+    return out
 
 
 def load(d):
@@ -194,7 +343,7 @@ def load(d):
     ssvc_rows = [[cve, v.get("exploitation"), v.get("automatable"), v.get("impact")] for cve, v in ssvc.items()]
     tables["ssvc"] = (["cve", "exploitation", "automatable", "impact"], ssvc_rows)
 
-    # p0_itw (entries: [year, cve, vendor, product, type, in_kev]) -- no natural PK, full reload
+    # p0_itw (entries: [year, cve, vendor, product, type, in_kev]) -- no natural PK
     p0_entries = d.get("p0", {}).get("entries", [])
     p0_rows = []
     for e in p0_entries:
@@ -232,8 +381,26 @@ def load(d):
     return tables
 
 
+def load_manifest():
+    if MANIFEST_FILE.exists():
+        return json.loads(MANIFEST_FILE.read_text(encoding="utf-8"))
+    return {}
+
+
+def save_manifest(manifest):
+    MANIFEST_FILE.write_text(
+        json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n",
+        encoding="utf-8",
+    )
+
+
 def main():
-    dry_run = "--dry-run" in sys.argv
+    argv = sys.argv[1:]
+    dry_run = "--dry-run" in argv
+    max_writes = DEFAULT_MAX_WRITES
+    if "--max-writes" in argv:
+        i = argv.index("--max-writes")
+        max_writes = int(argv[i + 1])
 
     if not DATA_FILE.exists():
         print(f"ERROR: {DATA_FILE} not found", file=sys.stderr)
@@ -241,43 +408,110 @@ def main():
 
     d = json.loads(DATA_FILE.read_text(encoding="utf-8"))
     tables = load(d)
+    manifest = load_manifest()
 
-    # clear stale out/ files from a previous run
     if OUT_DIR.exists():
         for f in OUT_DIR.glob("*.sql"):
-            f.unlink()
+            try:
+                f.unlink()
+            except OSError:
+                pass  # stale file from a previous run; will be overwritten if reused
 
-    all_files = []
-    # p0_itw has no natural primary key -- wipe + reload each run for idempotency
-    wipe_and_reload = {"p0_itw"}
+    order = [t for t in TABLE_ORDER if t in tables] + [t for t in tables if t not in TABLE_ORDER]
 
-    for table, (columns, rows) in tables.items():
+    planned = 0
+    deferred = []
+    report = []
+    # (path, table, upsert_keys[(key,hash)], delete_keys[str])
+    file_plans = []
+
+    for table in order:
+        columns, rows = tables[table]
         if not rows:
             continue
-        stmts = []
-        if table in wipe_and_reload:
-            stmts.append(f"DELETE FROM {table};")
-        stmts.extend(rows_to_statements(table, columns, rows))
-        files = write_out_files(stmts, table)
-        all_files.extend(files)
-        print(f"{table}: {len(rows)} rows -> {len(files)} file(s)")
+
+        pk_cols = TABLE_PK.get(table)
+        upserts, deletes, current = diff_table(table, columns, rows, manifest)
+        table_total = len(upserts) + len(deletes)
+
+        if table_total == 0:
+            report.append((table, 0, 0, 0, False))
+            continue
+
+        if planned + table_total > max_writes:
+            deferred.append(table)
+            report.append((table, len(upserts), len(deletes), 0, True))
+            continue
+
+        planned += table_total
+        report.append((table, len(upserts), len(deletes), table_total, False))
+
+        upsert_stmts = build_upsert_statements(table, columns, pk_cols, upserts)
+        delete_stmts = build_delete_statements(table, pk_cols, deletes)
+
+        idx = 0
+        buf, buf_bytes, buf_keys, buf_dels = [], 0, [], []
+
+        def flush_file():
+            nonlocal buf, buf_bytes, idx, buf_keys, buf_dels
+            if not buf:
+                return
+            idx += 1
+            OUT_DIR.mkdir(parents=True, exist_ok=True)
+            path = OUT_DIR / f"{table}_{idx:03d}.sql"
+            path.write_text("\n".join(buf) + "\n", encoding="utf-8")
+            file_plans.append((path, table, list(buf_keys), list(buf_dels)))
+            buf, buf_bytes, buf_keys, buf_dels = [], 0, [], []
+
+        for stmt, keys in upsert_stmts:
+            b = len(stmt.encode("utf-8"))
+            if buf and buf_bytes + b > MAX_BYTES_PER_FILE:
+                flush_file()
+            buf.append(stmt)
+            buf_bytes += b
+            buf_keys.extend(keys)
+        for stmt, keys in delete_stmts:
+            b = len(stmt.encode("utf-8"))
+            if buf and buf_bytes + b > MAX_BYTES_PER_FILE:
+                flush_file()
+            buf.append(stmt)
+            buf_bytes += b
+            buf_dels.extend(keys)
+        flush_file()
+
+    print("Planned writes per table (rows_written; upsert + delete):")
+    for table, up, de, total, is_deferred in report:
+        tag = " -- DEFERRED (budget)" if is_deferred else ""
+        print(f"  {table:18s} upsert={up:6d} delete={de:6d} planned={total:6d}{tag}")
+    print(f"\nTotal planned writes: {planned} (budget {max_writes})")
+    if deferred:
+        print("Deferred tables (picked up automatically next run):", ", ".join(deferred))
 
     if dry_run:
-        print(f"\nDry run: wrote {len(all_files)} SQL file(s) to {OUT_DIR}, not applied.")
+        print(f"\nDry run: wrote {len(file_plans)} SQL file(s) to {OUT_DIR}, not applied, manifest untouched.")
         return
 
-    for f in all_files:
-        print(f"Applying {f.name} ...")
+    for path, table, keys, dels in file_plans:
+        print(f"Applying {path.name} ...")
         result = subprocess.run(
-            ["npx", "wrangler@4", "d1", "execute", DB_NAME, "--remote", "--file", str(f)],
+            ["npx", "wrangler@4", "d1", "execute", DB_NAME, "--remote", "--file", str(path)],
             cwd=str(ROOT),
             shell=(os.name == "nt"),
         )
         if result.returncode != 0:
-            print(f"ERROR applying {f}", file=sys.stderr)
+            print(f"ERROR applying {path}", file=sys.stderr)
+            save_manifest(manifest)  # keep whatever succeeded so far
             sys.exit(result.returncode)
 
-    print(f"\nDone: applied {len(all_files)} file(s) to D1 database '{DB_NAME}'.")
+        # Only now -- confirmed applied -- update the manifest for this file's rows.
+        tbl_manifest = manifest.setdefault(table, {})
+        for key, h in keys:
+            tbl_manifest[key] = h
+        for key in dels:
+            tbl_manifest.pop(key, None)
+
+    save_manifest(manifest)
+    print(f"\nDone: applied {len(file_plans)} file(s) to D1 database '{DB_NAME}'.")
 
 
 if __name__ == "__main__":

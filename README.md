@@ -131,6 +131,17 @@ relies on Cloudflare Workers' free-tier defaults. Source: `cloudflare/schema.sql
 `cloudflare/load_d1.py` (loader, run weekly by the refresh workflow), `cloudflare/worker/` (the Worker
 itself).
 
+### D1 free-tier budget
+
+D1's free tier caps writes at **100,000 `rows_written`/day** (an index write counts too). The loader
+is incremental: it diffs `zeroweek-data.json` against the committed `cloudflare/d1_manifest.json`
+(a per-table map of primary key → row hash) and only writes rows that are new or changed, plus a
+DELETE for rows that disappeared (skipped for a few append-only feeds). It also stops after a
+configurable write budget (`--max-writes`, default 60,000) and defers the rest to the next weekly
+run, so a full cold load — or a period of unusually heavy upstream churn — spreads safely over a
+few days instead of blowing the daily cap in one run. `python cloudflare/load_d1.py --dry-run`
+prints the planned per-table write counts without touching D1 or the manifest.
+
 ### Enabling the weekly D1 sync
 
 The weekly workflow tries to sync the refreshed data into D1 automatically (`cloudflare: sync to D1`

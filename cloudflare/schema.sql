@@ -1,5 +1,16 @@
 -- Zero Project — D1 schema (Cloudflare free tier)
 -- Apply with: wrangler d1 execute zero-project --remote --file cloudflare/schema.sql
+--
+-- 2026-09-06: dropped idx_vendor_weekly_cna and idx_p0_itw_cve -- the Worker
+-- (cloudflare/worker/src/index.js) never queries by those columns, and every
+-- index write counts against D1's free-tier rows_written budget. Kept
+-- idx_kev_entries_date and idx_advisories_date (the Worker's /api/week and
+-- /api/weeks routes need them) plus every PRIMARY KEY.
+-- This is a schema change against the existing remote database: it needs a
+-- one-time `wrangler d1 execute zero-project --remote --file cloudflare/schema.sql`
+-- (DROP INDEX for the two removed indexes, since CREATE INDEX IF NOT EXISTS
+-- won't remove them) -- do NOT run this today, D1 writes are rate-limited
+-- until the daily rows_written quota resets 2026-09-08 00:00 UTC.
 
 CREATE TABLE IF NOT EXISTS kev_entries (
   date_added   TEXT,
@@ -43,7 +54,7 @@ CREATE TABLE IF NOT EXISTS vendor_weekly (
   high_critical INTEGER,
   PRIMARY KEY (week, cna)
 );
-CREATE INDEX IF NOT EXISTS idx_vendor_weekly_cna ON vendor_weekly(cna);
+-- idx_vendor_weekly_cna dropped 2026-09-06: no query filters by cna alone.
 
 CREATE TABLE IF NOT EXISTS watchlist_monthly (
   product_id TEXT,
@@ -115,7 +126,7 @@ CREATE TABLE IF NOT EXISTS p0_itw (
   type    TEXT,
   in_kev  INTEGER
 );
-CREATE INDEX IF NOT EXISTS idx_p0_itw_cve ON p0_itw(cve);
+-- idx_p0_itw_cve dropped 2026-09-06: no query filters p0_itw by cve alone.
 
 CREATE TABLE IF NOT EXISTS atlas_case_studies (
   id     TEXT PRIMARY KEY,
