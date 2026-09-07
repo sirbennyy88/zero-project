@@ -1104,51 +1104,76 @@ def _ai_patterns():
     excl_re = [re.compile(r'\b' + re.escape(e) + r'\b', re.I) for e in excl]
     return compiled, excl_re
 
-def _ai_scan_text(text, compiled, excl_re):
+# A CVE description or reference naming an AI vendor/product is very often just describing
+# the *affected* software (e.g. "the AI ChatBot plugin ... uploads files to a linked OpenAI
+# account" -- CVE-2024-0452, credited to a human finder) rather than crediting an AI with the
+# discovery. containers.cna.credits[] is an explicit finder-attribution field, so a match
+# there is trusted at face value; a description/reference match is only counted when a
+# discovery verb sits within DISCOVERY_CONTEXT_WINDOW characters of it.
+DISCOVERY_CONTEXT_RE = re.compile(
+    r'\b(found|discover(?:ed|y)?|identif(?:ied|y|ies)|generat(?:ed|es)\s+by|assist(?:ed|s)\s+(?:discovery|by)|'
+    r'detect(?:ed|s)\s+by|flagg(?:ed)?\s+by|surfac(?:ed)?\s+by|uncover(?:ed)?|'
+    r'produc(?:ed|es)\s+by|autonomous(?:ly)?|vulnerability\s+research\s+agent|automated\s+vulnerability)\b', re.I)
+DISCOVERY_CONTEXT_WINDOW = 60
+
+def _ai_scan_text(text, compiled, excl_re, require_context=False):
     """[(pattern, matched substring), ...] for AI-credit patterns in text; a match whose
     span an exclusion phrase fully covers (e.g. an affected-product mention of
-    "OpenAI Codex") is voided -- "AI" alone is never in the pattern list, so it never matches."""
+    "OpenAI Codex") is voided -- "AI" alone is never in the pattern list, so it never matches.
+    When require_context is set (description/reference fields), a match is also voided unless
+    a discovery verb (found/discovered/identified/generated/...) appears within
+    DISCOVERY_CONTEXT_WINDOW characters, so a CVE merely *about* an AI product doesn't count."""
     if not text: return []
     excl_spans = [(m.start(), m.end()) for er in excl_re for m in er.finditer(text)]
+    ctx_spans = [(m.start(), m.end()) for m in DISCOVERY_CONTEXT_RE.finditer(text)] if require_context else None
     hits = []
     for p, cre in compiled:
         for m in cre.finditer(text):
             if any(s <= m.start() and m.end() <= e for s, e in excl_spans): continue
+            if ctx_spans is not None:
+                lo, hi = m.start() - DISCOVERY_CONTEXT_WINDOW, m.end() + DISCOVERY_CONTEXT_WINDOW
+                if not any(cs < hi and ce > lo for cs, ce in ctx_spans): continue
             hits.append((p, m.group(0)))
     return hits
 
 def _scan_cve_record(j, compiled, excl_re):
     """One CVE JSON 5 record -> {'pub','matched','field','cna'} or None.
-    Checked in order of authority: credits (explicit discovery credit) > descriptions
-    (may mention "found by <model>") > references (title/url of a writeup)."""
+    Checked in order of authority: credits (explicit discovery credit, trusted at face value)
+    > descriptions (only counted near a discovery verb) > references (title/url of a writeup,
+    same context requirement)."""
     cna_container = ((j.get('containers') or {}).get('cna') or {})
     cna_name = ((j.get('cveMetadata') or {}).get('assignerShortName')) or ''
     pub = ((j.get('cveMetadata') or {}).get('datePublished') or '')[:10]
-    for field, texts in (
-        ('credits', [' '.join(str(c.get(k) or '') for k in ('value', 'description') if c.get(k)) for c in (cna_container.get('credits') or [])]),
-        ('description', [d.get('value') or '' for d in (cna_container.get('descriptions') or []) if (d.get('lang') or 'en').lower().startswith('en')]),
-        ('reference', [f"{r.get('name') or ''} {r.get('url') or ''}" for r in (cna_container.get('references') or [])]),
+    for field, require_context, texts in (
+        ('credits', False, [' '.join(str(c.get(k) or '') for k in ('value', 'description') if c.get(k)) for c in (cna_container.get('credits') or [])]),
+        ('description', True, [d.get('value') or '' for d in (cna_container.get('descriptions') or []) if (d.get('lang') or 'en').lower().startswith('en')]),
+        ('reference', True, [f"{r.get('name') or ''} {r.get('url') or ''}" for r in (cna_container.get('references') or [])]),
     ):
         matched = []
         for text in texts:
-            matched.extend(h[0] for h in _ai_scan_text(text, compiled, excl_re))
+            matched.extend(h[0] for h in _ai_scan_text(text, compiled, excl_re, require_context))
         if matched:
             return {'pub': pub, 'matched': sorted(set(matched)), 'field': field, 'cna': cna_name}
     return None
 
-def _gh_release_asset(patterns, repo='CVEProject/cvelistV5'):
-    """First asset in the latest release of `repo` whose filename matches any regex in `patterns`."""
+def _gh_release_asset(patterns, repo='CVEProject/cvelistV5', scan_releases=8):
+    """First asset matching any regex in `patterns`, searching the `scan_releases` most recent
+    releases newest-first (cvelistV5 publishes hourly delta releases plus a periodic full "all
+    CVEs" dump; the single most-recent release does not always carry the full-dump asset, e.g.
+    its once-daily "at_end_of_day" release ships only that day's cumulative delta)."""
     h = {'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28'}
     if TOKEN: h['Authorization'] = 'Bearer ' + TOKEN
-    j = json.loads(http(f'https://api.github.com/repos/{repo}/releases/latest', headers=h, timeout=60))
-    assets = j.get('assets') or []
-    log(f"[ai_credit] latest release {j.get('tag_name')}: assets = {[a.get('name') for a in assets]}")
-    for pat in patterns:
-        cre = re.compile(pat, re.I)
-        for a in assets:
-            if cre.search(a.get('name') or ''):
-                return a.get('browser_download_url'), a.get('name'), j.get('tag_name')
-    return None, None, j.get('tag_name')
+    releases = json.loads(http(f'https://api.github.com/repos/{repo}/releases?per_page={scan_releases}', headers=h, timeout=60))
+    latest_tag = releases[0].get('tag_name') if releases else None
+    for j in releases:
+        assets = j.get('assets') or []
+        log(f"[ai_credit] release {j.get('tag_name')}: assets = {[a.get('name') for a in assets]}")
+        for pat in patterns:
+            cre = re.compile(pat, re.I)
+            for a in assets:
+                if cre.search(a.get('name') or ''):
+                    return a.get('browser_download_url'), a.get('name'), j.get('tag_name')
+    return None, None, latest_tag
 
 def _download_to(url, dest, timeout=900):
     h = dict(UA)
@@ -1160,14 +1185,30 @@ def _download_to(url, dest, timeout=900):
             if not chunk: break
             f.write(chunk)
 
+def _open_cve_zip(zip_path):
+    """cvelistV5's "all CVEs" release asset is a zip that wraps a single inner cves.zip
+    (hence the doubled .zip.zip filename) holding cves/YYYY/Nxxx/CVE-YYYY-NNNNN.json; a
+    plain delta zip has the CVE JSON files directly at its top level. Returns a ZipFile
+    open on whichever one actually holds the CVE records, plus a cleanup callback."""
+    outer = zipfile.ZipFile(zip_path)
+    names = outer.namelist()
+    inner_name = next((n for n in names if n.rsplit('/', 1)[-1] == 'cves.zip'), None)
+    if inner_name and len(names) <= 3:
+        data = outer.read(inner_name)
+        outer.close()
+        return zipfile.ZipFile(io.BytesIO(data)), (lambda: None)
+    return outer, outer.close
+
 def _scan_zip_for_ai_credit(zip_path, compiled, excl_re, known_pub, min_year=AI_SCAN_START_YEAR):
-    """Scan every CVE-YYYY-NNNN.json in zip_path (year >= min_year) without extracting to disk.
-    Returns (ai_hits: {cve: rec}, new_pub: {cve: datePublished}) -- new_pub only contains CVE
-    ids not already present in `known_pub`, so re-scanning an updated record in a delta zip
-    does not double count it in the weekly "all CVEs published" total."""
+    """Scan every CVE-YYYY-NNNN.json in zip_path (year >= min_year) without extracting to disk
+    (transparently unwrapping the nested cves.zip -- see _open_cve_zip). Returns
+    (ai_hits: {cve: rec}, new_pub: {cve: datePublished}) -- new_pub only contains CVE ids not
+    already present in `known_pub`, so re-scanning an updated record in a delta zip does not
+    double count it in the weekly "all CVEs published" total."""
     ai_hits, new_pub = {}, {}
     n_seen = n_scanned = 0
-    with zipfile.ZipFile(zip_path) as z:
+    z, close = _open_cve_zip(zip_path)
+    try:
         for info in z.infolist():
             m = re.search(r'(CVE-(\d{4})-\d{4,7})\.json$', info.filename)
             if not m or info.is_dir(): continue
@@ -1186,6 +1227,8 @@ def _scan_zip_for_ai_credit(zip_path, compiled, excl_re, known_pub, min_year=AI_
             rec = _scan_cve_record(j, compiled, excl_re)
             if rec: ai_hits[cid] = rec
             if n_seen % 20000 == 0: log(f'[ai_credit] progress {n_seen} CVE-{min_year}+ records seen, {len(ai_hits)} AI-credited so far')
+    finally:
+        close()
     log(f'[ai_credit] {zip_path.name}: scanned {n_scanned}/{n_seen} CVE-{min_year}+ records, {len(ai_hits)} AI-credited, {len(new_pub)} newly-seen publish dates')
     return ai_hits, new_pub
 
