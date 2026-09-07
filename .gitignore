@@ -1,5 +1,7 @@
 data-src/cache/*.log
 data-src/cache/*.err
+data-src/cache/cvelist_all.zip
+data-src/cache/cvelist_delta.zip
 __pycache__/
 *.pyc
 zero-day-2026-data.*
@@ -8,3 +10,6 @@ build_data.py
 inject_kev.py
 .DS_Store
 Thumbs.db
+.wrangler/
+cloudflare/out/*.sql
+node_modules/

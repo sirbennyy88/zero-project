@@ -9,7 +9,7 @@ Pulls every primary feed, rebuilds zeroweek-data.js / .json / .csv and feed.xml 
 
 Every fetcher is independent: if one source is down, the previous cached result is used and the run still succeeds.
 """
-import argparse, csv, datetime as dt, gzip, io, json, math, os, pathlib, re, statistics, sys, time, urllib.request, urllib.parse, urllib.error, html as htmlmod
+import argparse, csv, datetime as dt, gzip, io, json, math, os, pathlib, re, statistics, sys, time, urllib.request, urllib.parse, urllib.error, html as htmlmod, zipfile
 import xml.etree.ElementTree as ET
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -18,7 +18,7 @@ CACHE = HERE / 'cache'; CACHE.mkdir(exist_ok=True)
 MANUAL = json.loads((HERE / 'manual.json').read_text(encoding='utf-8'))
 TODAY = dt.date.today()
 START = dt.date(2021, 1, 1)                  # 5-year scope
-UA = {'User-Agent': 'zeroweek-refresh/1.0 (+https://zero.peries.ca)', 'Accept-Encoding': 'gzip'}
+UA = {'User-Agent': 'zeroweek-refresh/1.0 (+https://zero.propulse.tech)', 'Accept-Encoding': 'gzip'}
 TOKEN = os.environ.get('GITHUB_TOKEN', '')
 NVD_KEY = os.environ.get('NVD_API_KEY', '')
 NVD_SLEEP = 0.7 if NVD_KEY else 6.5
@@ -118,7 +118,7 @@ def kev_weekly(entries):
     first = max(START, dt.date(2021, 11, 1))
     weeks = weeks_between(first, TODAY); idx = {w: i for i, w in enumerate(weeks)}
     buckets = [{'total': 0, 'fresh': 0, 'older': 0, 'ransom': 0, 'tte': [], 'edge': 0} for _ in weeks]
-    for d, cve, ven, prod, k, due, name, pub, cat, score, sev in entries:
+    for d, cve, ven, prod, k, due, name, pub, cat, score, sev, *_ in entries:
         w = monday(d).isoformat()
         if w not in idx: continue
         b = buckets[idx[w]]; b['total'] += 1
@@ -139,7 +139,7 @@ def kev_weekly(entries):
 
 def compute_tte(entries):
     by_year, by_month = {}, {}
-    for d, cve, ven, prod, k, due, name, pub, cat, score, sev in entries:
+    for d, cve, ven, prod, k, due, name, pub, cat, score, sev, *_ in entries:
         if not pub: continue
         try:
             delta = (dt.date.fromisoformat(d) - dt.date.fromisoformat(pub)).days
@@ -154,7 +154,7 @@ def compute_tte(entries):
 
 def kev_by_category(entries):
     out = {}
-    for d, cve, ven, prod, k, due, name, pub, cat, score, sev in entries:
+    for d, cve, ven, prod, k, due, name, pub, cat, score, sev, *_ in entries:
         y = d[:4]; out.setdefault(y, {}); out[y][cat] = out[y].get(cat, 0) + 1
     return out
 
@@ -1086,6 +1086,205 @@ def fetch_csaf():
     log(f'[csaf] {len(providers)} providers, {len(rows)} Red Hat advisories, {len(weekly)} weeks')
     return {'providers': providers, 'records': records, 'weekly': weekly, 'latest': latest}
 
+# ---------------------------------------------------------------- 20. AI-credited CVEs (cvelistV5 credits scan)
+# "How many vulnerabilities are AI-found?" Source of truth: containers.cna.credits[]
+# (value/description), containers.cna.descriptions and references[] in the cvelistV5 JSON
+# records, matched against manual.json's ai_credit_patterns/ai_credit_exclusions.
+# Bulk fetch is a GitHub *release* asset (the full cvelistV5 zip), scanned in-memory with
+# zipfile+json -- never extracted to disk. Weekly refreshes scan only the release's delta
+# zip and merge into the cached index, so the multi-hundred-MB full zip is fetched once.
+CVELIST_ZIP = CACHE / 'cvelist_all.zip'
+CVELIST_DELTA_ZIP = CACHE / 'cvelist_delta.zip'
+AI_SCAN_START_YEAR = 2024
+
+def _ai_patterns():
+    pats = MANUAL.get('ai_credit_patterns', [])
+    excl = MANUAL.get('ai_credit_exclusions', [])
+    compiled = [(p, re.compile(r'\b' + re.escape(p) + r'\b', re.I)) for p in pats]
+    excl_re = [re.compile(r'\b' + re.escape(e) + r'\b', re.I) for e in excl]
+    return compiled, excl_re
+
+def _ai_scan_text(text, compiled, excl_re):
+    """[(pattern, matched substring), ...] for AI-credit patterns in text; a match whose
+    span an exclusion phrase fully covers (e.g. an affected-product mention of
+    "OpenAI Codex") is voided -- "AI" alone is never in the pattern list, so it never matches."""
+    if not text: return []
+    excl_spans = [(m.start(), m.end()) for er in excl_re for m in er.finditer(text)]
+    hits = []
+    for p, cre in compiled:
+        for m in cre.finditer(text):
+            if any(s <= m.start() and m.end() <= e for s, e in excl_spans): continue
+            hits.append((p, m.group(0)))
+    return hits
+
+def _scan_cve_record(j, compiled, excl_re):
+    """One CVE JSON 5 record -> {'pub','matched','field','cna'} or None.
+    Checked in order of authority: credits (explicit discovery credit) > descriptions
+    (may mention "found by <model>") > references (title/url of a writeup)."""
+    cna_container = ((j.get('containers') or {}).get('cna') or {})
+    cna_name = ((j.get('cveMetadata') or {}).get('assignerShortName')) or ''
+    pub = ((j.get('cveMetadata') or {}).get('datePublished') or '')[:10]
+    for field, texts in (
+        ('credits', [' '.join(str(c.get(k) or '') for k in ('value', 'description') if c.get(k)) for c in (cna_container.get('credits') or [])]),
+        ('description', [d.get('value') or '' for d in (cna_container.get('descriptions') or []) if (d.get('lang') or 'en').lower().startswith('en')]),
+        ('reference', [f"{r.get('name') or ''} {r.get('url') or ''}" for r in (cna_container.get('references') or [])]),
+    ):
+        matched = []
+        for text in texts:
+            matched.extend(h[0] for h in _ai_scan_text(text, compiled, excl_re))
+        if matched:
+            return {'pub': pub, 'matched': sorted(set(matched)), 'field': field, 'cna': cna_name}
+    return None
+
+def _gh_release_asset(patterns, repo='CVEProject/cvelistV5'):
+    """First asset in the latest release of `repo` whose filename matches any regex in `patterns`."""
+    h = {'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28'}
+    if TOKEN: h['Authorization'] = 'Bearer ' + TOKEN
+    j = json.loads(http(f'https://api.github.com/repos/{repo}/releases/latest', headers=h, timeout=60))
+    assets = j.get('assets') or []
+    log(f"[ai_credit] latest release {j.get('tag_name')}: assets = {[a.get('name') for a in assets]}")
+    for pat in patterns:
+        cre = re.compile(pat, re.I)
+        for a in assets:
+            if cre.search(a.get('name') or ''):
+                return a.get('browser_download_url'), a.get('name'), j.get('tag_name')
+    return None, None, j.get('tag_name')
+
+def _download_to(url, dest, timeout=900):
+    h = dict(UA)
+    if TOKEN: h['Authorization'] = 'Bearer ' + TOKEN
+    req = urllib.request.Request(url, headers=h)
+    with urllib.request.urlopen(req, timeout=timeout) as r, open(dest, 'wb') as f:
+        while True:
+            chunk = r.read(1 << 20)
+            if not chunk: break
+            f.write(chunk)
+
+def _scan_zip_for_ai_credit(zip_path, compiled, excl_re, known_pub, min_year=AI_SCAN_START_YEAR):
+    """Scan every CVE-YYYY-NNNN.json in zip_path (year >= min_year) without extracting to disk.
+    Returns (ai_hits: {cve: rec}, new_pub: {cve: datePublished}) -- new_pub only contains CVE
+    ids not already present in `known_pub`, so re-scanning an updated record in a delta zip
+    does not double count it in the weekly "all CVEs published" total."""
+    ai_hits, new_pub = {}, {}
+    n_seen = n_scanned = 0
+    with zipfile.ZipFile(zip_path) as z:
+        for info in z.infolist():
+            m = re.search(r'(CVE-(\d{4})-\d{4,7})\.json$', info.filename)
+            if not m or info.is_dir(): continue
+            cid, year = m.group(1), int(m.group(2))
+            if year < min_year: continue
+            n_seen += 1
+            try:
+                with z.open(info) as f:
+                    j = json.loads(f.read().decode('utf-8', 'replace'))
+            except Exception as ex:
+                if n_seen % 5000 == 0: log(f'[ai_credit] {cid} parse FAILED: {ex!r}')
+                continue
+            n_scanned += 1
+            pub = ((j.get('cveMetadata') or {}).get('datePublished') or '')[:10]
+            if pub and cid not in known_pub and cid not in new_pub: new_pub[cid] = pub
+            rec = _scan_cve_record(j, compiled, excl_re)
+            if rec: ai_hits[cid] = rec
+            if n_seen % 20000 == 0: log(f'[ai_credit] progress {n_seen} CVE-{min_year}+ records seen, {len(ai_hits)} AI-credited so far')
+    log(f'[ai_credit] {zip_path.name}: scanned {n_scanned}/{n_seen} CVE-{min_year}+ records, {len(ai_hits)} AI-credited, {len(new_pub)} newly-seen publish dates')
+    return ai_hits, new_pub
+
+@cached('ai_credit')
+def fetch_ai_credit():
+    prev = cache_get('ai_credit') or {}
+    compiled, excl_re = _ai_patterns()
+    index = {k: dict(v) for k, v in (prev.get('index') or {}).items()}
+    pub_totals = dict(prev.get('pub_totals') or {})
+    last_tag = prev.get('last_full_tag')
+    full = (not index) or getattr(ARGS, 'ai_credit_full', False)
+    if full:
+        url, name, tag = _gh_release_asset([r'all[_-]?cves?.*midnight.*\.zip$', r'^\d{4}[_-]?\d{2}[_-]?\d{2}.*all.*cve.*\.zip$', r'all[_-]?cves?.*\.zip$'])
+        if not url:
+            raise RuntimeError(f'no full cvelistV5 zip asset found in latest release (tag {tag})')
+        log(f'[ai_credit] full scan: downloading {name} ({tag}) -> {CVELIST_ZIP.name}')
+        _download_to(url, CVELIST_ZIP)
+        try:
+            index, pub_totals = _scan_zip_for_ai_credit(CVELIST_ZIP, compiled, excl_re, {})
+        finally:
+            try: CVELIST_ZIP.unlink()
+            except Exception: pass
+        last_tag = tag
+    else:
+        url, name, tag = _gh_release_asset([r'delta.*\.zip$'])
+        if url:
+            log(f'[ai_credit] incremental scan: downloading delta {name} ({tag}) -> {CVELIST_DELTA_ZIP.name}')
+            _download_to(url, CVELIST_DELTA_ZIP)
+            try:
+                delta_hits, new_pub = _scan_zip_for_ai_credit(CVELIST_DELTA_ZIP, compiled, excl_re, pub_totals)
+            finally:
+                try: CVELIST_DELTA_ZIP.unlink()
+                except Exception: pass
+            index.update(delta_hits); pub_totals.update(new_pub); last_tag = tag
+        else:
+            log('[ai_credit] no delta zip asset found in latest release; keeping cached index unchanged')
+    return {'index': index, 'pub_totals': pub_totals, 'patterns': MANUAL.get('ai_credit_patterns', []),
+            'exclusions': MANUAL.get('ai_credit_exclusions', []), 'asof': TODAY.isoformat(), 'last_full_tag': last_tag}
+
+def merge_ai_credit_index(ai_credit, revealed_manual):
+    """Union the cvelistV5 credits-scan index with Anthropic ledger 'revealed' findings that
+    carry a CVE id, tagged source=anthropic-ledger (per spec: ZW.ai_found unions these in)."""
+    index = {k: dict(v) for k, v in ((ai_credit or {}).get('index') or {}).items()}
+    for rec in index.values(): rec.setdefault('source', 'cvelistv5-credits')
+    for m in (revealed_manual or []):
+        cid = (m.get('id') or '').strip()
+        if not re.fullmatch(r'CVE-\d{4}-\d{4,7}', cid): continue
+        if cid in index:
+            index[cid].setdefault('ledger', True)
+        else:
+            index[cid] = {'pub': None, 'matched': [], 'field': 'anthropic-ledger', 'cna': 'anthropic-ledger', 'source': 'anthropic-ledger', 'ledger': True}
+    return index
+
+def build_ai_found(ai_credit, merged_index, kev_entries, euvd_built):
+    """ZW.ai_found data contract (see README/manual.json ai_credit_patterns for methodology)."""
+    ai_credit = ai_credit or {}
+    pub_totals = dict(ai_credit.get('pub_totals') or {})
+    patterns = ai_credit.get('patterns') or MANUAL.get('ai_credit_patterns', [])
+    ai_cves = set(merged_index)
+    ledger_ids = {c for c, rec in merged_index.items() if rec.get('ledger')}
+
+    kev_overlap = [[e[1], e[0], e[2], e[3], merged_index.get(e[1], {}).get('matched') or []]
+                   for e in kev_entries if len(e) > 11 and e[11]]
+    euvd_cves = set()
+    for e in (euvd_built or {}).get('entries') or []: euvd_cves.update(e[2])
+    euvd_overlap = sorted(ai_cves & euvd_cves)
+
+    weeks = weeks_between(dt.date(2024, 1, 1), TODAY)
+    ai_by_week, total_by_week = {}, {}
+    for cid, rec in merged_index.items():
+        pub = rec.get('pub') or pub_totals.get(cid)
+        if not pub: continue
+        try: w = monday(pub).isoformat()
+        except Exception: continue
+        ai_by_week[w] = ai_by_week.get(w, 0) + 1
+    for cid, pub in pub_totals.items():
+        try: w = monday(pub).isoformat()
+        except Exception: continue
+        total_by_week[w] = total_by_week.get(w, 0) + 1
+    weekly = [[w, ai_by_week.get(w, 0), total_by_week.get(w, 0)] for w in weeks]
+
+    by_cna, by_pattern = {}, {}
+    for rec in merged_index.values():
+        c = rec.get('cna') or 'unknown'; by_cna[c] = by_cna.get(c, 0) + 1
+        for p in (rec.get('matched') or []): by_pattern[p] = by_pattern.get(p, 0) + 1
+    by_cna = dict(sorted(by_cna.items(), key=lambda x: -x[1])[:25])
+    by_pattern = dict(sorted(by_pattern.items(), key=lambda x: -x[1]))
+
+    year = str(TODAY.year)
+    ai_this_year = sum(1 for c in ai_cves if c.split('-')[1] == year)
+    total_this_year = sum(1 for c, p in pub_totals.items() if (p or '').startswith(year))
+    share = round(ai_this_year / total_this_year, 4) if total_this_year else None
+
+    return {'asof': ai_credit.get('asof') or TODAY.isoformat(), 'patterns': patterns, 'weekly': weekly,
+            'by_cna': by_cna, 'by_pattern': by_pattern, 'kev_overlap': kev_overlap, 'euvd_overlap': euvd_overlap,
+            'totals': {'ai_credited': len(ai_cves), 'in_kev': len(kev_overlap), 'in_euvd': len(euvd_overlap),
+                       'mythos_ledger_revealed': len(ledger_ids), 'share_of_2026_cves': share},
+            'index': merged_index}
+
 # ---------------------------------------------------------------- build outputs
 def load_sources_registry():
     text = (HERE / 'research' / 'sources.md').read_text(encoding='utf-8')
@@ -1095,7 +1294,7 @@ def load_sources_registry():
 
 def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_watchlist, extra_feeds,
           euvd=None, epss=None, p0=None, exploit=None, ssvc=None, advisories=None,
-          atlas=None, avid=None, csaf=None):
+          atlas=None, avid=None, csaf=None, ai_credit=None):
     data_through = max(e[0] for e in kev['entries']) if kev else TODAY.isoformat()
     cve_pub = cve_pub or {}
     kev_categories = MANUAL.get('kev_categories', {})
@@ -1146,11 +1345,16 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_wat
     _st('avid-db', bool(avid_latest), len(avid_latest), avid_latest[0][0] if avid_latest else None)
     _st('bsi-csaf-aggregator', bool(csaf_providers), len(csaf_providers), max((p.get('last_updated') or '' for p in csaf_providers), default=None) or None)
     _st('redhat-csaf', bool(csaf_latest), len(csaf_latest), csaf_latest[0][0] if csaf_latest else None)
+    _st('ai-credit-cvelistv5', bool((ai_credit or {}).get('index')), len((ai_credit or {}).get('index') or {}), (ai_credit or {}).get('asof'), (ai_credit or {}).get('last_full_tag') or '')
     events = [{'date': e['date'], 'label': e['label'], 'week': monday(e['date']).isoformat(), 'frac': round((dt.date.fromisoformat(e['date']).weekday() + .5) / 7, 2)} for e in MANUAL['events']]
     revealed_manual = []
     for line in (HERE / 'mythos_cves_raw.txt').read_text(encoding='utf-8').splitlines():
         if line.strip():
             i, proj, cls, sev, title = line.split('|'); revealed_manual.append({'id': i, 'project': proj, 'bug_class': cls, 'severity': sev, 'title': title})
+    ai_index = merge_ai_credit_index(ai_credit, revealed_manual)
+    ai_cve_set = set(ai_index)
+    for row in kev_entries: row.append(row[1] in ai_cve_set)   # ai_found: index 11, appended so earlier indexes are stable
+    ai_found_built = build_ai_found(ai_credit, ai_index, kev_entries, euvd_built)
     ZW = {
         'meta': {'generated': dt.datetime.now(dt.timezone.utc).isoformat(timespec='seconds'), 'data_through': data_through, 'scope_start': START.isoformat(),
                  'kev_released': kev.get('released') if kev else None, 'kev_catalog_size': kev.get('count') if kev else None,
@@ -1189,6 +1393,7 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_wat
         'ai_incidents': {'source': 'AVID (avidml/avid-db)', 'by_month': avid.get('by_month') or {}, 'latest': avid_latest},
         'owasp': {'llm_top10_2025': OWASP_LLM_TOP10_2025, 'agentic_top10': OWASP_AGENTIC_TOP10, 'ml_top10': OWASP_ML_TOP10},
         'csaf': {'providers': csaf_providers, 'weekly': csaf_weekly, 'latest': csaf_latest},
+        'ai_found': ai_found_built,
         'sources_registry': sources_registry,
         'source_status': source_status,
     }
@@ -1197,9 +1402,10 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_wat
     # tidy CSV
     rows = []
     add = lambda *r: rows.append(list(r))
-    for d, cve, ven, prod, k, due, name, pub, cat, score, sev in ZW['kev']['entries']:
+    for d, cve, ven, prod, k, due, name, pub, cat, score, sev, *_ai in ZW['kev']['entries']:
+        ai_found = _ai[0] if _ai else False
         note = ('same-year CVE; ' if int(cve.split('-')[1]) >= int(d[:4]) else 'older CVE; ') + ('ransomware; ' if k == 'K' else '') + name
-        note += f' | published={pub} category={cat} score={score if score is not None else ""} severity={sev}'
+        note += f' | published={pub} category={cat} score={score if score is not None else ""} severity={sev} ai_found={ai_found}'
         add('kev_entry', d, 'exploited_in_wild', cve, ven, prod, 1, note)
     for w, t, f, o, r, tte, edge in kw:
         for k, v in (('total', t), ('same_year_cve', f), ('older_cve', o), ('ransomware_linked', r), ('median_tte_days', tte), ('edge_appliance_count', edge)): add('kev_weekly', w, k, '', 'CISA KEV', '', v, '')
@@ -1240,6 +1446,9 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_wat
     for d, cid, name, target, actor, tids, url in ZW['atlas']['case_studies']: add('atlas_case_study', d, 'ai_attack_case_study', cid, actor, target, 1, f"{name} | techniques={','.join(tids)}")
     for d, rid, title, url in ZW['ai_incidents']['latest']: add('avid_incident', d, 'ai_incident_report', rid, 'AVID', '', 1, title)
     for w, n, nx in ZW['csaf']['weekly']: add('csaf_weekly', w, 'advisories', '', 'Red Hat CSAF', '', n, f'exploit_status_flagged={nx}')
+    for w, n_ai, n_total in ZW['ai_found']['weekly']: add('ai_found_weekly', w, 'ai_credited_vs_total_published', '', 'cvelistV5 credits scan', '', n_ai, f'total_published={n_total}')
+    for cve, d, ven, prod, matched in ZW['ai_found']['kev_overlap']: add('ai_found_exploited', d, 'ai_credited_and_kev', cve, ven, prod, 1, 'patterns=' + ','.join(matched))
+    for cve, rec in ZW['ai_found']['index'].items(): add('ai_found_entry', rec.get('pub') or '', rec.get('field') or '', cve, rec.get('cna') or '', rec.get('source') or '', 1, 'patterns=' + ','.join(rec.get('matched') or []))
     for sid, rows_ in advisories_out.items():
         for d, s, title, link in rows_: add('advisory', d, sid, '', dict((r['id'], r.get('org')) for r in sources_registry).get(sid, sid), '', 1, title)
     with open(ROOT / 'zeroweek-data.csv', 'w', newline='', encoding='utf-8') as f:
@@ -1267,8 +1476,9 @@ def write_feed(ZW):
 def main():
     global ARGS
     ap = argparse.ArgumentParser(); ap.add_argument('--offline', action='store_true'); ap.add_argument('--force-eco', action='store_true', help='pull ecosystem counts even without a token (slow, rate-limited)')
-    ap.add_argument('--skip', default='', help='comma list of fetchers to skip: kev,ledger,epoch,msrc,oracle,gh_eco,gh_repos,dotnet,cve_pub,nvd_watchlist,extra_feeds,euvd,epss,p0,exploit,ssvc,advisories,atlas,avid,csaf')
+    ap.add_argument('--skip', default='', help='comma list of fetchers to skip: kev,ledger,epoch,msrc,oracle,gh_eco,gh_repos,dotnet,cve_pub,nvd_watchlist,extra_feeds,euvd,epss,p0,exploit,ssvc,advisories,atlas,avid,csaf,ai_credit')
     ap.add_argument('--watchlist-limit', type=int, default=None, help='only process the first N watchlist products in fetch_nvd_watchlist (first full run is slow: ~51 products x ~18 windows x 6.5s unkeyed)')
+    ap.add_argument('--ai-credit-full', action='store_true', help='force a full cvelistV5 zip rescan for fetch_ai_credit instead of the incremental delta scan')
     ARGS = ap.parse_args(); skip = set(x.strip() for x in ARGS.skip.split(',') if x.strip())
     run = lambda name, fn, *a: (cache_get(name) if name in skip else fn(*a))
     kev = run('kev', fetch_kev); ledger = run('ledger', fetch_ledger); epoch = run('epoch', fetch_epoch)
@@ -1290,8 +1500,9 @@ def main():
     atlas = run('atlas', fetch_atlas)
     avid = run('avid', fetch_avid)
     csaf = run('csaf', fetch_csaf)
+    ai_credit = run('ai_credit', fetch_ai_credit)
     build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_watchlist, extra_feeds,
-          euvd, epss, p0, exploit, ssvc, advisories, atlas, avid, csaf)
+          euvd, epss, p0, exploit, ssvc, advisories, atlas, avid, csaf, ai_credit)
     (CACHE / 'last_run.log').write_text('\n'.join(LOG), encoding='utf-8')
 
 if __name__ == '__main__':

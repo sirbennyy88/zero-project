@@ -2,7 +2,7 @@
  "site": {
   "name": "Zero Project",
   "short": "Zero",
-  "url": "https://zero.peries.ca/",
+  "url": "https://zero.propulse.tech/",
   "author": "Ben Peries",
   "license": "CC BY 4.0",
   "repo": "https://github.com/sirbennyy88/zero-project"
@@ -2764,5 +2764,21 @@
    "url": "https://www.cisa.gov/news-events/directives/bod-26-04-prioritizing-security-updates-based-risk",
    "note": "Four-variable risk matrix replacing flat CVE-year timelines with tiered 3/14/60-calendar-day windows (or next scheduled upgrade if none of the four risk criteria are met). 60-day deadline (~Aug 2026) to update internal processes; 180-day deadline (~Dec 2026) for full Table 1 compliance. Rationale: AI-accelerated exploitation has collapsed disclosure-to-weaponization from months to hours."
   }
- }
+ },
+ "ai_credit_patterns": [
+  "Claude", "Claude Code", "Claude Security", "Anthropic", "Mythos", "Mythos Preview",
+  "Glasswing", "MDASH", "GPT-5", "GPT-4", "OpenAI", "Aardvark", "Codex CLI",
+  "Gemini", "DeepMind", "Google DeepMind", "Big Sleep", "OSS-Fuzz AI", "AIxCC",
+  "XBOW", "Copilot Autofix", "GitHub Copilot", "Daybreak",
+  "AI-assisted", "AI assisted", "AI-generated", "AI-discovered", "AI-found",
+  "large language model", "LLM-assisted", "LLM assisted",
+  "autonomous agent", "AI agent", "agentic AI", "frontier model",
+  "vulnerability research agent", "automated vulnerability discovery"
+ ],
+ "ai_credit_exclusions": [
+  "OpenAI Codex", "OpenAI Gym", "OpenAI API", "OpenAI Playground",
+  "Copilot for Business", "GitHub Copilot extension", "GitHub Copilot Chat extension",
+  "Google Gemini app", "Gemini Nano"
+ ],
+ "ai_credit_notes": "Matching is word-boundary and case-insensitive against containers.cna.credits[].value/description and containers.cna.descriptions (discovery/finder context only, not affected-product fields) plus references[].url/name. 'AI' alone never matches; an exclusion phrase found overlapping a pattern match voids that match (e.g. an affected-product mention of 'OpenAI Codex' does not credit a discovery). Every match records which field matched (credits|description|reference) and the literal matched text."
 }

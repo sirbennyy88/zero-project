@@ -1,0 +1,8 @@
+name = "zero-project-api"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "zero-project"
+database_id = "483b036d-29c2-4583-bfec-b5406d1e1e23"

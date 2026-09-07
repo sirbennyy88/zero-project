@@ -2,7 +2,7 @@
 
 **A public, open-data tracker of zero-day vulnerabilities exploited in the wild, AI-discovered security bugs, and vendor patch volumes — week by week since 2021.**
 
-Live at **[zero.peries.ca](https://zero.peries.ca/)**
+Live at **[zero.propulse.tech](https://zero.propulse.tech/)** (previously zero.peries.ca, which will redirect)
 
 ## What it shows
 
@@ -98,8 +98,53 @@ python data-src/refresh.py --offline
 │   └── ISSUE_TEMPLATE/       # GitHub issue templates for suggestions and data errors
 ├── run-refresh.ps1           # PowerShell helper to run refresh locally
 ├── install-scheduler.ps1     # Windows Task Scheduler setup (optional)
-└── CNAME                      # GitHub Pages domain (zero.peries.ca)
+├── cloudflare/                 # D1 database, read API worker, weekly sync (see below)
+└── CNAME                      # GitHub Pages custom domain (zero.propulse.tech, once DNS is live)
 ```
+
+## Cloudflare: read API and database (optional, free-tier)
+
+In addition to the static JSON/CSV files, the same data is mirrored into a Cloudflare D1 database
+(`zero-project`) and exposed through a small read-only Worker API, so other tools can query a single
+week, a single CVE, or search without downloading the full dataset.
+
+- **API base URL:** `https://zero-project-api.benito-1d7.workers.dev`
+- **Endpoints:**
+  - `GET /api/weeks?from=&to=` — weekly KEV totals in a date range
+  - `GET /api/week/{YYYY-MM-DD}` — KEV entries added that ISO week, joined with EPSS/exploit/SSVC signals
+  - `GET /api/cve/{id}` — one CVE across KEV, EPSS, exploit signals, and SSVC
+  - `GET /api/vendors?week=` — vendor (CNA) high/critical counts for a week
+  - `GET /api/products/{id}` — monthly severity counts for a watchlist product
+  - `GET /api/search?q=` — search CVE ID / vendor / product / name (limit 50)
+  - `GET /api/stats` — row-count totals and last refresh timestamp
+
+Example:
+
+```bash
+curl "https://zero-project-api.benito-1d7.workers.dev/api/stats"
+curl "https://zero-project-api.benito-1d7.workers.dev/api/week/2026-08-31"
+curl "https://zero-project-api.benito-1d7.workers.dev/api/search?q=chrome"
+```
+
+All responses are JSON with `Access-Control-Allow-Origin: *` and an hour of edge caching; rate limiting
+relies on Cloudflare Workers' free-tier defaults. Source: `cloudflare/schema.sql` (schema),
+`cloudflare/load_d1.py` (loader, run weekly by the refresh workflow), `cloudflare/worker/` (the Worker
+itself).
+
+### Enabling the weekly D1 sync
+
+The weekly workflow tries to sync the refreshed data into D1 automatically (`cloudflare: sync to D1`
+step in `.github/workflows/refresh.yml`) but is set to `continue-on-error: true`, so a missing token
+never breaks the site deploy. To enable it:
+
+1. Create a Cloudflare API token: dashboard → **My Profile → API Tokens → Create Token** → start from the
+   **"Edit Cloudflare Workers"** template, then add **D1: Edit** permission (Account level) to the same
+   token. Copy the token value.
+2. Add it as a repository secret:
+   ```bash
+   gh secret set CLOUDFLARE_API_TOKEN --repo sirbennyy88/zero-project
+   ```
+3. `CLOUDFLARE_ACCOUNT_ID` is already set as a repository secret.
 
 ## Suggest a tool or source
 
@@ -122,7 +167,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## How to cite
 
-> Zero Project — Zero-days per week, before and after Mythos. https://zero.peries.ca/. Data refreshed every Monday. [Accessed DATE].
+> Zero Project — Zero-days per week, before and after Mythos. https://zero.propulse.tech/. Data refreshed every Monday. [Accessed DATE].
 
 Or as BibTeX:
 
@@ -130,7 +175,7 @@ Or as BibTeX:
 @misc{ZeroProject2026,
   title={Zero Project: Zero-days per week},
   author={Peries, Ben},
-  url={https://zero.peries.ca/},
+  url={https://zero.propulse.tech/},
   note={Refreshed weekly; last accessed [DATE]},
   year={2026}
 }

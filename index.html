@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Zero Project</title>
 <meta name="description" content="Zero Project: zero-days exploited in the wild, vulnerabilities found by Claude Mythos, product watchlist exposure, and the governance frameworks each number evidences — week by week, 2021 to today. Open data, refreshed every Monday.">
-<link rel="canonical" href="https://zero.peries.ca/">
-<link rel="alternate" type="application/rss+xml" title="Zero Project weekly" href="https://zero.peries.ca/feed.xml">
+<link rel="canonical" href="https://zero.propulse.tech/">
+<link rel="alternate" type="application/rss+xml" title="Zero Project weekly" href="https://zero.propulse.tech/feed.xml">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Zero Project">
 <meta property="og:title" content="Zero Project — zero-days per week, before and after Mythos">
 <meta property="og:description" content="Exploited CVEs, AI-found vulnerabilities, vendor patch volumes, a product watchlist and a metric-to-framework matrix, one ISO week at a time since 2021. Browse any week, search any CVE, download the data.">
-<meta property="og:url" content="https://zero.peries.ca/">
-<meta property="og:image" content="https://zero.peries.ca/og.png">
+<meta property="og:url" content="https://zero.propulse.tech/">
+<meta property="og:image" content="https://zero.propulse.tech/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#F5F4EF" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#15181C" media="(prefers-color-scheme: dark)">
@@ -286,7 +286,7 @@ section[id],div[id]{scroll-margin-top:120px}
 .glance .subline{font-family:var(--ff-mono);font-size:var(--fs-sm);color:var(--ink-3);font-variant-numeric:tabular-nums}
 
 /* ---- KPI strip ---- */
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s4);margin:var(--s6) 0 0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--s4);margin:var(--s6) 0 0}
 .kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:var(--s5) var(--s5) var(--s4) calc(var(--s5) + 4px);
   display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto 1fr;gap:var(--s2);position:relative;overflow:hidden}
 .kpi>*{min-width:0;overflow-wrap:anywhere}
@@ -668,6 +668,7 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
   <div class="kpi" style="--stripe:var(--kev)"><div class="lab">…of which fresh CVEs (issued this year)</div><div class="val" id="kpi2">—</div><div class="delta" id="kpi2d"></div><div class="sub" id="kpi2s"></div></div>
   <div class="kpi" style="--stripe:var(--mark)"><div class="lab" id="kpi3l">Latest week</div><div class="val" id="kpi3">—</div><div class="delta" id="kpi3d"></div><div class="sub" id="kpi3s"></div></div>
   <div class="kpi" style="--stripe:var(--myth)"><div class="lab">Found by Mythos · public ledger, discovered after 7 Apr</div><div class="val" id="kpi4">—</div><div class="delta" id="kpi4d"></div><div class="sub" id="kpi4s"></div></div>
+  <div class="kpi" style="--stripe:var(--myth)"><div class="lab">AI-found &amp; exploited · KEV entries credited to an AI model</div><div class="val" id="kpi5">—</div><div class="delta" id="kpi5d"></div><div class="sub" id="kpi5s"></div></div>
 </section>
 <p class="lede" style="margin-top:var(--s5)">The public ledger is only the disclosed slice: Glasswing partners reported <strong>10,000+</strong> high/critical bugs in the first six weeks, published as aggregates only. The tabs split the evidence — what is being exploited, what AI is finding, what vendors are shipping, what your own stack is exposed to, and which control in which framework each number evidences.</p>
 
@@ -793,6 +794,25 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
 
 <!-- ============ AI-FOUND ============ -->
 <div class="tp" id="tab-ai" role="tabpanel" aria-labelledby="t-ai" tabindex="0" hidden>
+<section class="panel" id="aicredit">
+  <div class="panel-head">
+    <div><h2>Vulnerabilities credited to AI</h2><p>How many vulnerabilities are AI-found, and how many of those were later exploited? Every CVE record published since 2024 in the official cvelistV5 feed is scanned for a discovery credit that names an AI model or tool — its <code class="mono">credits[]</code>, description and reference fields — plus Anthropic's own public ledger of revealed Mythos findings. "AI" alone is never a match; see <a href="#tab=data">Data &amp; sources</a> for the full pattern list and each match's matched field.</p></div>
+  </div>
+  <div class="kpis" id="aikpis" style="margin:0 0 var(--s5)"></div>
+  <div class="chart-wrap"><canvas id="aicreditchart"></canvas></div>
+  <div class="legend"><span><i class="sw" style="background:var(--myth)"></i>AI-credited CVEs / week</span><span><i class="sw line" style="background:var(--kev)"></i>All CVEs published / week (right axis)</span></div>
+  <p class="note" id="aicreditnote"></p>
+  <div class="two" style="margin-top:var(--s5)">
+    <div>
+      <h3>Top CNAs by AI-credited count</h3>
+      <div class="duelist" id="aicna"></div>
+    </div>
+    <div>
+      <h3>Exploited and AI-found</h3>
+      <div class="tbl-scroll" style="max-height:300px"><table id="aiexploitedtbl"><thead><tr><th>Added to KEV</th><th>CVE</th><th>Vendor</th><th>Product</th><th>Matched pattern</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </div>
+</section>
 <section class="panel" id="mythos">
   <div class="panel-head">
     <div><h2>Found by Mythos, by week</h2><p>Anthropic's coordinated-disclosure ledger for open-source software. Bars: findings by the week the model <em>discovered</em> them, stacked by the external triage firm's severity (falling back to the maintainer's, then Claude's own rating). Blue line: weekly hash commitments, i.e. disclosure cadence. Green: patched upstream. Recent weeks are undercounted — a finding only appears once it has cleared triage and been reported, which lags discovery by weeks to months.</p></div>
@@ -968,7 +988,7 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
   </div>
   <div class="wkstrip" id="wkstrip" aria-label="Weeks of the selected year"></div>
   <div class="wkhead" id="wkhead"></div>
-  <div class="tbl-scroll tbl-scroll--tall"><table class="kevlist" id="kevlist"><thead><tr><th>Added</th><th>CVE</th><th>Vendor</th><th>Product</th><th>Class</th><th>Vulnerability</th><th>Patch due</th><th>EPSS</th><th>Exploit</th><th>SSVC</th></tr></thead><tbody></tbody></table></div>
+  <div class="tbl-scroll tbl-scroll--tall"><table class="kevlist" id="kevlist"><thead><tr><th>Added</th><th>CVE</th><th>Vendor</th><th>Product</th><th>Class</th><th>Vulnerability</th><th>Patch due</th><th>EPSS</th><th>Exploit</th><th>SSVC</th><th>AI</th></tr></thead><tbody></tbody></table></div>
   <div class="wkfoot" id="wkfoot"></div>
 </section>
 </div>
@@ -1013,6 +1033,31 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
 
   <h3 style="margin-top:var(--s6)">Similar trackers, and how this one differs</h3>
   <div class="compare" id="compare"></div>
+
+  <h3 style="margin-top:var(--s6)">API</h3>
+  <div style="max-width:80ch">
+  <p class="note" style="margin-top:0">The same data behind this page is mirrored into a Cloudflare D1
+    database and exposed as a small read-only JSON API, for anyone who wants a single week, a single CVE,
+    or a search without downloading the full JSON/CSV export. All responses are JSON with CORS enabled
+    (<code class="mono">Access-Control-Allow-Origin: *</code>) and cached at the edge for an hour; rate
+    limiting relies on Cloudflare Workers' free-tier defaults. This is a defensive, best-effort API —
+    treat the static <a href="zeroweek-data.json" download>zeroweek-data.json</a> /
+    <a href="zeroweek-data.csv" download>zeroweek-data.csv</a> exports as the source of truth.</p>
+  <p><strong>Base URL:</strong> <code class="mono">https://zero-project-api.benito-1d7.workers.dev</code></p>
+  <div class="tbl-scroll"><table><thead><tr><th>Endpoint</th><th>What it returns</th></tr></thead><tbody>
+    <tr><td class="mono">GET /api/weeks?from=&amp;to=</td><td>Weekly KEV totals in a date range</td></tr>
+    <tr><td class="mono">GET /api/week/{YYYY-MM-DD}</td><td>KEV entries added that ISO week, joined with EPSS / exploit / SSVC signals</td></tr>
+    <tr><td class="mono">GET /api/cve/{id}</td><td>One CVE across KEV, EPSS, exploit signals, and SSVC</td></tr>
+    <tr><td class="mono">GET /api/vendors?week=</td><td>Vendor (CNA) high/critical counts for a week</td></tr>
+    <tr><td class="mono">GET /api/products/{id}</td><td>Monthly severity counts for a watchlist product</td></tr>
+    <tr><td class="mono">GET /api/search?q=</td><td>Search CVE ID / vendor / product / name (limit 50)</td></tr>
+    <tr><td class="mono">GET /api/stats</td><td>Row-count totals and last refresh timestamp</td></tr>
+  </tbody></table></div>
+  <p><strong>Examples:</strong></p>
+  <pre class="mono" style="white-space:pre-wrap">curl "https://zero-project-api.benito-1d7.workers.dev/api/stats"
+curl "https://zero-project-api.benito-1d7.workers.dev/api/week/2026-08-31"
+curl "https://zero-project-api.benito-1d7.workers.dev/api/search?q=chrome"</pre>
+  </div>
 </div>
 </section>
 </div>
@@ -1042,7 +1087,7 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
 <script>
 /* ================= data binding ================= */
 const D = window.ZW || {};
-const SITE = (D.meta && D.meta.site) || {name:"Zero Project", url:"https://zero.peries.ca/"};
+const SITE = (D.meta && D.meta.site) || {name:"Zero Project", url:"https://zero.propulse.tech/"};
 if (SITE.repo){ document.getElementById("repolink").href = SITE.repo;
   const fr=document.getElementById("footrepo"); if(fr) fr.href=SITE.repo; }
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -1059,7 +1104,9 @@ const pct = (a,b) => b?Math.round(1000*a/b)/10:null;
 const el = id => document.getElementById(id);
 const PENDING = '<div class="pending"><b>Available after the next Monday refresh.</b> ';
 
-const KEV_ALL = (D.kev && D.kev.entries) || [];   // [date,cve,vendor,product,K/U,due,name,published,category,score,severity]
+const KEV_ALL = (D.kev && D.kev.entries) || [];   // [date,cve,vendor,product,K/U,due,name,published,category,score,severity,ai_found]
+const AI_FOUND = D.ai_found || {};
+const AI_INDEX = AI_FOUND.index || {};
 const KW = (D.kev && D.kev.weekly) || [];         // [week,total,fresh,older,ransom,median_tte_days,edge_count]
 const KWEEKS = KW.map(r=>r[0]);
 const DATA_THROUGH = (D.meta && D.meta.data_through) || (KEV_ALL.length? KEV_ALL[KEV_ALL.length-1][0] : "");
@@ -1502,6 +1549,16 @@ const HAS_TTE = !!TTE_PIPE || TTE_ENTRY_DAYS.length>0;
   el("k_ledger").textContent=num(disc); el("kpi4").textContent=num(disc);
   el("kpi4d").textContent=peak?`peak week ${fmtWk(peak[0])}: ${num(peak[1]+peak[2]+peak[3]+peak[4]+peak[5])}`:"";
   el("kpi4s").textContent=`Disclosed subset only; ${num(commits)} hash commitments since 6 Apr`;
+  try{
+    const aiTotals=AI_FOUND.totals||{};
+    const aiExploited = aiTotals.in_kev!=null ? aiTotals.in_kev : KEV_ALL.filter(e=>e[11]).length;
+    const aiCredited = aiTotals.ai_credited!=null ? aiTotals.ai_credited : Object.keys(AI_INDEX).length;
+    if(el("kpi5")){
+      el("kpi5").textContent = num(aiExploited);
+      el("kpi5d").textContent = aiCredited ? `of ${num(aiCredited)} AI-credited CVEs total` : "";
+      el("kpi5s").textContent = aiTotals.mythos_ledger_revealed!=null ? `${num(aiTotals.mythos_ledger_revealed)} via the Mythos ledger's revealed findings` : "See the AI-found tab for methodology.";
+    }
+  }catch(err){ /* ZW.ai_found not in this build yet */ }
 })();
 
 /* ================= overview: CISO view ================= */
@@ -1837,7 +1894,56 @@ function revDraw(){
 }
 el("revq").addEventListener("input",revDraw);
 
+/* --- Vulnerabilities credited to AI (cvelistV5 credits scan + Mythos ledger union) --- */
+let aiCreditChart=null;
+function drawAiCredit(){
+  const box=el("aicredit"); if(!box) return;
+  const weekly=(AI_FOUND.weekly||[]).filter(r=>r[0]>=`${THIS_YEAR-1}-01-01`);
+  if(!weekly.length){
+    el("aikpis").innerHTML='<p class="note">Available after the next fetch_ai_credit refresh.</p>';
+    return;
+  }
+  const t=theme();
+  const o={responsive:true,maintainAspectRatio:false,animation:{duration:250},interaction:{mode:"index",intersect:false},
+    layout:{padding:{top:10,right:8}},
+    scales:{
+      x:{grid:{display:false},border:{color:t.line},ticks:{color:t.ink3,font:AXIS_FONT,maxRotation:0,autoSkip:true,autoSkipPadding:14,maxTicksLimit:12,callback(v){const l=this.getLabelForValue(v);return /^\d{4}-\d{2}-\d{2}$/.test(l)?fmtWkY(l):l;}}},
+      y:{beginAtZero:true,grid:{color:t.grid},border:{display:false},ticks:{color:t.ink3,font:AXIS_FONT,precision:0},title:{display:true,text:"AI-credited CVEs / week",color:t.ink3,font:{size:11}}},
+      y1:{beginAtZero:true,position:"right",grid:{display:false},border:{display:false},ticks:{color:t.ink3,font:AXIS_FONT,precision:0},title:{display:true,text:"all CVEs published / week",color:t.ink3,font:{size:11}}}
+    },
+    plugins:{legend:{display:false},tooltip:tipStyle({callbacks:{title:items=>"Week of "+items[0].label}})}
+  };
+  if(aiCreditChart) aiCreditChart.destroy();
+  aiCreditChart=new Chart(el("aicreditchart"),{data:{labels:weekly.map(r=>r[0]),datasets:[
+    {type:"bar",label:"AI-credited CVEs",data:weekly.map(r=>r[1]),backgroundColor:css("--myth"),yAxisID:"y",barPercentage:.8,categoryPercentage:.9},
+    {type:"line",label:"All CVEs published",data:weekly.map(r=>r[2]),borderColor:css("--kev"),backgroundColor:css("--kev"),borderWidth:2,pointRadius:0,tension:.25,yAxisID:"y1"}
+  ]},options:o});
+
+  const T=AI_FOUND.totals||{};
+  const yr=String(THIS_YEAR);
+  const aiThisYear=Object.entries(AI_INDEX).filter(([c])=>c.split("-")[1]===yr).length;
+  const shareTxt = T.share_of_2026_cves!=null ? (T.share_of_2026_cves*100).toFixed(2)+"%" : "—";
+  el("aikpis").innerHTML = `
+    <div class="kpi" style="--stripe:var(--myth)"><div class="lab">AI-credited CVEs · ${esc(yr)}</div><div class="val">${num(aiThisYear)}</div><div class="sub">${num(T.ai_credited||Object.keys(AI_INDEX).length)} total since 2024</div></div>
+    <div class="kpi" style="--stripe:var(--myth)"><div class="lab">Share of all ${esc(yr)} CVEs</div><div class="val">${shareTxt}</div><div class="sub">from cvelistV5 credits, description &amp; reference matches</div></div>
+    <div class="kpi" style="--stripe:var(--kev)"><div class="lab">Later exploited (KEV overlap)</div><div class="val">${num(T.in_kev||0)}</div><div class="sub">${num(T.in_euvd||0)} also flagged exploited by ENISA EUVD</div></div>
+    <div class="kpi" style="--stripe:var(--patched)"><div class="lab">Mythos-revealed findings</div><div class="val">${num(T.mythos_ledger_revealed||0)}</div><div class="sub">Anthropic ledger, tagged source=anthropic-ledger</div></div>`;
+  el("aicreditnote").textContent = `As of ${esc(AI_FOUND.asof||"—")}. Patterns: ${(AI_FOUND.patterns||[]).slice(0,8).join(", ")}${(AI_FOUND.patterns||[]).length>8?", …":""}. A match requires a full pattern in the CVE's credits, description or reference fields — "AI" alone never matches, and an excluded phrase (e.g. an affected-product mention of "OpenAI Codex") voids an overlapping match.`;
+
+  const byCna=Object.entries(AI_FOUND.by_cna||{});
+  const cnaMax=Math.max(1,...byCna.map(x=>x[1]));
+  el("aicna").innerHTML = byCna.length ? byCna.slice(0,12).map(([cna,n])=>
+    `<div class="d"><div class="top"><span>${esc(cna)}</span><span class="w">${num(n)}</span></div><div class="bot"><span class="bar" style="width:${Math.max(2,Math.round(100*n/cnaMax))}%;height:6px;background:var(--myth);display:inline-block;border-radius:3px"></span></div></div>`
+  ).join("") : '<p class="note note--body">No CNA breakdown in this build yet.</p>';
+
+  const kevOverlap=(AI_FOUND.kev_overlap||[]).slice().sort((a,b)=>b[1]<a[1]?-1:1);
+  document.querySelector("#aiexploitedtbl tbody").innerHTML = kevOverlap.length ? kevOverlap.slice(0,100).map(([cve,date,ven,prod,matched])=>
+    `<tr><td class="mono">${esc(date)}</td><td><a class="pill fresh" href="#tab=browse&cve=${esc(cve)}">${esc(cve)}</a></td><td>${esc(ven)}</td><td class="prod" title="${esc(prod)}">${esc(prod)}</td><td class="micro">${esc((matched||[]).join(", "))}</td></tr>`
+  ).join("") : `<tr class="empty-row"><td colspan="5">None yet — no CVE both credited to AI and confirmed exploited (CISA KEV) in this build.</td></tr>`;
+}
+
 BUILDERS.ai=function(){
+  try{ drawAiCredit(); }catch(err){ console.error("[zero] ai-credit build failed:",err); }
   myChart=new Chart(el("myth"),{data:{labels:myLabels,datasets:myDatasets()},options:myOpts(),plugins:[markers]});
   const T=(D.ledger&&D.ledger.totals)||{};
   el("ledgertotals").textContent=`Ledger totals as of ${T.as_of||"—"}: ${num(T.entries)} entries · ${num(T.disclosed_to_maintainers||T.total_disclosed)} disclosed to maintainers · ${num(T.patched_upstream)} patched upstream · ${num(T.cves||T.total_cves)} CVEs and ${num(T.ghsas||T.total_ghsas)} GHSAs assigned · ${num(T.candidates_found)} candidates found · ${num(T.confirmed_valid)} confirmed valid (${T.true_positive_rate?Math.round(T.true_positive_rate*100)+"%":"—"} true positives).`;
@@ -2180,7 +2286,7 @@ function showWeek(w, scroll){
   const es=all.filter(e=>(!kf.fresh||isFresh(e))&&(!kf.old||!isFresh(e))&&(!kf.ransom||e[4]==="K")&&(!cveFilter||cveFilter(e)));
   const fresh=all.filter(isFresh).length, rans=all.filter(e=>e[4]==="K").length; const idx=KWEEKS.indexOf(w); const ev=EVENTS.find(x=>x.week===w);
   whead.innerHTML=`<span class="t">Week ${ws.indexOf(w)+1} of ${y} · ${fmtLong(w)} – ${fmtLong(endOf(w))}${w===LATEST_WEEK&&LATEST_PARTIAL?` <span class='pill'>partial · data to ${fmtWk(DATA_THROUGH)}</span>`:""} <a class="pill" href="#tab=browse&week=${w}" title="permalink">#</a></span><span class="s"><b>${all.length}</b> added · <b>${fresh}</b> fresh · <b>${all.length-fresh}</b> older · <b>${rans}</b> ransomware${ev?` · <span class="mkev">◆ ${esc(ev.label)}</span>`:""}</span>`;
-  klist.innerHTML=es.length?es.map(e=>{const c=catOf(e);return `<tr data-cve="${e[1]}"><td class="mono">${e[0].slice(5)}</td><td><a class="pill ${isFresh(e)?"fresh":"old"}" href="https://nvd.nist.gov/vuln/detail/${e[1]}" target="_blank" rel="noopener">${e[1]}</a>${e[4]==="K"?"<span class='sk' title='Known ransomware campaign use'>☠</span>":""}</td><td>${esc(e[2])}</td><td class="prod" title="${esc(e[3])}">${esc(e[3])}</td><td class="micro">${esc((CAT_LABEL[c]||c).replace(" / ","/"))}</td><td class="vuln" title="${esc(e[6])}">${esc(e[6])}</td><td class="mono">${(e[5]||"").slice(5)}</td><td>${epssPill(e[1])}</td><td>${exploitBadges(e[1])}</td><td>${ssvcPill(e[1])}</td></tr>`;}).join(""):`<tr class="empty-row"><td colspan="10">${kf.fresh||kf.old||kf.ransom||cveFilter?"No entry in this week matches the filter — clear it to see all "+all.length+" additions.":"CISA added nothing to the catalog in this week."}</td></tr>`;
+  klist.innerHTML=es.length?es.map(e=>{const c=catOf(e);const air=AI_INDEX[e[1]];return `<tr data-cve="${e[1]}"><td class="mono">${e[0].slice(5)}</td><td><a class="pill ${isFresh(e)?"fresh":"old"}" href="https://nvd.nist.gov/vuln/detail/${e[1]}" target="_blank" rel="noopener">${e[1]}</a>${e[4]==="K"?"<span class='sk' title='Known ransomware campaign use'>☠</span>":""}</td><td>${esc(e[2])}</td><td class="prod" title="${esc(e[3])}">${esc(e[3])}</td><td class="micro">${esc((CAT_LABEL[c]||c).replace(" / ","/"))}</td><td class="vuln" title="${esc(e[6])}">${esc(e[6])}</td><td class="mono">${(e[5]||"").slice(5)}</td><td>${epssPill(e[1])}</td><td>${exploitBadges(e[1])}</td><td>${ssvcPill(e[1])}</td><td>${e[11]?`<span class="pill fresh" title="${air?esc((air.matched||[]).join(", ")):"AI-credited discovery"}">AI</span>`:'<span class="pill old">—</span>'}</td></tr>`;}).join(""):`<tr class="empty-row"><td colspan="11">${kf.fresh||kf.old||kf.ransom||cveFilter?"No entry in this week matches the filter — clear it to see all "+all.length+" additions.":"CISA added nothing to the catalog in this week."}</td></tr>`;
   const prevW=KWEEKS[idx-1], prevN=prevW?(byWeek[prevW]||[]).length:null;
   wfoot.textContent=(prevN!=null?`Previous week: ${prevN} added. `:"")+`${y} to date through this week: ${ws.filter(x=>x<=w).reduce((a,x)=>a+(byWeek[x]||[]).length,0)} KEV additions.`+(NOTABLE[w]?` Notable: ${NOTABLE[w]}.`:"");
   el("wkprev").disabled=idx===0; el("wknext").disabled=idx===KWEEKS.length-1;
@@ -2220,6 +2326,7 @@ window.addEventListener("hashchange",routeHash);
 /* ================= search ================= */
 const SIDX=[];
 KEV_ALL.forEach(e=>SIDX.push({g:"Exploited (KEV)",k:`${e[1]} ${e[2]} ${e[3]} ${e[6]} ${CAT_LABEL[catOf(e)]||""}`.toLowerCase(),m:e[1],t:`${e[2]} · ${e[3]} — ${e[6]}`,d:e[0],go:()=>openCVE(e[1])}));
+Object.entries(AI_INDEX).forEach(([cve,rec])=>SIDX.push({g:"AI-credited CVEs",k:`${cve} ${(rec.matched||[]).join(" ")} ${rec.cna||""}`.toLowerCase(),m:cve,t:`${(rec.matched||[]).join(", ")||"AI-credited"} · ${rec.cna||rec.source||""}`,d:rec.pub||"",go:()=>{goTab("ai");el("aicredit").scrollIntoView({behavior:"smooth",block:"start"});}}));
 REVEALED.forEach(m=>SIDX.push({g:"Found by Mythos (revealed)",k:`${m.id} ${m.project} ${m.bug_class} ${m.title}`.toLowerCase(),m:m.id,t:`${m.project} · ${m.bug_class} — ${m.title}`,d:m.severity,go:()=>{goTab("ai");el("revq").value=m.id;revDraw();el("revealed").scrollIntoView({behavior:"smooth",block:"start"});}}));
 WATCHLIST_DEF.forEach(p=>SIDX.push({g:"Product watchlist",k:`${p.name} ${CAT_LABEL[p.category]||p.category} ${(p.cpes||[]).join(" ")}`.toLowerCase(),m:p.name,t:CAT_LABEL[p.category]||p.category,d:(WL_KEV[p.id]||[]).length?`${(WL_KEV[p.id]||[]).length} in KEV`:"",go:()=>focusProduct(p.id)}));
 FRAMEWORKS.forEach(f=>{
