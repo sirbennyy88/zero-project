@@ -146,7 +146,7 @@
   "2024": 78,
   "2025": 90
  },
- "gtig_note": "Google Threat Intelligence Group in-the-wild zero-day counts as revised in its 2025 review (2023 and 2024 were first reported as 97 and 75).",
+ "gtig_note": "Google Threat Intelligence Group in-the-wild zero-day counts as revised in its 2025 review (2023 and 2024 were first reported as 97 and 75). GTIG's own annual series only runs 2019->; for 2016-2018 the ten-year row instead shows Google Project Zero's '0day In the Wild' tracker (ZW.p0.yearly), which is a narrower, P0-scoped set of investigators and a different definition -- see the Exploited tab methodology note. Do not sum the two series.",
  "long_lived_bugs": [
   {
    "id": "OpenBSD (undisclosed)",

@@ -17,7 +17,7 @@ ROOT = HERE.parent
 CACHE = HERE / 'cache'; CACHE.mkdir(exist_ok=True)
 MANUAL = json.loads((HERE / 'manual.json').read_text(encoding='utf-8'))
 TODAY = dt.date.today()
-START = dt.date(2021, 1, 1)                  # 5-year scope
+START = dt.date(2016, 1, 1)                  # 10-year scope (default; overridable via --since)
 UA = {'User-Agent': 'zeroweek-refresh/1.0 (+https://zero.propulse.tech)', 'Accept-Encoding': 'gzip'}
 TOKEN = os.environ.get('GITHUB_TOKEN', '')
 NVD_KEY = os.environ.get('NVD_API_KEY', '')
@@ -251,11 +251,22 @@ def fetch_msrc():
     return out
 
 # ---------------------------------------------------------------- 5. Oracle CPU
+def _oracle_links(url):
+    """cpu<mon><year>[optional 'v<n>' revision suffix].html links from an Oracle index page."""
+    idx = http(url, headers=BROWSER_UA)
+    return sorted(set(re.findall(r'/security-alerts/(cpu[a-z]{3}20\d\d(?:v\d+)?\.html)', idx)))
+
 @cached('oracle')
 def fetch_oracle():
     prev = cache_get('oracle') or {}
-    idx = http('https://www.oracle.com/security-alerts/', headers=BROWSER_UA)
-    links = sorted(set(re.findall(r'/security-alerts/(cpu[a-z]{3}20\d\d\.html)', idx)))
+    links = _oracle_links('https://www.oracle.com/security-alerts/')
+    if START.year < 2021:
+        # the current index only lists CPUs since 2021; earlier ones (back to 2010) are on the archive page
+        try:
+            links += _oracle_links('https://www.oracle.com/security-alerts/cpuarchive.html')
+        except Exception as ex:
+            log(f'[oracle] cpuarchive.html FAILED: {ex!r}')
+    links = sorted(set(links))
     out = dict(prev)
     for l in links:
         mm = re.match(r'cpu([a-z]{3})(20\d\d)', l); key = f'{mm.group(2)}-{MON[mm.group(1).title()]:02d}'
@@ -672,17 +683,20 @@ def fetch_exploit(cves):
         log(f'[exploit] metasploit FAILED: {ex!r}')
         prev = cache_get('exploit') or {}
         msf_by_cve = prev.get('msf_by_cve') or {}
-    edb_cves = set()
+    edb_cves = set(); edb_yearly = {}
     try:
         text = http('https://gitlab.com/exploit-database/exploitdb/-/raw/main/files_exploits.csv', timeout=120)
         for row in csv.reader(io.StringIO(text)):
             if len(row) > 11:
                 edb_cves.update(re.findall(r'CVE-\d{4}-\d{4,7}', row[11]))
-        log(f'[exploit] exploit-db: {len(edb_cves)} CVEs mapped')
+                pub = (row[3] if len(row) > 3 else '')[:4]
+                if re.fullmatch(r'20\d\d', pub): edb_yearly[pub] = edb_yearly.get(pub, 0) + 1
+        log(f'[exploit] exploit-db: {len(edb_cves)} CVEs mapped, {sum(edb_yearly.values())} dated entries')
     except Exception as ex:
         log(f'[exploit] exploit-db FAILED: {ex!r}')
         prev = cache_get('exploit') or {}
         edb_cves = set(prev.get('edb_cves') or [])
+        edb_yearly = dict(prev.get('edb_yearly') or {})
     prev = cache_get('exploit') or {}
     poc_counts = dict(prev.get('poc_counts') or {})
     cves = sorted(set(cves))
@@ -701,13 +715,20 @@ def fetch_exploit(cves):
             if i % 200 == 0: log(f'[poc-in-github] ({i + 1}/{len(missing)}) {cve}: {ex!r}')
         if (i + 1) % 250 == 0: log(f'[poc-in-github] progress {i + 1}/{len(missing)}')
         time.sleep(0.12)
-    return {'msf_by_cve': msf_by_cve, 'edb_cves': sorted(edb_cves), 'poc_counts': poc_counts}
+    return {'msf_by_cve': msf_by_cve, 'edb_cves': sorted(edb_cves), 'poc_counts': poc_counts, 'edb_yearly': edb_yearly}
 
 def build_exploit(exploit, kev_entries):
     exploit = exploit or {}
     msf = exploit.get('msf_by_cve') or {}
     edb = set(exploit.get('edb_cves') or [])
     poc = exploit.get('poc_counts') or {}
+    msf_yearly = {}
+    for info in msf.values():
+        y = (info.get('disclosure_date') or '')[:4]
+        if re.fullmatch(r'20\d\d', y): msf_yearly[y] = msf_yearly.get(y, 0) + 1
+    edb_yearly = exploit.get('edb_yearly') or {}
+    years = sorted(set(edb_yearly) | set(msf_yearly))
+    yearly_published = [[y, msf_yearly.get(y, 0), edb_yearly.get(y, 0)] for y in years if y >= str(START.year)]
     by_cve = {}
     for cve in {e[1] for e in kev_entries} | set(poc) | set(msf) | edb:
         by_cve[cve] = {'msf': cve in msf, 'edb': cve in edb, 'poc': poc.get(cve, 0)}
@@ -720,7 +741,7 @@ def build_exploit(exploit, kev_entries):
         info = by_cve.get(e[1]) or {}
         if info.get('msf') or info.get('edb') or info.get('poc'): has[i] += 1
     weekly_share = [[w, round(has[i] / tot[i], 3) if tot[i] else None] for i, w in enumerate(weeks)]
-    return {'by_cve': by_cve, 'weekly_share': weekly_share}
+    return {'by_cve': by_cve, 'weekly_share': weekly_share, 'yearly_published': yearly_published}
 
 # ---------------------------------------------------------------- 14. CVE.org (cveawg) SSVC enrichment
 @cached('ssvc')
@@ -1400,6 +1421,7 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_wat
     ai_found_built = build_ai_found(ai_credit, ai_index, kev_entries, euvd_built)
     ZW = {
         'meta': {'generated': dt.datetime.now(dt.timezone.utc).isoformat(timespec='seconds'), 'data_through': data_through, 'scope_start': START.isoformat(),
+                 'scope_note': f'Scope: {START.year} → today; KEV since Nov 2021, P0 since 2014',
                  'kev_released': kev.get('released') if kev else None, 'kev_catalog_size': kev.get('count') if kev else None,
                  'ledger_entries': ledger.get('entries') if ledger else None, 'site': MANUAL['site'], 'log': LOG[-40:]},
         'events': events,
@@ -1483,6 +1505,7 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_wat
     for y, n in p0_built['yearly'].items(): add('p0_yearly', y, 'zero_days_itw', '', 'Google Project Zero', '', n, '')
     for d, cve, ven, prod, typ, in_kev in p0_built['entries']: add('p0_entry', d, 'zero_day_itw', cve, ven, prod, 1, f'type={typ} in_kev={in_kev}')
     for w, share in exploit_built['weekly_share']: add('exploit_weekly_share', w, 'share_with_public_exploit', '', 'Metasploit/Exploit-DB/PoC-in-GitHub', '', share, '')
+    for y, msf_n, edb_n in exploit_built.get('yearly_published', []): add('exploit_yearly_published', y, 'metasploit_modules', '', 'Metasploit', '', msf_n, f'exploitdb={edb_n}'); add('exploit_yearly_published', y, 'exploitdb_files', '', 'Exploit-DB', '', edb_n, f'metasploit={msf_n}')
     for cve, info in exploit_built['by_cve'].items(): add('exploit_availability', '', 'msf_edb_poc', cve, '', '', 1, f"msf={info['msf']} edb={info['edb']} poc={info['poc']}")
     for cve, rec in ssvc.items():
         if rec.get('exploitation') or rec.get('automatable') or rec.get('impact'): add('ssvc', '', 'decision', cve, 'CISA-ADP', '', 1, f"exploitation={rec.get('exploitation')} automatable={rec.get('automatable')} impact={rec.get('impact')}")
@@ -1517,12 +1540,15 @@ def write_feed(ZW):
     (ROOT / 'feed.xml').write_text(xml, encoding='utf-8')
 
 def main():
-    global ARGS
+    global ARGS, START
     ap = argparse.ArgumentParser(); ap.add_argument('--offline', action='store_true'); ap.add_argument('--force-eco', action='store_true', help='pull ecosystem counts even without a token (slow, rate-limited)')
     ap.add_argument('--skip', default='', help='comma list of fetchers to skip: kev,ledger,epoch,msrc,oracle,gh_eco,gh_repos,dotnet,cve_pub,nvd_watchlist,extra_feeds,euvd,epss,p0,exploit,ssvc,advisories,atlas,avid,csaf,ai_credit')
     ap.add_argument('--watchlist-limit', type=int, default=None, help='only process the first N watchlist products in fetch_nvd_watchlist (first full run is slow: ~51 products x ~18 windows x 6.5s unkeyed)')
     ap.add_argument('--ai-credit-full', action='store_true', help='force a full cvelistV5 zip rescan for fetch_ai_credit instead of the incremental delta scan')
+    ap.add_argument('--since', default='2016-01-01', help='earliest date scoped into every fetcher (default 2016-01-01, i.e. a 10-year window); KEV weekly still starts at the later of this and Nov 2021 (catalog start), and the P0 sheet independently supplies 2014+')
     ARGS = ap.parse_args(); skip = set(x.strip() for x in ARGS.skip.split(',') if x.strip())
+    START = dt.date.fromisoformat(ARGS.since)
+    log(f'[scope] START={START.isoformat()} (--since={ARGS.since})')
     run = lambda name, fn, *a: (cache_get(name) if name in skip else fn(*a))
     kev = run('kev', fetch_kev); ledger = run('ledger', fetch_ledger); epoch = run('epoch', fetch_epoch)
     msrc = run('msrc', fetch_msrc); oracle = run('oracle', fetch_oracle)

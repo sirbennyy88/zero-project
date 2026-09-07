@@ -625,7 +625,7 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
 
 <div class="wrap" id="top">
 <header>
-  <div class="eyebrow">ISO weeks (Mon–Sun) · data through <span id="dataThrough">—</span> · refreshed every Monday</div>
+  <div class="eyebrow">ISO weeks (Mon–Sun) · data through <span id="dataThrough">—</span> · refreshed every Monday · Scope: 2016 → today; KEV since Nov 2021, P0 since 2014</div>
   <h1>How many zero-days per week — before and after Mythos?</h1>
   <p class="dek"><strong>Exploited in the wild</strong> runs at <span class="fig" id="k_post">—</span> a week since Claude Mythos Preview shipped on 7 Apr 2026, against <span class="fig" id="k_pre">—</span> in the 22 weeks before and a five-year average of <span class="fig" id="k_5y">—</span>. <strong>Found by Mythos</strong> is a different order of magnitude: <span class="fig" id="k_ledger">—</span> open-source findings in Anthropic's public ledger.</p>
   <div class="actions">
@@ -642,10 +642,11 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
 <section class="panel" id="exploited">
   <div class="panel-head">
     <div><h2>Exploited in the wild, by week</h2><p>Vulnerabilities CISA added to its Known Exploited Vulnerabilities catalog each week — the closest public proxy for "zero-days confirmed under attack". Bars split by whether the CVE was issued in the same year (fresh) or earlier (old bugs newly seen exploited). Solid line is the 4-week average; dashed markers are Anthropic model events. Click a bar to open that week in Browse.</p></div>
-    <div class="controls"><div class="toggle" role="group" aria-label="Range"><button type="button" aria-pressed="false" data-krange="mythos">Since Mythos</button><button type="button" aria-pressed="true" data-krange="2026">2026</button><button type="button" aria-pressed="false" data-krange="12m">12 months</button><button type="button" aria-pressed="false" data-krange="all">Since Nov 2021</button></div><div class="toggle" role="group" aria-label="Series"><button type="button" aria-pressed="true" data-kev="split">Fresh vs old</button><button type="button" aria-pressed="false" data-kev="total">Total</button><button type="button" aria-pressed="false" data-kev="ransom">Ransomware</button></div></div>
+    <div class="controls"><div class="toggle" role="group" aria-label="Range"><button type="button" aria-pressed="false" data-krange="mythos">Since Mythos</button><button type="button" aria-pressed="true" data-krange="2026">2026</button><button type="button" aria-pressed="false" data-krange="12m">12 months</button><button type="button" aria-pressed="false" data-krange="all">Since Nov 2021 (KEV)</button></div><div class="toggle" role="group" aria-label="Series"><button type="button" aria-pressed="true" data-kev="split">Fresh vs old</button><button type="button" aria-pressed="false" data-kev="total">Total</button><button type="button" aria-pressed="false" data-kev="ransom">Ransomware</button></div></div>
   </div>
   <div class="chart-wrap"><canvas id="kev"></canvas></div>
   <div class="legend"><span><i class="sw" style="background:var(--kev)"></i>CVE issued same year</span><span><i class="sw" style="background:var(--kev-old)"></i>CVE issued earlier</span><span><i class="sw line" style="background:var(--ink)"></i>4-week moving average</span><span><i class="sw dash"></i>Model release / access event</span><span id="partialnote"></span></div>
+  <p class="note">KEV's catalog only goes back to Nov 2021. For zero-days exploited in the wild before that, see <a href="#tab=overview">Project Zero's "P0 in-the-wild" series, 2014→ (yearly)</a> in the ten-year row below.</p>
   <p class="note" id="chartCap"></p>
 </section>
 
@@ -682,7 +683,7 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
 
 <section class="panel" id="years">
   <div class="panel-head">
-    <div><h2>Five years in one row</h2><p>KEV additions per year (CISA), Google Threat Intelligence's count of zero-days exploited in the wild, and Microsoft's Patch Tuesday CVE total. KEV started on 3 Nov 2021, so 2021 is two months; the current year is year-to-date.</p></div>
+    <div><h2>Ten years in one row</h2><p>2016→: KEV additions per year (CISA, from Nov 2021), Project Zero's in-the-wild zero-days (P0 ITW, 2014→), Google Threat Intelligence's yearly count (GTIG, 2019→), Microsoft's Patch Tuesday CVE total, Oracle CPU patches, and exploits publicly published (Metasploit + Exploit-DB). KEV started 3 Nov 2021, so 2021 is two months; the current year is year-to-date. Scope: 2016 → today; KEV since Nov 2021, P0 since 2014.</p></div>
   </div>
   <div class="yrs" id="yrs"></div>
   <div class="chart-wrap" style="height:120px;margin-top:var(--s5)"><canvas id="p0mini"></canvas></div>
@@ -857,7 +858,7 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
 <section class="panel" id="companies">
   <div class="panel-head">
     <div><h2>Major vendors: high &amp; critical CVEs published per week</h2><p>What the big companies are actually disclosing. Each week's bar stacks the high- and critical-severity CVEs published by that vendor's own CVE Numbering Authority (cve.org records, via Epoch AI's explorer). This is the public tail of Glasswing: Mythos-found bugs only show up here once the vendor ships a patch and files the CVE, typically 45–90 days after discovery. Across the 21 notable CNAs, monthly high/critical CVEs went from a pre-Mythos record of ~490 to <span id="epochpeak">—</span>. Toggle vendors below; hover a bar for the split.</p></div>
-    <div class="controls"><div class="toggle" role="group" aria-label="Range"><button type="button" aria-pressed="true" data-crange="1y">Since Sep 2025</button><button type="button" aria-pressed="false" data-crange="all">Since 2021</button></div><div class="toggle" role="group" aria-label="Scale"><button type="button" aria-pressed="true" data-cscale="linear">Linear</button><button type="button" aria-pressed="false" data-cscale="logarithmic">Log</button></div><div class="toggle" role="group" aria-label="Other CNAs"><button type="button" aria-pressed="false" data-other="1">+ all other CNAs</button></div></div>
+    <div class="controls"><div class="toggle" role="group" aria-label="Range"><button type="button" aria-pressed="true" data-crange="1y">Since Sep 2025</button><button type="button" aria-pressed="false" data-crange="all">All years</button></div><div class="toggle" role="group" aria-label="Scale"><button type="button" aria-pressed="true" data-cscale="linear">Linear</button><button type="button" aria-pressed="false" data-cscale="logarithmic">Log</button></div><div class="toggle" role="group" aria-label="Other CNAs"><button type="button" aria-pressed="false" data-other="1">+ all other CNAs</button></div></div>
   </div>
   <div class="chips" id="chips"></div>
   <div class="chart-wrap tall"><canvas id="cochart"></canvas></div>
@@ -889,7 +890,7 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
 <section class="panel" id="patch">
   <div class="panel-head">
     <div><h2>Patch-cycle volume: Microsoft Patch Tuesday, Oracle CPU, .NET</h2><p>Microsoft CVEs per monthly release (MSRC CVRF API, Chromium/Edge entries excluded), Oracle patches per Critical Patch Update (oracle.com advisories), and .NET security advisories (dotnet/announcements). Microsoft's June 2026 (198) broke a 20-year record, July (570) nearly tripled it; Microsoft attributes the surge to its own AI harness (MDASH) plus Glasswing. Oracle moved from quarterly to monthly releases and July 2026 carried 1,448 patches against a 2021–2025 range of 309–520.</p></div>
-    <div class="controls"><div class="toggle" role="group" aria-label="Range"><button type="button" aria-pressed="true" data-prange="2026">2026</button><button type="button" aria-pressed="false" data-prange="all">Since 2021</button></div></div>
+    <div class="controls"><div class="toggle" role="group" aria-label="Range"><button type="button" aria-pressed="true" data-prange="2026">2026</button><button type="button" aria-pressed="false" data-prange="all">Since 2016</button></div></div>
   </div>
   <div class="chart-wrap short"><canvas id="patchchart"></canvas></div>
   <div class="legend"><span><i class="sw" style="background:var(--kev)"></i>Microsoft Patch Tuesday CVEs</span><span><i class="sw" style="background:var(--myth)"></i>Oracle CPU patches</span><span><i class="sw" style="background:var(--mark)"></i>.NET security advisories (right axis)</span><span><i class="sw dash"></i>Mythos Preview (7 Apr 2026)</span></div>
@@ -910,7 +911,7 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
 <section class="panel" id="frameworks">
   <div class="panel-head">
     <div><h2>Frameworks &amp; package ecosystems: .NET, Next.js, Spring, npm, PyPI…</h2><p>Where application developers feel it. GitHub-reviewed security advisories published per month for each package ecosystem (GitHub Advisory Database, all severities). The latest month is undercounted everywhere — GitHub review lag runs 2–6 weeks.</p></div>
-    <div class="controls"><div class="toggle" role="group" aria-label="Range"><button type="button" aria-pressed="true" data-erange="2026">2026</button><button type="button" aria-pressed="false" data-erange="all">Since 2021</button></div></div>
+    <div class="controls"><div class="toggle" role="group" aria-label="Range"><button type="button" aria-pressed="true" data-erange="2026">2026</button><button type="button" aria-pressed="false" data-erange="all">Since 2016</button></div></div>
   </div>
   <div class="chart-wrap short"><canvas id="ecochart"></canvas></div>
   <div class="legend" id="ecolegend"></div>
@@ -997,7 +998,7 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
 <div class="tp" id="tab-data" role="tabpanel" aria-labelledby="t-data" tabindex="0" hidden>
 <section class="panel" id="data">
   <div class="panel-head">
-    <div><h2>Download the dataset</h2><p>Everything on this page plus the entry-level records behind it: every CISA KEV addition since November 2021, every Mythos finding Anthropic has publicly revealed, all .NET advisories, weekly vendor CVE counts for 22 CNAs since 2021, the Mythos ledger by week, ecosystem and framework advisory counts, Patch Tuesday and Oracle CPU volumes since 2021, the product watchlist, the framework mapping, the release timeline and vendor statements. The JSON is nested by dataset; the CSV is one tidy long table (<code class="mono">dataset, period, series, id, vendor_or_project, product_or_class, value, note</code>). Regenerated every Monday by the open pipeline.</p></div>
+    <div><h2>Download the dataset</h2><p>Everything on this page plus the entry-level records behind it: every CISA KEV addition since November 2021, every Mythos finding Anthropic has publicly revealed, all .NET advisories, weekly vendor CVE counts for 22 CNAs since 2016, the Mythos ledger by week, ecosystem and framework advisory counts, Patch Tuesday and Oracle CPU volumes since 2016, the product watchlist, the framework mapping, the release timeline and vendor statements. <strong>Scope: 2016 → today; KEV since Nov 2021, P0 since 2014.</strong> The JSON is nested by dataset; the CSV is one tidy long table (<code class="mono">dataset, period, series, id, vendor_or_project, product_or_class, value, note</code>). Regenerated every Monday by the open pipeline.</p></div>
   </div>
   <div class="dl">
     <a href="zeroweek-data.json" download>zeroweek-data.json <span class="k">nested · all datasets</span></a>
@@ -1656,10 +1657,14 @@ const HAS_TTE = !!TTE_PIPE || TTE_ENTRY_DAYS.length>0;
 
 /* ================= overview: five years + timeline ================= */
 (function years(){
-  const G=D.gtig_zero_days_by_year||{}; const yrs=[]; for(let y=2021;y<=THIS_YEAR;y++) yrs.push(y);
-  el("yrs").innerHTML=yrs.map(y=>{ const es=KEV_ALL.filter(e=>e[0].startsWith(y+"")); const fresh=es.filter(isFresh).length; const pt=Object.entries(MSRC).filter(([m])=>m.startsWith(y+"")).reduce((s,[,v])=>s+v,0);
-    const wk=KW.filter(r=>r[0].startsWith(y+"")&&(r[0]!==LATEST_WEEK||!LATEST_PARTIAL)); const perwk=wk.length?(wk.reduce((s,r)=>s+r[1],0)/wk.length).toFixed(1):"—";
-    return `<div class="yr"><div class="y">${y}${y===THIS_YEAR?" ytd":""}${y===2021?" (Nov–Dec)":""}</div><div class="n">${es.length}</div><div class="s">KEV additions · ${perwk}/wk<br>${fresh} fresh · ${es.length-fresh} older<br>GTIG zero-days: <b>${G[y]??"—"}</b><br>Patch Tuesday CVEs: <b>${pt?num(pt):"—"}</b></div></div>`; }).join("");
+  const G=D.gtig_zero_days_by_year||{}; const yrs=[]; for(let y=2016;y<=THIS_YEAR;y++) yrs.push(y);
+  const EXPY={}; (EXPLOIT.yearly_published||[]).forEach(([y,msf,edb])=>{EXPY[y]=[msf,edb];});
+  el("yrs").innerHTML=yrs.map(y=>{ const es=y>=2021?KEV_ALL.filter(e=>e[0].startsWith(y+"")):[]; const fresh=es.filter(isFresh).length;
+    const pt=Object.entries(MSRC).filter(([m])=>m.startsWith(y+"")).reduce((s,[,v])=>s+v,0);
+    const oc=Object.entries(ORACLE).filter(([m])=>m.startsWith(y+"")).reduce((s,[,v])=>s+(v&&v.patches||0),0);
+    const p0y=P0_YEARLY[y]||0; const gt=G[y]; const ex=EXPY[y]||[0,0];
+    const wk=y>=2021?KW.filter(r=>r[0].startsWith(y+"")&&(r[0]!==LATEST_WEEK||!LATEST_PARTIAL)):[]; const perwk=wk.length?(wk.reduce((s,r)=>s+r[1],0)/wk.length).toFixed(1):"—";
+    return `<div class="yr"><div class="y">${y}${y===THIS_YEAR?" ytd":""}${y===2021?" (Nov–Dec)":""}</div><div class="n">${y>=2021?es.length:"—"}</div><div class="s">${y>=2021?`KEV additions · ${perwk}/wk<br>${fresh} fresh · ${es.length-fresh} older<br>`:"KEV: pre-catalog<br>"}P0 ITW: <b>${p0y||"—"}</b> · GTIG: <b>${gt??"—"}</b><br>Patch Tuesday: <b>${pt?num(pt):"—"}</b> · Oracle CPU: <b>${oc?num(oc):"—"}</b><br>Exploits published: <b>${(ex[0]+ex[1])?num(ex[0]+ex[1]):"—"}</b></div></div>`; }).join("");
 })();
 el("tl").innerHTML=(D.timeline||[]).filter(t=>t.date>="2026-01-01").slice(-10).map(t=>`<div class="tl"><div class="d">${t.date}</div><div class="s">${esc(t.event)}</div></div>`).join("");
 /* ================= exploited tab ================= */
