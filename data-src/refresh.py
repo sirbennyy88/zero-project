@@ -835,6 +835,257 @@ def fetch_advisories():
     out['__status__'] = status
     return out
 
+# ---------------------------------------------------------------- 16. MITRE ATLAS (AI attack case studies)
+# dist/v6/ATLAS-latest.yaml is a git symlink: raw.githubusercontent serves the *target filename*
+# (e.g. "ATLAS-2026.08.yaml"), not the document, so the fetcher follows it once.
+# There is no YAML parser in the stdlib, so the three blocks we need are scanned by indent/regex.
+ATLAS_BASE = 'https://raw.githubusercontent.com/mitre-atlas/atlas-data/main/dist/v6/'
+
+def _atlas_val(raw):
+    """Strip YAML scalar quoting from the right-hand side of a `key: value` line."""
+    v = (raw or '').strip()
+    if len(v) >= 2 and v[0] == v[-1] and v[0] in '\'"': v = v[1:-1].replace("''", "'")
+    return v.strip()
+
+def _atlas_blocks(text):
+    """{top-level key: block body} for lines like `case-studies:` with no value."""
+    heads = [(m.group(1), m.start(), m.end()) for m in re.finditer(r'(?m)^([a-z-]+):[ \t]*$', text)]
+    out = {}
+    for i, (name, s, e) in enumerate(heads):
+        out[name] = text[e:heads[i + 1][1] if i + 1 < len(heads) else len(text)]
+    return out
+
+def _atlas_records(block):
+    """{id: record body} for 2-space-indent child keys (`  AML.CS0000:`) inside a block.
+
+    Sub-technique ids (AML.T0000.001) are flat siblings of their parent in this dist file,
+    so the dotted form is simply allowed in the id pattern.
+    """
+    heads = [(m.group(1), m.start(), m.end()) for m in re.finditer(r'(?m)^  ([A-Za-z0-9.]+):[ \t]*$', block)]
+    out = {}
+    for i, (rid, s, e) in enumerate(heads):
+        out[rid] = block[e:heads[i + 1][1] if i + 1 < len(heads) else len(block)]
+    return out
+
+def _atlas_field(body, key):
+    m = re.search(r'(?m)^    %s:(.*)$' % re.escape(key), body)
+    return _atlas_val(m.group(1)) if m else ''
+
+@cached('atlas')
+def fetch_atlas():
+    prev = cache_get('atlas') or {}
+    empty = {'version': None, 'techniques': [], 'case_studies': []}
+    try:
+        text = http(ATLAS_BASE + 'ATLAS-latest.yaml', timeout=300)
+        if len(text) < 200 and text.strip().lower().endswith('.yaml'):
+            text = http(ATLAS_BASE + text.strip(), timeout=300)
+    except Exception as ex:
+        log(f'[atlas] fetch FAILED: {ex!r} -> cache'); return prev or empty
+    try:
+        blocks = _atlas_blocks(text)
+    except Exception as ex:
+        log(f'[atlas] block scan FAILED: {ex!r} -> cache'); return prev or empty
+    m = re.search(r'(?m)^  version:(.*)$', blocks.get('collection', ''))
+    version = _atlas_val(m.group(1)) if m else None
+    tactic_names = {}
+    for tid, body in _atlas_records(blocks.get('tactics', '')).items():
+        try: tactic_names[tid] = _atlas_field(body, 'name')
+        except Exception: continue
+    # relationships[caseId].employs[] links a case study to the techniques/tactics it used
+    employs, tactic_of = {}, {}
+    for rid, body in _atlas_records(blocks.get('relationships', '')).items():
+        try:
+            seg = re.search(r'(?ms)^    employs:[ \t]*$(.*?)(?=^    [a-z-]+:|\Z)', body)
+            if not seg: continue
+            targets = []
+            for item in re.split(r'(?m)^    - (?=source:)', seg.group(1)):
+                tm = re.search(r'(?m)^      target:(.*)$', item)
+                if not tm: continue
+                tv = _atlas_val(tm.group(1))
+                if not tv: continue
+                if tv not in targets: targets.append(tv)
+                ta = re.search(r'(?m)^      tactic:(.*)$', item)
+                if ta and tv not in tactic_of: tactic_of[tv] = _atlas_val(ta.group(1))
+            if targets: employs[rid] = targets
+        except Exception as ex:
+            log(f'[atlas] relationships {rid} skipped: {ex!r}')
+    techniques = []
+    for tid, body in _atlas_records(blocks.get('techniques', '')).items():
+        try:
+            if not tid.startswith('AML.T'): continue
+            tac = tactic_of.get(tid, '')
+            techniques.append({'id': tid, 'name': _atlas_field(body, 'name'), 'tactic': tactic_names.get(tac, tac)})
+        except Exception as ex:
+            log(f'[atlas] technique {tid} skipped: {ex!r}')
+    case_studies = []
+    for cid, body in _atlas_records(blocks.get('case-studies', '')).items():
+        try:
+            if not cid.startswith('AML.CS'): continue
+            case_studies.append([_atlas_field(body, 'date')[:10], cid, _atlas_field(body, 'name'),
+                                 _atlas_field(body, 'target'), _atlas_field(body, 'actor'),
+                                 employs.get(cid, []), 'https://atlas.mitre.org/studies/' + cid])
+        except Exception as ex:
+            log(f'[atlas] case study {cid} skipped: {ex!r}')
+    case_studies.sort(key=lambda r: (r[0], r[1]))
+    if not case_studies and prev.get('case_studies'):
+        log('[atlas] parsed 0 case studies -> keeping cache'); return prev
+    log(f'[atlas] {len(case_studies)} case studies, {len(techniques)} techniques')
+    return {'version': version, 'techniques': techniques, 'case_studies': case_studies}
+
+# ---------------------------------------------------------------- 17. AVID (AI Vulnerability Database)
+AVID_RAW = 'https://raw.githubusercontent.com/avidml/avid-db/main/reports/'
+AVID_HTML = 'https://github.com/avidml/avid-db/blob/main/reports/'
+AVID_MAX_FETCH = 100                  # per-run request budget; cache fills in over successive runs
+
+@cached('avid')
+def fetch_avid():
+    prev = cache_get('avid') or {}
+    records = dict(prev.get('records') or {})
+    try:
+        years, _ = gh('https://api.github.com/repos/avidml/avid-db/contents/reports')
+    except Exception as ex:
+        log(f'[avid] year listing FAILED: {ex!r}'); years = []
+    ydirs = sorted((x.get('name') for x in years if isinstance(x, dict) and x.get('type') == 'dir'
+                    and re.fullmatch(r'\d{4}', x.get('name') or '')), reverse=True)[:2]
+    wanted = []
+    for yd in ydirs:
+        try:
+            files, _ = gh(f'https://api.github.com/repos/avidml/avid-db/contents/reports/{yd}')
+        except Exception as ex:
+            log(f'[avid] {yd} listing FAILED: {ex!r}'); continue
+        for x in files:
+            n = (x.get('name') or '') if isinstance(x, dict) else ''
+            if n.endswith('.json'): wanted.append(f'{yd}/{n}')
+        time.sleep(0.2)
+    wanted.sort(reverse=True)
+    missing = [k for k in wanted if k not in records][:AVID_MAX_FETCH]
+    log(f'[avid] {len(missing)} to fetch of {len(wanted)} report files ({len(records)} cached)')
+    for key in missing:
+        try:
+            raw = http(AVID_RAW + key, timeout=30)
+            j = json.loads(raw)
+            rid = ((j.get('metadata') or {}).get('report_id')) or key.split('/')[-1][:-5]
+            date = str(j.get('reported_date') or j.get('published_date') or j.get('last_modified_date') or '')[:10]
+            pt = j.get('problemtype') or {}
+            desc = pt.get('description') if isinstance(pt, dict) else None
+            title = (desc.get('value') if isinstance(desc, dict) else desc) or j.get('description') or ''
+            cves = sorted(set(re.findall(r'CVE-\d{4}-\d{4,7}', raw)))
+            records[key] = [date, rid, str(title).strip()[:160], AVID_HTML + key, cves]
+        except Exception as ex:
+            log(f'[avid] {key} FAILED: {ex!r}')
+        time.sleep(0.12)
+    rows = sorted((r for r in records.values() if r and r[0]), key=lambda r: (r[0], r[1]), reverse=True)
+    by_month = {}
+    for r in rows: by_month[r[0][:7]] = by_month.get(r[0][:7], 0) + 1
+    latest = [[r[0], r[1], r[2], r[3]] for r in rows[:50]]
+    log(f'[avid] {len(rows)} reports across {len(by_month)} months')
+    return {'records': records, 'by_month': dict(sorted(by_month.items())), 'latest': latest}
+
+# ---------------------------------------------------------------- 18. OWASP AI/LLM taxonomies (static)
+# Fixed, annually-revised taxonomies -- vendored once rather than fetched weekly (see
+# data-src/research/ai-frameworks-data.md sections 3.1/3.2/3.5). Every URL below was confirmed live.
+OWASP_LLM_TOP10_2025 = [
+    {'id': 'LLM01:2025', 'name': 'Prompt Injection', 'url': 'https://genai.owasp.org/llmrisk/llm01-prompt-injection/'},
+    {'id': 'LLM02:2025', 'name': 'Sensitive Information Disclosure', 'url': 'https://genai.owasp.org/llmrisk/llm022025-sensitive-information-disclosure/'},
+    {'id': 'LLM03:2025', 'name': 'Supply Chain', 'url': 'https://genai.owasp.org/llmrisk/llm032025-supply-chain/'},
+    {'id': 'LLM04:2025', 'name': 'Data and Model Poisoning', 'url': 'https://genai.owasp.org/llmrisk/llm042025-data-and-model-poisoning/'},
+    {'id': 'LLM05:2025', 'name': 'Improper Output Handling', 'url': 'https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/'},
+    {'id': 'LLM06:2025', 'name': 'Excessive Agency', 'url': 'https://genai.owasp.org/llmrisk/llm062025-excessive-agency/'},
+    {'id': 'LLM07:2025', 'name': 'System Prompt Leakage', 'url': 'https://genai.owasp.org/llmrisk/llm072025-system-prompt-leakage/'},
+    {'id': 'LLM08:2025', 'name': 'Vector and Embedding Weaknesses', 'url': 'https://genai.owasp.org/llmrisk/llm082025-vector-and-embedding-weaknesses/'},
+    {'id': 'LLM09:2025', 'name': 'Misinformation', 'url': 'https://genai.owasp.org/llmrisk/llm092025-misinformation/'},
+    {'id': 'LLM10:2025', 'name': 'Unbounded Consumption', 'url': 'https://genai.owasp.org/llmrisk/llm102025-unbounded-consumption/'},
+]
+# OWASP Top 10 for Agentic Applications: risk IDs not confirmed against a live OWASP source
+# (research/ai-frameworks-data.md 3.2 leaves them unverified), so ship it empty rather than invent names.
+OWASP_AGENTIC_TOP10 = []
+_OWASP_ML_DOC = 'https://owasp.org/www-project-machine-learning-security-top-10/docs/'
+OWASP_ML_TOP10 = [
+    {'id': 'ML01:2023', 'name': 'Input Manipulation Attack', 'url': _OWASP_ML_DOC + 'ML01_2023-Input_Manipulation_Attack.html'},
+    {'id': 'ML02:2023', 'name': 'Data Poisoning Attack', 'url': _OWASP_ML_DOC + 'ML02_2023-Data_Poisoning_Attack.html'},
+    {'id': 'ML03:2023', 'name': 'Model Inversion Attack', 'url': _OWASP_ML_DOC + 'ML03_2023-Model_Inversion_Attack.html'},
+    {'id': 'ML04:2023', 'name': 'Membership Inference Attack', 'url': _OWASP_ML_DOC + 'ML04_2023-Membership_Inference_Attack.html'},
+    {'id': 'ML05:2023', 'name': 'Model Theft', 'url': _OWASP_ML_DOC + 'ML05_2023-Model_Theft.html'},
+    {'id': 'ML06:2023', 'name': 'AI Supply Chain Attacks', 'url': _OWASP_ML_DOC + 'ML06_2023-AI_Supply_Chain_Attacks.html'},
+    {'id': 'ML07:2023', 'name': 'Transfer Learning Attack', 'url': _OWASP_ML_DOC + 'ML07_2023-Transfer_Learning_Attack.html'},
+    {'id': 'ML08:2023', 'name': 'Model Skewing', 'url': _OWASP_ML_DOC + 'ML08_2023-Model_Skewing.html'},
+    {'id': 'ML09:2023', 'name': 'Output Integrity Attack', 'url': _OWASP_ML_DOC + 'ML09_2023-Output_Integrity_Attack.html'},
+    {'id': 'ML10:2023', 'name': 'Model Poisoning', 'url': _OWASP_ML_DOC + 'ML10_2023-Model_Poisoning.html'},
+]
+
+# ---------------------------------------------------------------- 19. CSAF 2.0 (BSI aggregator + Red Hat)
+BSI_AGGREGATOR = 'https://wid.cert-bund.de/.well-known/csaf-aggregator/aggregator.json'
+REDHAT_CSAF_META = 'https://security.access.redhat.com/data/csaf/v2/provider-metadata.json'
+REDHAT_CSAF_MAX = 20                  # per-run advisory sample; the year index alone is ~7 MB
+
+@cached('csaf')
+def fetch_csaf():
+    prev = cache_get('csaf') or {}
+    providers = list(prev.get('providers') or [])
+    try:
+        ag = json.loads(http(BSI_AGGREGATOR, timeout=60))
+        found = []
+        for key, default_role in (('csaf_providers', 'csaf_provider'), ('csaf_publishers', 'csaf_publisher')):
+            for p in (ag.get(key) or []):
+                try:
+                    md = (p.get('metadata') or {}) if isinstance(p, dict) else {}
+                    pub = md.get('publisher') or {}
+                    url = md.get('url') or ''
+                    name = pub.get('name') or pub.get('namespace') or url
+                    base = re.sub(r'^https?://(www\.)?', '', (pub.get('namespace') or name or '')).lower()
+                    pid = re.sub(r'[^a-z0-9]+', '-', base).strip('-')[:60]
+                    found.append({'id': pid, 'name': name, 'url': url, 'status': 'ok',
+                                  'role': md.get('role') or default_role, 'last_updated': str(md.get('last_updated') or '')[:10]})
+                except Exception as ex:
+                    log(f'[csaf] provider entry skipped: {ex!r}')
+        if found: providers = found
+        log(f'[csaf] BSI aggregator: {len(providers)} providers')
+    except Exception as ex:
+        log(f'[csaf] BSI aggregator FAILED: {ex!r} -> keeping {len(providers)} cached providers')
+    records = dict(prev.get('records') or {})
+    try:
+        meta = json.loads(http(REDHAT_CSAF_META, timeout=60))
+        dir_url = ''
+        for d_ in (meta.get('distributions') or []):
+            u = (d_ or {}).get('directory_url') or ''
+            if u.rstrip('/').endswith('/advisories'): dir_url = u.rstrip('/'); break
+        if not dir_url: raise RuntimeError('no advisories directory_url in Red Hat provider-metadata')
+        year_url = f'{dir_url}/{TODAY.year}/'
+        idx = http(year_url, timeout=300)
+        # sort by the numeric advisory serial, not the string (rhsa-2026_10234 > rhsa-2026_9874)
+        names = sorted({n.lower() for n in re.findall(r'rhsa-\d{4}_\d+\.json', idx, re.I)},
+                       key=lambda n: int(n.rsplit('_', 1)[1].split('.')[0]))
+        if not names: raise RuntimeError('no RHSA advisory filenames in Red Hat year index')
+        log(f'[csaf] redhat {TODAY.year}: {len(names)} RHSA files, sampling newest {REDHAT_CSAF_MAX} by serial')
+        for n in names[-REDHAT_CSAF_MAX:]:
+            try:
+                a = json.loads(http(year_url + n, timeout=30))
+                doc = a.get('document') or {}; tr = doc.get('tracking') or {}
+                aid = tr.get('id') or n[:-5].upper()
+                date = str(tr.get('initial_release_date') or tr.get('current_release_date') or '')[:10]
+                title = re.sub(r'^Red Hat Security Advisory:\s*', '', str(doc.get('title') or ''))[:160]
+                flagged = 0
+                for v in (a.get('vulnerabilities') or []):
+                    for th in (v.get('threats') or []):
+                        if (th or {}).get('category') == 'exploit_status': flagged = 1
+                records[aid] = [date, aid, title, 'https://access.redhat.com/errata/' + aid.replace(' ', ''),
+                                flagged, tr.get('status') or '']
+            except Exception as ex:
+                log(f'[csaf] redhat {n} FAILED: {ex!r}')
+            time.sleep(0.15)
+    except Exception as ex:
+        log(f'[csaf] Red Hat CSAF FAILED: {ex!r} -> BSI providers only')
+    rows = sorted((r for r in records.values() if r and r[0]), key=lambda r: (r[0], r[1]))
+    counts = {}
+    for r in rows:
+        try: w = monday(r[0]).isoformat()
+        except Exception: continue
+        b = counts.setdefault(w, [0, 0]); b[0] += 1; b[1] += 1 if r[4] else 0
+    weekly = [[w, n, x] for w, (n, x) in sorted(counts.items())]
+    latest = [[r[0], r[1], r[2], r[3]] for r in rows[::-1][:50]]
+    log(f'[csaf] {len(providers)} providers, {len(rows)} Red Hat advisories, {len(weekly)} weeks')
+    return {'providers': providers, 'records': records, 'weekly': weekly, 'latest': latest}
+
 # ---------------------------------------------------------------- build outputs
 def load_sources_registry():
     text = (HERE / 'research' / 'sources.md').read_text(encoding='utf-8')
@@ -843,7 +1094,8 @@ def load_sources_registry():
     return json.loads(m.group(1))
 
 def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_watchlist, extra_feeds,
-          euvd=None, epss=None, p0=None, exploit=None, ssvc=None, advisories=None):
+          euvd=None, epss=None, p0=None, exploit=None, ssvc=None, advisories=None,
+          atlas=None, avid=None, csaf=None):
     data_through = max(e[0] for e in kev['entries']) if kev else TODAY.isoformat()
     cve_pub = cve_pub or {}
     kev_categories = MANUAL.get('kev_categories', {})
@@ -862,6 +1114,21 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_wat
     advisories = advisories or {}
     advisory_status = advisories.get('__status__') or {}
     advisories_out = {k: v for k, v in advisories.items() if k != '__status__'}
+    atlas = atlas or {}
+    atlas_cs = atlas.get('case_studies') or []
+    atlas_by_year, atlas_by_technique = {}, {}
+    for cs in atlas_cs:
+        try:
+            y = (cs[0] or '')[:4]
+            if y: atlas_by_year[y] = atlas_by_year.get(y, 0) + 1
+            for tid in (cs[5] or []): atlas_by_technique[tid] = atlas_by_technique.get(tid, 0) + 1
+        except Exception: continue
+    avid = avid or {}
+    avid_latest = avid.get('latest') or []
+    csaf = csaf or {}
+    csaf_providers = csaf.get('providers') or []
+    csaf_weekly = csaf.get('weekly') or []
+    csaf_latest = csaf.get('latest') or []
     sources_registry = load_sources_registry()
     source_status = {}
     for sid, status in advisory_status.items(): source_status[sid] = status
@@ -875,6 +1142,10 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_wat
     _st('exploitdb-csv', bool((exploit or {}).get('edb_cves')), len((exploit or {}).get('edb_cves') or []))
     _st('poc-in-github', bool((exploit or {}).get('poc_counts')), len((exploit or {}).get('poc_counts') or {}))
     _st('cisa-adp-ssvc-kev', bool(ssvc), sum(1 for v in ssvc.values() if v.get('exploitation') or v.get('automatable') or v.get('impact')))
+    _st('atlas-data', bool(atlas_cs), len(atlas_cs), max((c[0] for c in atlas_cs if c[0]), default=None), f"ATLAS {atlas.get('version') or '?'}")
+    _st('avid-db', bool(avid_latest), len(avid_latest), avid_latest[0][0] if avid_latest else None)
+    _st('bsi-csaf-aggregator', bool(csaf_providers), len(csaf_providers), max((p.get('last_updated') or '' for p in csaf_providers), default=None) or None)
+    _st('redhat-csaf', bool(csaf_latest), len(csaf_latest), csaf_latest[0][0] if csaf_latest else None)
     events = [{'date': e['date'], 'label': e['label'], 'week': monday(e['date']).isoformat(), 'frac': round((dt.date.fromisoformat(e['date']).weekday() + .5) / 7, 2)} for e in MANUAL['events']]
     revealed_manual = []
     for line in (HERE / 'mythos_cves_raw.txt').read_text(encoding='utf-8').splitlines():
@@ -912,6 +1183,12 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_wat
         'exploit': exploit_built,
         'ssvc': ssvc,
         'advisories': advisories_out,
+        'atlas': {'version': atlas.get('version'), 'techniques': atlas.get('techniques') or [], 'case_studies': atlas_cs,
+                  'by_year': dict(sorted(atlas_by_year.items())),
+                  'by_technique': dict(sorted(atlas_by_technique.items(), key=lambda x: (-x[1], x[0])))},
+        'ai_incidents': {'source': 'AVID (avidml/avid-db)', 'by_month': avid.get('by_month') or {}, 'latest': avid_latest},
+        'owasp': {'llm_top10_2025': OWASP_LLM_TOP10_2025, 'agentic_top10': OWASP_AGENTIC_TOP10, 'ml_top10': OWASP_ML_TOP10},
+        'csaf': {'providers': csaf_providers, 'weekly': csaf_weekly, 'latest': csaf_latest},
         'sources_registry': sources_registry,
         'source_status': source_status,
     }
@@ -960,6 +1237,9 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_wat
     for cve, info in exploit_built['by_cve'].items(): add('exploit_availability', '', 'msf_edb_poc', cve, '', '', 1, f"msf={info['msf']} edb={info['edb']} poc={info['poc']}")
     for cve, rec in ssvc.items():
         if rec.get('exploitation') or rec.get('automatable') or rec.get('impact'): add('ssvc', '', 'decision', cve, 'CISA-ADP', '', 1, f"exploitation={rec.get('exploitation')} automatable={rec.get('automatable')} impact={rec.get('impact')}")
+    for d, cid, name, target, actor, tids, url in ZW['atlas']['case_studies']: add('atlas_case_study', d, 'ai_attack_case_study', cid, actor, target, 1, f"{name} | techniques={','.join(tids)}")
+    for d, rid, title, url in ZW['ai_incidents']['latest']: add('avid_incident', d, 'ai_incident_report', rid, 'AVID', '', 1, title)
+    for w, n, nx in ZW['csaf']['weekly']: add('csaf_weekly', w, 'advisories', '', 'Red Hat CSAF', '', n, f'exploit_status_flagged={nx}')
     for sid, rows_ in advisories_out.items():
         for d, s, title, link in rows_: add('advisory', d, sid, '', dict((r['id'], r.get('org')) for r in sources_registry).get(sid, sid), '', 1, title)
     with open(ROOT / 'zeroweek-data.csv', 'w', newline='', encoding='utf-8') as f:
@@ -987,7 +1267,7 @@ def write_feed(ZW):
 def main():
     global ARGS
     ap = argparse.ArgumentParser(); ap.add_argument('--offline', action='store_true'); ap.add_argument('--force-eco', action='store_true', help='pull ecosystem counts even without a token (slow, rate-limited)')
-    ap.add_argument('--skip', default='', help='comma list of fetchers to skip: kev,ledger,epoch,msrc,oracle,gh_eco,gh_repos,dotnet,cve_pub,nvd_watchlist,extra_feeds,euvd,epss,p0,exploit,ssvc,advisories')
+    ap.add_argument('--skip', default='', help='comma list of fetchers to skip: kev,ledger,epoch,msrc,oracle,gh_eco,gh_repos,dotnet,cve_pub,nvd_watchlist,extra_feeds,euvd,epss,p0,exploit,ssvc,advisories,atlas,avid,csaf')
     ap.add_argument('--watchlist-limit', type=int, default=None, help='only process the first N watchlist products in fetch_nvd_watchlist (first full run is slow: ~51 products x ~18 windows x 6.5s unkeyed)')
     ARGS = ap.parse_args(); skip = set(x.strip() for x in ARGS.skip.split(',') if x.strip())
     run = lambda name, fn, *a: (cache_get(name) if name in skip else fn(*a))
@@ -1007,8 +1287,11 @@ def main():
     exploit = run('exploit', fetch_exploit, sorted(kev_cves_for_epss))
     ssvc = run('ssvc', fetch_ssvc, sorted(kev_cves_for_epss))
     advisories = run('advisories', fetch_advisories)
+    atlas = run('atlas', fetch_atlas)
+    avid = run('avid', fetch_avid)
+    csaf = run('csaf', fetch_csaf)
     build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_watchlist, extra_feeds,
-          euvd, epss, p0, exploit, ssvc, advisories)
+          euvd, epss, p0, exploit, ssvc, advisories, atlas, avid, csaf)
     (CACHE / 'last_run.log').write_text('\n'.join(LOG), encoding='utf-8')
 
 if __name__ == '__main__':

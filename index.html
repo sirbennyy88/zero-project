@@ -811,6 +811,25 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
   <div class="tbl-scroll tbl-scroll--tall"><table id="revtbl"><thead><tr><th>ID</th><th>Project</th><th>Bug class</th><th>Severity</th><th>Title</th></tr></thead><tbody></tbody></table></div>
   <p id="revfoot" class="note"></p>
 </section>
+
+<section class="panel" id="atlasavid">
+  <div class="panel-head">
+    <div><h2>AI attacks &amp; incidents (MITRE ATLAS, AVID)</h2><p>A different lens from the ledger above: real-world adversarial incidents <em>against</em> AI systems, not bugs found by one. Case studies and technique tags from MITRE's ATLAS knowledge base, plus logged incidents from the AI Vulnerability Database (AVID).</p></div>
+  </div>
+  <div class="two" style="margin-top:var(--s4)">
+    <div>
+      <h3>ATLAS case studies by year</h3>
+      <div class="agebars" id="atlasyears"></div>
+    </div>
+    <div>
+      <h3>Most-cited ATLAS techniques</h3>
+      <div class="duelist" id="atlastech"></div>
+    </div>
+  </div>
+  <h3 style="margin-top:var(--s6)">Latest attacks &amp; incidents</h3>
+  <div class="tbl-scroll tbl-scroll--tall"><table id="aiincitbl"><thead><tr><th>Date</th><th>Source</th><th>Name</th><th>Link</th></tr></thead><tbody></tbody></table></div>
+  <p id="aiincifoot" class="note"></p>
+</section>
 </div>
 
 <!-- ============ VENDORS ============ -->
@@ -910,6 +929,13 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
   </div>
   <div class="tbl-scroll tbl-scroll--tall"><table class="matrix" id="mtable"></table></div>
   <p id="matnote" class="note"></p>
+</section>
+
+<section class="panel" id="owasptax">
+  <div class="panel-head">
+    <div><h2>OWASP GenAI / ML risk taxonomies</h2><p>Three OWASP top-10 risk lists that bear on AI systems specifically — LLM applications, agentic AI, and classic ML. Each chip links to OWASP's own page for that entry.</p></div>
+  </div>
+  <div id="owaspgroups"></div>
 </section>
 
 <section class="panel" id="fwdir">
@@ -1824,6 +1850,47 @@ BUILDERS.ai=function(){
     revDraw();
   });
   revDraw();
+
+  /* --- MITRE ATLAS / AVID: AI attacks & incidents (defensive — keys may not exist yet) --- */
+  try{
+    const ATLAS = D.atlas || {};
+    const BY_YEAR = ATLAS.by_year || {};
+    const atlasYears = Object.keys(BY_YEAR).sort();
+    const ayMax = Math.max(1, ...Object.values(BY_YEAR));
+    const ayEl = el("atlasyears");
+    if(ayEl){
+      ayEl.innerHTML = atlasYears.length ? atlasYears.map(y=>
+        `<div class="r"><span class="y">${esc(y)}</span><span class="b" style="width:${Math.max(2,Math.round(100*BY_YEAR[y]/ayMax))}%"></span><span class="n">${num(BY_YEAR[y])}</span></div>`
+      ).join("") : '<p class="note note--body">No ATLAS case-study counts in this build yet — lands after the next Monday refresh.</p>';
+    }
+
+    const BY_TECH = ATLAS.by_technique || {};
+    const TECH_BY_ID = {};
+    (ATLAS.techniques||[]).forEach(t=>{ if(t && t.id) TECH_BY_ID[t.id]=t; });
+    const topTech = Object.entries(BY_TECH).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const atEl = el("atlastech");
+    if(atEl){
+      atEl.innerHTML = topTech.length ? topTech.map(([tid,count])=>{
+        const t = TECH_BY_ID[tid]||{};
+        return `<div class="d"><div class="top"><a class="pill" href="https://atlas.mitre.org/techniques/${encodeURIComponent(tid)}" target="_blank" rel="noopener">${esc(tid)}</a><span>${esc(t.name||"")}</span></div><div class="bot"><span>${esc(t.tactic||"")}</span><span class="w">${num(count)} case${count===1?"":"s"}</span></div></div>`;
+      }).join("") : '<p class="note note--body">Technique frequencies land after the ATLAS fetcher\'s next run.</p>';
+    }
+
+    const cases = (ATLAS.case_studies||[]).slice().sort((a,b)=> (a&&a[0])<(b&&b[0])?1:-1);
+    const AVID_LATEST = ((D.ai_incidents||{}).latest)||[];
+    const combined = [
+      ...cases.slice(0,10).filter(Boolean).map(c=>({date:c[0]||"",src:"ATLAS",name:c[2]||"",url:c[6]||""})),
+      ...AVID_LATEST.slice(0,10).filter(Boolean).map(a=>({date:a[0]||"",src:"AVID",name:a[2]||"",url:a[3]||""}))
+    ].sort((a,b)=> a.date<b.date?1:-1).slice(0,10);
+    const tbody = document.querySelector("#aiincitbl tbody");
+    if(tbody){
+      tbody.innerHTML = combined.length ? combined.map(r=>
+        `<tr><td class="mono">${esc(r.date)}</td><td><span class="pill">${esc(r.src)}</span></td><td>${esc(r.name)}</td><td>${r.url?`<a href="${esc(r.url)}" target="_blank" rel="noopener">source →</a>`:"—"}</td></tr>`
+      ).join("") : `<tr class="empty-row"><td colspan="4">No ATLAS case studies or AVID incidents in this build yet — available once the data-src fetchers for them have run.</td></tr>`;
+    }
+    const aiFoot = el("aiincifoot");
+    if(aiFoot) aiFoot.textContent = `${cases.length} ATLAS case studies · ${AVID_LATEST.length} AVID incidents tracked${ATLAS.version?` · ATLAS ${esc(ATLAS.version)}`:""}.`;
+  }catch(err){ /* never let missing/malformed ATLAS or AVID data break the AI-found tab */ }
 };
 
 /* ================= vendors tab ================= */
@@ -2071,6 +2138,28 @@ BUILDERS.governance=function(){
     fwStatFilter = fwStatFilter===b.dataset.fwstat ? null : b.dataset.fwstat;
     [...el("fwstat").children].forEach(x=>x.setAttribute("aria-pressed",x.dataset.fwstat===fwStatFilter?"true":"false")); drawFwDir(); });
   el("changedlist").innerHTML=CHANGED_2026.map(c=>`<div class="c"><span class="when">${esc(c.when)}</span><div class="what"><b>${esc(c.title)}</b><p>${esc(c.body)}</p><div class="caveat">${esc(c.caveat)}</div><p><a href="${esc(c.url)}" rel="noopener">${esc(c.link)} →</a></p></div></div>`).join("");
+
+  /* --- OWASP GenAI / ML risk taxonomies (defensive — D.owasp may not exist yet) --- */
+  try{
+    const OWASP = D.owasp || {};
+    const owaspGroups = [
+      {key:"llm_top10_2025", label:"OWASP LLM Top 10 (2025)"},
+      {key:"agentic_top10", label:"OWASP Agentic AI Top 10"},
+      {key:"ml_top10", label:"OWASP ML Top 10"}
+    ];
+    const owaspBox = el("owaspgroups");
+    if(owaspBox){
+      const html = owaspGroups.map(g=>{
+        const items = OWASP[g.key]||[];
+        if(!items.length) return "";
+        return `<h4 style="margin-top:var(--s4)">${esc(g.label)}</h4><div class="chips">${items.map(it=>
+          `<a class="chip" href="${esc((it&&it.url)||"#")}" target="_blank" rel="noopener">${esc((it&&it.id)||"")} ${esc((it&&it.name)||"")}</a>`
+        ).join("")}</div>`;
+      }).join("");
+      owaspBox.innerHTML = html || '<p class="note note--body">OWASP GenAI/ML taxonomies land after the next data refresh.</p>';
+    }
+  }catch(err){ /* never let missing/malformed OWASP data break the Governance tab */ }
+
   drawMatrix(); drawFwDir();
 };
 
@@ -2146,6 +2235,9 @@ FRAMES.forEach(f=>SIDX.push({g:"Framework releases",k:`${f.framework} ${f.vendor
 (D.timeline||[]).forEach(t=>SIDX.push({g:"Timeline",k:t.event.toLowerCase(),m:t.date,t:t.event,d:"",go:()=>{goTab("overview");el("tl").scrollIntoView({behavior:"smooth",block:"start"});}}));
 EUVD_ENTRIES.forEach(e=>{const [date,eid,cves,ven,prod,score,desc]=e; SIDX.push({g:"EUVD (Europe)",k:`${eid} ${(cves||[]).join(" ")} ${ven} ${prod} ${desc}`.toLowerCase(),m:eid,t:`${ven} ${prod} — ${desc}`,d:date,go:()=>{goTab("exploited");el("euvdblock").scrollIntoView({behavior:"smooth",block:"start"});}});});
 Object.entries(ADVISORIES).forEach(([sid,rows])=>(rows||[]).forEach(([date,s,title,link])=>SIDX.push({g:"Advisories",k:`${title} ${ADVISORY_NAMES[sid]||sid}`.toLowerCase(),m:ADVISORY_NAMES[sid]||sid,t:title,d:date,go:()=>{goTab("overview");el("advisories").scrollIntoView({behavior:"smooth",block:"start"});}})));
+((D.atlas||{}).techniques||[]).forEach(t=>{ if(!t||!t.id) return; SIDX.push({g:"AI attacks (ATLAS)",k:`${t.id} ${t.name||""} ${t.tactic||""}`.toLowerCase(),m:t.id,t:`${t.name||""} — ${t.tactic||""}`,d:"",go:()=>{goTab("ai");el("atlasavid").scrollIntoView({behavior:"smooth",block:"start"});}}); });
+((D.atlas||{}).case_studies||[]).forEach(c=>{ if(!c||!c[1]) return; SIDX.push({g:"AI attacks (ATLAS)",k:`${c[1]} ${c[2]||""} ${c[3]||""} ${c[4]||""}`.toLowerCase(),m:c[1],t:`${c[2]||""} — ${c[3]||""}`,d:c[0]||"",go:()=>{goTab("ai");el("atlasavid").scrollIntoView({behavior:"smooth",block:"start"});}}); });
+((D.ai_incidents||{}).latest||[]).forEach(a=>{ if(!a||!a[1]) return; SIDX.push({g:"AI incidents (AVID)",k:`${a[1]} ${a[2]||""}`.toLowerCase(),m:a[1],t:a[2]||"",d:a[0]||"",go:()=>{goTab("ai");el("atlasavid").scrollIntoView({behavior:"smooth",block:"start"});}}); });
 const q=el("q"), sres=el("sres"); let sel=-1, hits=[];
 function runSearch(){ const v=q.value.trim().toLowerCase(); sres.innerHTML=""; sel=-1; hits=[]; if(v.length<2) return; const terms=v.split(/\s+/);
   const scored=SIDX.filter(x=>terms.every(t=>x.k.includes(t))).slice(0,60); if(!scored.length){sres.innerHTML='<div class="none">No match. Try a CVE id, vendor, product, control reference or framework name.</div>';return;}

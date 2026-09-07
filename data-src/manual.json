@@ -2517,6 +2517,116 @@
      ]
     }
    ]
+  },
+  {
+   "id": "owasp-aivss",
+   "name": "OWASP AIVSS (AI Vulnerability Scoring System)",
+   "version": "draft",
+   "date": "2026",
+   "url": "https://aivss.owasp.org",
+   "type": "ai",
+   "relevance": "CVSS-style severity-scoring standard specifically for AI/agentic vulnerabilities; a natural additional severity axis for AI-found disclosures once the spec stabilizes.",
+   "controls": [
+    {
+     "ref": "AIVSS calculator (draft)",
+     "title": "AI/agentic vulnerability severity scoring",
+     "metrics": [
+      7
+     ]
+    }
+   ]
+  },
+  {
+   "id": "oasis-cosai",
+   "name": "OASIS CoSAI (Coalition for Secure AI) Risk Map",
+   "version": "current",
+   "date": "2026",
+   "url": "https://github.com/cosai-oasis/secure-ai-tooling",
+   "type": "ai",
+   "relevance": "Schema-validated YAML risk/control taxonomy for AI systems; used as a tagging vocabulary for AI-found vulnerability disclosures rather than a source of dated records itself.",
+   "controls": [
+    {
+     "ref": "risks.yaml",
+     "title": "AI risk taxonomy with Model-Creator/Model-Consumer responsibility split",
+     "metrics": [
+      7,
+      8
+     ]
+    }
+   ]
+  },
+  {
+   "id": "oasis-csaf-2.0",
+   "name": "OASIS CSAF 2.0 (Common Security Advisory Framework)",
+   "version": "2.0",
+   "date": "2022-11-16",
+   "url": "https://oasis-open.github.io/csaf-documentation/",
+   "type": "security",
+   "relevance": "Machine-readable vendor advisory standard with a spec-guaranteed exploit-status field (threats[].category); Red Hat and the BSI CERT-Bund aggregator publish live CSAF feeds this tracker draws exploited-vulnerability corroboration from.",
+   "controls": [
+    {
+     "ref": "threats[].category == exploit_status",
+     "title": "Structured exploit-status flag per advisory",
+     "metrics": [
+      1,
+      4
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cyclonedx-mlbom",
+   "name": "CycloneDX 1.6 ML-BOM / AIBOM",
+   "version": "1.6",
+   "date": "2024-04",
+   "url": "https://cyclonedx.org/capabilities/mlbom/",
+   "type": "ai",
+   "relevance": "SBOM standard extended with a modelCard component type for declaring AI model provenance and dataset dependencies; the emerging way vendors will declare AI supply-chain composition relevant to AI-vulnerability supply-chain tracking.",
+   "controls": [
+    {
+     "ref": "modelCard component type",
+     "title": "Machine-readable AI/ML model and dataset provenance manifest",
+     "metrics": [
+      8
+     ]
+    }
+   ]
+  },
+  {
+   "id": "owasp-ai-exchange",
+   "name": "OWASP AI Exchange",
+   "version": "current",
+   "date": "2026",
+   "url": "https://owaspai.org",
+   "type": "ai",
+   "relevance": "Community-authored reference of AI threats, controls, and best practices; background reading and terminology anchor for classifying AI-found vulnerability disclosures.",
+   "controls": [
+    {
+     "ref": "Threats and controls catalog",
+     "title": "AI threat/control reference content",
+     "metrics": [
+      7
+     ]
+    }
+   ]
+  },
+  {
+   "id": "owasp-ml-top10",
+   "name": "OWASP Machine Learning Security Top 10",
+   "version": "2023",
+   "date": "2023",
+   "url": "https://github.com/OWASP/www-project-machine-learning-security-top-10",
+   "type": "ai",
+   "relevance": "Fixed 10-item taxonomy of ML-specific attack classes (data poisoning, model inversion, model theft, etc.); a tagging vocabulary for AI-found vulnerability disclosures distinct from the LLM-application-focused Top 10 already tracked.",
+   "controls": [
+    {
+     "ref": "ML01-ML10",
+     "title": "Machine learning attack-class taxonomy",
+     "metrics": [
+      7
+     ]
+    }
+   ]
   }
  ],
  "metrics": [
