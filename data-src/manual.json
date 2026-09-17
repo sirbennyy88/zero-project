@@ -2874,5 +2874,32 @@
   "Copilot for Business", "GitHub Copilot extension", "GitHub Copilot Chat extension",
   "Google Gemini app", "Gemini Nano"
  ],
- "ai_credit_notes": "Matching is word-boundary and case-insensitive against containers.cna.credits[].value/description and containers.cna.descriptions (discovery/finder context only, not affected-product fields) plus references[].url/name. 'AI' alone never matches; an exclusion phrase found overlapping a pattern match voids that match (e.g. an affected-product mention of 'OpenAI Codex' does not credit a discovery). Every match records which field matched (credits|description|reference) and the literal matched text."
+ "ai_credit_notes": "Matching is word-boundary and case-insensitive against containers.cna.credits[].value/description and containers.cna.descriptions (discovery/finder context only, not affected-product fields) plus references[].url/name. 'AI' alone never matches; an exclusion phrase found overlapping a pattern match voids that match (e.g. an affected-product mention of 'OpenAI Codex' does not credit a discovery). Every match records which field matched (credits|description|reference) and the literal matched text.",
+ "microsoft_families": [
+  "Windows", "Windows Server", "Office", ".NET/ASP.NET Core/Visual Studio", "Azure/cloud",
+  "SQL Server", "Exchange", "SharePoint", "Edge/Chromium", "Dynamics/Copilot/AI", "other"
+ ],
+ "dotnet_repos": [
+  "dotnet/efcore", "dotnet/sdk", "dotnet/maui", "dotnet/wpf", "dotnet/winforms"
+ ],
+ "linux_subsystems": {
+  "drm": "drivers/gpu", "gpu": "drivers/gpu",
+  "fs/": "fs", "btrfs": "fs", "ext4": "fs", "xfs": "fs", "nfs": "fs", "cifs": "fs", "overlayfs": "fs", "f2fs": "fs", "9p": "fs",
+  "bpf": "bpf",
+  "mm": "mm", "hugetlb": "mm", "kasan": "mm", "kfence": "mm",
+  "sched": "sched",
+  "usb": "usb",
+  "wifi": "wifi", "mac80211": "wifi", "wireless": "wifi", "ath9k": "wifi", "ath10k": "wifi", "ath11k": "wifi", "ath12k": "wifi", "iwlwifi": "wifi", "rtw88": "wifi", "rtw89": "wifi", "brcmfmac": "wifi", "mt76": "wifi",
+  "bluetooth": "bluetooth", "hci": "bluetooth",
+  "media": "media", "v4l2": "media", "dvb": "media", "uvc": "media",
+  "sound": "sound", "alsa": "sound", "asoc": "sound",
+  "arm64": "arch", "arm": "arch", "x86": "arch", "riscv": "arch", "risc-v": "arch", "powerpc": "arch", "s390": "arch", "mips": "arch", "loongarch": "arch",
+  "crypto": "crypto",
+  "kvm": "kvm",
+  "io_uring": "io_uring",
+  "net": "net", "tcp": "net", "udp": "net", "ipv4": "net", "ipv6": "net", "netfilter": "net", "nf_tables": "net", "bridge": "net", "ethernet": "net", "can": "net",
+  "block": "block", "nvme": "block", "scsi": "block", "md": "block", "dm-": "block", "dm ": "block",
+  "tracing": "tracing", "ftrace": "tracing", "perf": "tracing",
+  "drivers": "drivers"
+ }
 }

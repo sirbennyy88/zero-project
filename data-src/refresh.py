@@ -11,6 +11,10 @@ Every fetcher is independent: if one source is down, the previous cached result 
 """
 import argparse, csv, datetime as dt, gzip, io, json, math, os, pathlib, re, statistics, sys, time, urllib.request, urllib.parse, urllib.error, html as htmlmod, zipfile
 import xml.etree.ElementTree as ET
+import sources_microsoft
+# --- linux module (begin) ---
+import sources_linux
+# --- linux module (end) ---
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -1131,6 +1135,10 @@ CVELIST_ZIP = CACHE / 'cvelist_all.zip'
 CVELIST_DELTA_ZIP = CACHE / 'cvelist_delta.zip'
 AI_SCAN_START_YEAR = 2024
 
+# --- linux module (begin) ---
+EXTRA_SCANNERS = []  # registered by sources_linux.register(); called (cve_id, record_json) for every scanned CVE record
+# --- linux module (end) ---
+
 def _ai_patterns():
     pats = MANUAL.get('ai_credit_patterns', [])
     excl = MANUAL.get('ai_credit_exclusions', [])
@@ -1256,6 +1264,11 @@ def _scan_zip_for_ai_credit(zip_path, compiled, excl_re, known_pub, min_year=AI_
                 if n_seen % 5000 == 0: log(f'[ai_credit] {cid} parse FAILED: {ex!r}')
                 continue
             n_scanned += 1
+            # --- linux module (begin) ---
+            for _scanner in EXTRA_SCANNERS:
+                try: _scanner(cid, j)
+                except Exception as _ex: log(f'[linux] extra scanner failed on {cid}: {_ex!r}')
+            # --- linux module (end) ---
             pub = ((j.get('cveMetadata') or {}).get('datePublished') or '')[:10]
             if pub and cid not in known_pub and cid not in new_pub: new_pub[cid] = pub
             rec = _scan_cve_record(j, compiled, excl_re)
@@ -1371,7 +1384,7 @@ def load_sources_registry():
 
 def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_watchlist, extra_feeds,
           euvd=None, epss=None, p0=None, exploit=None, ssvc=None, advisories=None,
-          atlas=None, avid=None, csaf=None, ai_credit=None):
+          atlas=None, avid=None, csaf=None, ai_credit=None, linux=None):
     data_through = max(e[0] for e in kev['entries']) if kev else TODAY.isoformat()
     cap_week = monday(data_through).isoformat()  # never emit weeks after the last KEV dateAdded
     if ledger and ledger.get('weekly'):
@@ -1497,6 +1510,9 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_wat
         'sources_registry': sources_registry,
         'source_status': source_status,
     }
+    # --- linux module (begin) ---
+    ZW['linux'] = sources_linux.build({'TODAY': TODAY}, linux, ZW)
+    # --- linux module (end) ---
     (ROOT / 'zeroweek-data.js').write_text('window.ZW=' + json.dumps(ZW, ensure_ascii=False, separators=(',', ':')) + ';\n', encoding='utf-8')
     (ROOT / 'zeroweek-data.json').write_text(json.dumps(ZW, ensure_ascii=False, indent=1), encoding='utf-8')
     # tidy CSV
@@ -1552,6 +1568,20 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_wat
     for cve, rec in ZW['ai_found']['index'].items(): add('ai_found_entry', rec.get('pub') or '', rec.get('field') or '', cve, rec.get('cna') or '', rec.get('source') or '', 1, 'patterns=' + ','.join(rec.get('matched') or []))
     for sid, rows_ in advisories_out.items():
         for d, s, title, link in rows_: add('advisory', d, sid, '', dict((r['id'], r.get('org')) for r in sources_registry).get(sid, sid), '', 1, title)
+    # --- microsoft module (begin) ---
+    _ms_ctx = {'http': http, 'cache_get': cache_get, 'cache_put': cache_put, 'cached': cached, 'log': log,
+               'gh': gh, 'MANUAL': MANUAL, 'START': START, 'TODAY': TODAY, 'monday': monday,
+               'months_between': months_between, 'weeks_between': weeks_between}
+    ZW['microsoft'] = sources_microsoft.build(_ms_ctx, globals().get('_MS_FETCHED'), ZW)
+    rows.extend(sources_microsoft.csv_rows(ZW['microsoft']))
+    # ZW['microsoft'] was computed after the initial zeroweek-data.js/.json write above, so
+    # re-serialize both now that it's populated (cheap; keeps this to a single build() hook).
+    (ROOT / 'zeroweek-data.js').write_text('window.ZW=' + json.dumps(ZW, ensure_ascii=False, separators=(',', ':')) + ';\n', encoding='utf-8')
+    (ROOT / 'zeroweek-data.json').write_text(json.dumps(ZW, ensure_ascii=False, indent=1), encoding='utf-8')
+    # --- microsoft module (end) ---
+    # --- linux module (begin) ---
+    rows.extend(sources_linux.csv_rows(ZW['linux']))
+    # --- linux module (end) ---
     with open(ROOT / 'zeroweek-data.csv', 'w', newline='', encoding='utf-8') as f:
         w = csv.writer(f); w.writerow(['dataset', 'period', 'series', 'id', 'vendor_or_project', 'product_or_class', 'value', 'note']); w.writerows(rows)
     write_feed(ZW)
@@ -1595,6 +1625,9 @@ def main():
         except Exception as ex:
             WARNINGS.append(f'{name}: unhandled exception {ex!r} -> cache')
             log(f'[{name}] UNHANDLED EXCEPTION: {ex!r} -> cache'); return cache_get(name)
+    # --- linux module (begin) ---
+    sources_linux.register(EXTRA_SCANNERS)
+    # --- linux module (end) ---
     kev = run('kev', fetch_kev); ledger = run('ledger', fetch_ledger); epoch = run('epoch', fetch_epoch)
     msrc = run('msrc', fetch_msrc); oracle = run('oracle', fetch_oracle)
     eco = run('gh_eco', fetch_gh_eco); repos = run('gh_repos', fetch_gh_repos); dotnet = run('dotnet', fetch_dotnet)
@@ -1615,9 +1648,20 @@ def main():
     avid = run('avid', fetch_avid)
     csaf = run('csaf', fetch_csaf)
     ai_credit = run('ai_credit', fetch_ai_credit)
+    # --- linux module (begin) ---
+    _lx_ctx = {'http': http, 'gh': gh, 'log': log, 'MANUAL': MANUAL, 'TODAY': TODAY,
+               'offline': ARGS.offline, 'kev_entries': (kev or {}).get('entries', [])}
+    lx = run('linux', lambda: sources_linux.fetch(_lx_ctx))
+    # --- linux module (end) ---
+    # --- microsoft module (begin) ---
+    _ms_ctx = {'http': http, 'cache_get': cache_get, 'cache_put': cache_put, 'cached': cached, 'log': log,
+               'gh': gh, 'MANUAL': MANUAL, 'START': START, 'TODAY': TODAY, 'monday': monday,
+               'months_between': months_between, 'weeks_between': weeks_between}
+    globals()['_MS_FETCHED'] = run('microsoft', lambda: sources_microsoft.fetch(_ms_ctx))
+    # --- microsoft module (end) ---
     try:
         build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_watchlist, extra_feeds,
-              euvd, epss, p0, exploit, ssvc, advisories, atlas, avid, csaf, ai_credit)
+              euvd, epss, p0, exploit, ssvc, advisories, atlas, avid, csaf, ai_credit, lx)
     except Exception as ex:
         WARNINGS.append(f'build: FAILED {ex!r} -- zeroweek-data.* left unchanged from the previous run')
         log(f'[build] FAILED: {ex!r} -- outputs NOT overwritten, keeping previous zeroweek-data.*')

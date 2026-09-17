@@ -24,6 +24,8 @@ Browse any week, search any CVE ID, jump to a specific date, download the data, 
 - **CISO view** — an eight-number board-reporting summary computed from the same underlying data as the rest of the page
 - **Time-to-exploit** — median days from a CVE's publication to its addition to the CISA KEV catalog, broken out by year
 - **Exploited** tab now also includes a "what kind of thing is being exploited" category breakdown of KEV additions (edge/network appliance, browser & OS, on-prem collaboration, etc.)
+- **Microsoft** — MSRC Security Update Guide product-family breakdown, zero-days and likelihood hit-rate, .NET release channels and component advisories, plus Azure/cloud CVE and Copilot/AI-feature CVE counts, all keyed off `zeroweek-data.json`'s `microsoft` object (`monthly`, `families`, `likelihood_hit_rate`, `zero_days`, `pt_to_kev`, `bug_age`, `records`, `ai_credited`, `dotnet`, `azure_cloud_cves`, `copilot_ai`, `source_count`) — built by `data-src/sources_microsoft.py`
+- **Linux** — kernel CNA subsystem breakdown, monthly/by-release counts, bug age, stable/LTS branch and syzbot-share stats, and distro patch lag, from the `linux` object (`monthly`, `subsystems`, `by_release`, `bug_age`, `branches`, `kev`, `distro_lag`, `syzbot_share`, `ai_credited`, `android`) — built by `data-src/sources_linux.py`
 
 ### NVD_API_KEY (optional, speeds up the weekly run)
 
@@ -99,6 +101,8 @@ file. Non-fatal issues (a feed returning 0 items, a degraded source) are collect
 ├── og.png                     # Social preview image
 ├── data-src/
 │   ├── refresh.py            # Main refresh pipeline (stdlib Python 3.10+)
+│   ├── sources_microsoft.py  # MSRC SUG / .NET / Azure / Copilot fetch+build module (Microsoft tab)
+│   ├── sources_linux.py      # Kernel CNA / stable branches / distro lag fetch+build module (Linux tab)
 │   ├── build_data.py         # Helper to compile JSON from feeds
 │   ├── manual.json           # Curated facts: events, timeline, ecosystem list, repo list
 │   ├── mythos_cves_raw.txt   # Raw list of Mythos CVE findings

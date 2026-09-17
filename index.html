@@ -461,6 +461,26 @@ section[id],div[id]{scroll-margin-top:120px}
 .agebars .r.cur .b{background:var(--kev)}
 .agebars .r .y{font-family:var(--ff-mono);color:var(--ink-3)}
 .agebars .r .n{font-family:var(--ff-mono);text-align:right;font-variant-numeric:tabular-nums}
+/* .NET support bands: one row per channel on a shared time scale, ticks = security releases */
+.bandscale{position:relative;height:15px;margin:var(--s3) 0 var(--s2) 132px;font-family:var(--ff-mono);font-size:var(--fs-2xs);color:var(--ink-3)}
+.bandscale span{position:absolute;transform:translateX(-50%)}
+.bandrow{display:grid;grid-template-columns:132px 1fr 34px;gap:var(--s3);align-items:center;font-size:var(--fs-sm);padding:2px 0}
+.bandrow .bl{display:flex;align-items:center;gap:var(--s2);font-family:var(--ff-cond);font-weight:600;min-width:0}
+.bandrow .bt{font-family:var(--ff-mono);font-size:var(--fs-2xs);font-weight:500;color:var(--ink-3);border:1px solid var(--line);border-radius:var(--r-xs);padding:0 4px}
+.bandrow .bt.lts{color:var(--myth);border-color:color-mix(in srgb,var(--myth) 45%,transparent)}
+.bandrow .bb{position:relative;height:14px;background:var(--panel-3);border-radius:2px}
+.bandrow .seg{position:absolute;top:0;bottom:0;border-radius:2px;background:var(--myth-2)}
+.bandrow .seg.lts{background:var(--myth)}
+.bandrow .seg.sts{background:repeating-linear-gradient(135deg,var(--myth-2) 0 4px,var(--panel-2) 4px 7px)}
+.bandrow .seg.gone{opacity:.5}
+.bandrow .seg i{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--kev);border-radius:1px}
+.bandrow .bn{font-family:var(--ff-mono);font-size:var(--fs-xs);text-align:right;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.compblk{border-top:1px solid var(--grid);padding:var(--s4) 0}
+.compblk .ch{display:flex;align-items:baseline;gap:var(--s3)}
+.compblk .cn{font-family:var(--ff-cond);font-size:var(--fs-lg);font-weight:600}
+.compblk .cc{font-family:var(--ff-mono);font-size:var(--fs-sm);color:var(--myth)}
+.compblk .cc.zero{color:var(--ink-3)}
+@media (max-width:720px){.bandscale{margin-left:92px}.bandrow{grid-template-columns:92px 1fr 28px}}
 
 /* ============================================================ products */
 .filterrow{display:flex;gap:var(--s3);flex-wrap:wrap;align-items:center;margin-top:var(--s4)}
@@ -636,6 +656,8 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
     <button type="button" role="tab" id="t-ai" data-tab="ai" aria-controls="tab-ai" aria-selected="false" tabindex="-1">AI-found</button>
     <button type="button" role="tab" id="t-vendors" data-tab="vendors" aria-controls="tab-vendors" aria-selected="false" tabindex="-1">Vendors</button>
     <button type="button" role="tab" id="t-products" data-tab="products" aria-controls="tab-products" aria-selected="false" tabindex="-1">Products</button>
+    <button type="button" role="tab" id="t-microsoft" data-tab="microsoft" aria-controls="tab-microsoft" aria-selected="false" tabindex="-1">Microsoft &amp; .NET</button>
+    <button type="button" role="tab" id="t-linux" data-tab="linux" aria-controls="tab-linux" aria-selected="false" tabindex="-1">Linux</button>
     <button type="button" role="tab" id="t-patching" data-tab="patching" aria-controls="tab-patching" aria-selected="false" tabindex="-1">Patching</button>
     <button type="button" role="tab" id="t-frameworks" data-tab="frameworks" aria-controls="tab-frameworks" aria-selected="false" tabindex="-1">Frameworks &amp; ecosystems</button>
     <button type="button" role="tab" id="t-governance" data-tab="governance" aria-controls="tab-governance" aria-selected="false" tabindex="-1">Governance</button>
@@ -911,6 +933,164 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
 </section>
 </div>
 
+<!-- ============ MICROSOFT & .NET ============ -->
+<div class="tp" id="tab-microsoft" role="tabpanel" aria-labelledby="t-microsoft" tabindex="0" hidden>
+<section class="panel" id="msintro">
+  <div class="panel-head">
+    <div><h2>Microsoft &amp; .NET · what actually ships on Patch Tuesday</h2><p>Every CVE Microsoft published through its Security Update Guide, by release month, product family, severity and impact — plus the two flags that matter on release day: <code class="mono">Exploited</code> and the <em>Exploitation More Likely</em> index. Unlike the Patching tab's single monthly total, this view keeps Edge/Chromium entries in the data so you can see how much of a record month they account for, and turn them off.</p></div>
+  </div>
+  <div class="kpis" id="mskpis"></div>
+  <p class="note" id="msasof"></p>
+</section>
+
+<section class="panel" id="msfamily">
+  <div class="panel-head">
+    <div><h2>Patch Tuesday CVEs by product family, monthly since 2016</h2><p>Stacked by the family each CVE's product tag resolves to. Switch the stack to Microsoft's own severity rating or its impact class (RCE, elevation of privilege, spoofing…) — the same CVEs, cut three ways. Chips below the chart drop a family out of the stack.</p></div>
+    <div class="controls">
+      <div class="toggle" role="group" aria-label="Range">
+        <button type="button" aria-pressed="true" data-msrange="2026">2026</button>
+        <button type="button" aria-pressed="false" data-msrange="mythos">Since Mythos</button>
+        <button type="button" aria-pressed="false" data-msrange="all">Since 2016</button>
+      </div>
+      <div class="toggle" role="group" aria-label="Breakdown">
+        <button type="button" aria-pressed="true" data-msmode="families">Family</button>
+        <button type="button" aria-pressed="false" data-msmode="severity">Severity</button>
+        <button type="button" aria-pressed="false" data-msmode="impact">Impact</button>
+      </div>
+    </div>
+  </div>
+  <div class="chart-wrap"><canvas id="mschart"></canvas></div>
+  <div class="chips" id="mschips"></div>
+  <p class="note" id="msnote"></p>
+</section>
+
+<section class="panel" id="msrecords">
+  <div class="panel-head"><div><h2>Record months</h2><p>The twelve largest Patch Tuesday releases Microsoft has ever shipped, by CVE count. Bars in rust are months in the current year.</p></div></div>
+  <div class="agebars" id="msrecbars"></div>
+  <p class="note" id="msrecnote"></p>
+</section>
+
+<section class="panel" id="mszerodays">
+  <div class="panel-head">
+    <div><h2>Zero-days at release · <code class="mono">Exploited: Yes</code> on the day the patch shipped</h2><p>CVEs Microsoft itself flagged as exploited in the wild in the release that fixed them. A KEV pill means CISA later added the same CVE to the Known Exploited Vulnerabilities catalog; the CVE id opens the week browser.</p></div>
+    <div class="controls"><input type="search" id="mszq" class="tfilter" placeholder="Filter zero-days…" aria-label="Filter Microsoft zero-days"></div>
+  </div>
+  <div class="tbl-scroll tbl-scroll--tall"><table id="mszdtbl"><thead><tr><th>Released</th><th>CVE</th><th>Family</th><th>Title</th><th class="num">CVSS</th><th>KEV</th></tr></thead><tbody></tbody></table></div>
+  <p class="note" id="mszdfoot"></p>
+</section>
+
+<section class="panel" id="mshitrate">
+  <div class="panel-head"><div><h2>Does "Exploitation More Likely" predict anything?</h2><p>Microsoft rates every CVE at release on its own exploitability index. Each year's bar is the share of that year's <em>More Likely</em> CVEs that CISA later added to KEV — the index's hit-rate against observed exploitation. The line is how many CVEs carried the rating that year.</p></div></div>
+  <div class="chart-wrap short"><canvas id="mshrchart"></canvas></div>
+  <p class="note" id="mshrnote"></p>
+</section>
+
+<section class="panel" id="msdotnet">
+  <div class="panel-head"><div><h2>.NET · support bands and security releases per channel</h2><p>Each bar runs from a channel's release date to its end of support (endoflife.date); LTS channels are the solid ones, STS the hatched. Every tick is a patch release carrying at least one CVE, from that channel's own <code class="mono">releases.json</code>.</p></div></div>
+  <div id="dnbands"></div>
+  <p class="note" id="dnbandnote"></p>
+</section>
+
+<section class="panel" id="mscomponents">
+  <div class="panel-head"><div><h2>.NET components: what the CVE text actually names</h2><p>MSRC files .NET vulnerabilities under a handful of product tags and names the component, if at all, only in free text. That makes a per-component count honest for some components and empty for others — the empties below are a limitation of the source, not a clean bill of health.</p></div></div>
+  <div id="dncomp"></div>
+  <div id="dnblazor"></div>
+</section>
+
+<section class="panel" id="mscloud">
+  <div class="panel-head"><div><h2>Azure &amp; cloud services · Copilot and AI products</h2><p>Two slices of the same Security Update Guide data: CVEs whose product tag is an Azure or cloud service, and CVEs on Microsoft's AI and Dynamics products. Cloud-service CVEs mostly have no customer-installable patch — Microsoft publishes them for transparency after fixing the service.</p></div></div>
+  <div class="two">
+    <div>
+      <div class="wkhead"><span class="t">Azure &amp; cloud</span><span class="s" id="msazs"></span></div>
+      <div class="tbl-scroll tbl-scroll--tall"><table id="msaztbl"><thead><tr><th>Released</th><th>CVE</th><th>Product</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div>
+      <div class="wkhead"><span class="t">Copilot, Dynamics &amp; AI</span><span class="s" id="mscos"></span></div>
+      <div class="tbl-scroll tbl-scroll--tall"><table id="mscotbl"><thead><tr><th>Released</th><th>CVE</th><th>Product</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </div>
+</section>
+
+<section class="panel" id="msage">
+  <div class="panel-head"><div><h2>Bug age at fix</h2><p>How old the bug was when Microsoft shipped the fix, from the year in the CVE id against the year of the release that fixed it. Microsoft assigns CVE ids close to disclosure, so a median of zero is the expected shape — the mean is where the long-lived ones show up.</p></div></div>
+  <div class="agebars" id="msagebars"></div>
+  <p class="note" id="msagenote"></p>
+</section>
+
+<section class="panel" id="mscompare">
+  <div class="panel-head"><div><h2>Microsoft vs Linux vs Apple · high and critical CVEs per week</h2><p>Published CVE volume by assigning CNA (Epoch AI's cve.org processing, high and critical only). It measures what each vendor <em>published</em>, not what was exploited — the Linux kernel became its own CNA in February 2024, which is most of its step change.</p></div></div>
+  <div class="chart-wrap short"><canvas id="mscmpchart"></canvas></div>
+  <div class="legend" id="mscmplegend"></div>
+  <p class="note" id="mscmpnote"></p>
+</section>
+</div>
+
+<!-- ============ LINUX ============ -->
+<div class="tp" id="tab-linux" role="tabpanel" aria-labelledby="t-linux" tabindex="0" hidden>
+<section class="panel" id="lxintro">
+  <div class="panel-head">
+    <div><h2>Linux kernel · every CVE the kernel assigns itself</h2><p>Since February 2024 the Linux kernel is its own CNA and files a CVE for essentially every fix backported to a stable tree. That is why kernel CVE counts look alarming and why the interesting questions are different ones: which subsystem, which release, how long the bug lived, and whether anyone ever exploited it. Records come from <code class="mono">cvelistV5</code>, releases from kernel.org.</p></div>
+  </div>
+  <div class="kpis" id="lxkpis"></div>
+  <p class="note" id="lxasof"></p>
+</section>
+
+<section class="panel" id="lxsubsystems">
+  <div class="panel-head">
+    <div><h2>Kernel CVEs per month by subsystem</h2><p>Stacked by the subsystem prefix on the fix commit's own subject line (<code class="mono">net:</code>, <code class="mono">drm/amdgpu:</code>, <code class="mono">bpf:</code>…). The eight busiest subsystems are named; everything else folds into "other". The thin line is CVE ids the kernel assigned and then rejected.</p></div>
+    <div class="controls"><div class="toggle" role="group" aria-label="Range"><button type="button" aria-pressed="true" data-lxrange="2026">2026</button><button type="button" aria-pressed="false" data-lxrange="all">Since Feb 2024</button></div></div>
+  </div>
+  <div class="chart-wrap"><canvas id="lxsubchart"></canvas></div>
+  <div class="legend" id="lxsublegend"></div>
+  <p class="note" id="lxsubnote"></p>
+</section>
+
+<section class="panel" id="lxreleases">
+  <div class="panel-head"><div><h2>CVEs per kernel release</h2><p>How many CVEs name each release series as affected or fixed, oldest series first. Longterm (LTS) branches carry more because fixes are backported to them for years after the mainline release.</p></div></div>
+  <div class="chart-wrap short"><canvas id="lxrelchart"></canvas></div>
+  <div class="legend"><span><i class="sw" style="background:var(--myth)"></i>Longterm (LTS) branch</span><span><i class="sw" style="background:var(--myth-2)"></i>Other release series</span></div>
+  <p class="note" id="lxrelnote"></p>
+</section>
+
+<section class="panel" id="lxage">
+  <div class="panel-head"><div><h2>Bug age at fix, by the year the fix landed</h2><p>From the commit that introduced the bug to the commit that fixed it, in years. The bar is the median; the whisker runs from the 25th to the 75th percentile.</p></div></div>
+  <div class="chart-wrap short"><canvas id="lxagechart"></canvas></div>
+  <p class="note" id="lxagenote"></p>
+</section>
+
+<section class="panel" id="lxkev">
+  <div class="panel-head">
+    <div><h2>Kernel and Android CVEs confirmed exploited</h2><p>Every KEV entry whose vendor or product names Linux or Android, with its EPSS probability, the public exploit code known for it, and how long Red Hat and Ubuntu took to ship a fix after the upstream one.</p></div>
+    <div class="controls"><input type="search" id="lxkq" class="tfilter" placeholder="Filter exploited kernel CVEs…" aria-label="Filter exploited kernel CVEs"></div>
+  </div>
+  <div class="tbl-scroll tbl-scroll--tall"><table id="lxkevtbl"><thead><tr><th>Added</th><th>CVE</th><th>Product</th><th>Name</th><th class="num">EPSS</th><th>Exploit code</th><th class="num">Red Hat</th><th class="num">Ubuntu</th></tr></thead><tbody></tbody></table></div>
+  <p class="note" id="lxkevfoot"></p>
+</section>
+
+<section class="panel" id="lxbranches">
+  <div class="panel-head"><div><h2>Stable and longterm branches</h2><p>What kernel.org is tracking right now: mainline, the current stable series, and the longterm branches distributions actually ship. A branch marked end-of-life gets no further fixes, so anything still running it is accumulating unpatched CVEs from the month it stopped.</p></div></div>
+  <div class="fwgrid" id="lxbranchgrid"></div>
+</section>
+
+<section class="panel" id="lxsyzbot">
+  <div class="panel-head"><div><h2>Who found it: syzbot, AI tooling, or a person</h2><p>Share of each year's kernel CVEs credited to the kernel's own continuous fuzzer, to an AI discovery tool, and to everyone else. syzbot has been finding kernel bugs at scale since long before the CNA existed, which makes it the useful baseline for any claim about AI-found kernel bugs.</p></div></div>
+  <div class="chart-wrap short"><canvas id="lxsyzchart"></canvas></div>
+  <p class="note" id="lxsyznote"></p>
+</section>
+
+<section class="panel" id="lxandroid">
+  <div class="panel-head"><div><h2>Android security bulletins</h2><p>Google's monthly bulletin, whose kernel-component rows carry the same upstream CVE ids as the records above.</p></div></div>
+  <div id="lxandroidbody"></div>
+</section>
+
+<section class="panel" id="lxcompare">
+  <div class="panel-head"><div><h2>Linux vs Microsoft vs Apple · high and critical CVEs per week</h2><p>The same CNA series as the Microsoft tab, read from the kernel's side: the February 2024 CNA change, not a change in the kernel's security, is what moves the Linux line.</p></div></div>
+  <div class="chart-wrap short"><canvas id="lxcmpchart"></canvas></div>
+  <div class="legend" id="lxcmplegend"></div>
+  <p class="note" id="lxcmpnote"></p>
+</section>
+</div>
+
 <!-- ============ PATCHING ============ -->
 <div class="tp" id="tab-patching" role="tabpanel" aria-labelledby="t-patching" tabindex="0" hidden>
 <section class="panel" id="patch">
@@ -1052,6 +1232,8 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
   <p><strong>NVD enrichment changed on 15 April 2026.</strong> NVD now fully enriches only KEV, federal and EO 14028 critical-software CVEs, and reclassified roughly 29,000 backlogged pre-March-2026 records as "Not Scheduled". Severity and CVSS coverage outside that scope is systematically thinner from that date on — it affects the fresh-vs-old ratio and vendor severity splits, not the KEV counts themselves.</p>
   <p><strong>Ecosystem and framework counts</strong> are GitHub-reviewed advisories by publication month and advisories published by each repository. Projects that disclose outside GitHub show as zero there. Patch Tuesday counts come straight from Microsoft's CVRF feed, so they can differ by a few from Tenable's write-ups (which also exclude some third-party CVEs).</p>
   <p><strong>Framework mapping</strong> is editorial: the clause list per metric was compiled against each framework's published text, and paraphrased where the primary text is paywalled (ISO 27002, SOC 2 points of focus, CSA AICM detail pages). Draft documents are marked Draft and should not be cited as binding.</p>
+  <p><strong>Microsoft CVE detail</strong> comes from the MSRC Security Update Guide API (per-CVE product tag, severity, impact, <code class="mono">Exploited</code>, <code class="mono">Publicly Disclosed</code> and the exploitability index), with .NET channel support and per-patch CVE lists from <code class="mono">dotnet/core</code> release metadata and endoflife.date. The Microsoft tab <em>keeps</em> Edge/Chromium CVEs, which the Patch Tuesday line on the Patching tab excludes — the two totals differ for that reason. MSRC does not tag at component level, so the Blazor, EF Core, MAUI, WPF and WinForms lists are empty by source limitation, not by absence of bugs.</p>
+  <p><strong>Linux kernel records</strong> are the <code class="mono">cvelistV5</code> entries assigned by the Linux CNA, which the kernel has been since February 2024; subsystems come from the fix commit’s own subject prefix, bug ages from the introducing and fixing commit dates, branches and release dates from <code class="mono">kernel.org/releases.json</code>, and distro lag from Red Hat and Ubuntu advisory dates. The kernel files a CVE for essentially every backported fix, so kernel CVE counts are not comparable with any vendor that files per reported vulnerability. Android bulletin counts are pending: Google publishes that bulletin as HTML only.</p>
   <p><strong>Week boundaries</strong> are ISO Mondays. The latest week is partial until the next Monday refresh.</p>
   </div>
 
@@ -1519,7 +1701,7 @@ const markers = { id:"markers", afterDatasetsDraw(chart){
 }};
 
 /* ================= tab routing ================= */
-const TABS = ["overview","exploited","ai","vendors","products","patching","frameworks","governance","browse","data"];
+const TABS = ["overview","exploited","ai","vendors","products","microsoft","linux","patching","frameworks","governance","browse","data"];
 const BUILDERS = {};
 const BUILT = {};
 let curTab = "overview";
@@ -2439,6 +2621,559 @@ document.addEventListener("keydown",e=>{
 function openCVE(cve){ const e=KEV_ALL.find(x=>x[1]===cve); if(!e) return; cveFilter=null; showWeek(isoMon(e[0]),true); const tr=klist.querySelector(`tr[data-cve="${cve}"]`); if(tr){tr.classList.add("flash");} }
 BUILDERS.browse=function(){ if(!strip.children.length) showWeek(curWeek); };
 
+/* ================= microsoft & .NET tab ================= */
+/* Everything here is defensive: the Microsoft and Linux sections are the newest
+   part of the pipeline, so any key that has not landed yet degrades to a note
+   rather than an exception that takes the whole tab down. */
+const MS          = D.microsoft || {};
+const MS_MONTHLY  = MS.monthly || [];                 // [{month,total,families{},severity{},impact{},exploited,disclosed,more_likely}]
+const MS_FAMS     = MS.families || [];
+const MS_ZD       = MS.zero_days || [];               // [date,cve,family,title,cvss]
+const MS_RECORDS  = MS.records || [];                 // [month,count]
+const MS_HR       = (MS.likelihood_hit_rate || {}).by_year || {};
+const MS_PTKEV    = (MS.pt_to_kev || {}).by_year || {};
+const MS_AGE      = (MS.bug_age || {}).by_year || {};
+const MS_AI       = MS.ai_credited || [];             // [cve,date,family,matched[]]
+const MS_DOTNET   = MS.dotnet || {};
+const MS_CHANNELS = MS_DOTNET.channels || [];
+const MS_COMPS    = MS_DOTNET.components || {};
+const MS_EOL      = (MS_DOTNET.eol || {}).dotnet || [];
+const MS_XREPO    = MS_DOTNET.extra_repo_advisories || {};
+const MS_AZURE    = MS.azure_cloud_cves || [];        // [date,cve,tag,title]
+const MS_COPILOT  = MS.copilot_ai || [];
+const KEV_SET     = new Set(KEV_ALL.map(e => e[1]));
+const MS_FAM_COLOR = {
+  "Windows":"#BF441D", "Windows Server":"#E4B7A4", "Office":"#C9A72E", "Edge/Chromium":"#9AA4B0",
+  ".NET/ASP.NET Core/Visual Studio":"#5B7BD5", "Azure/cloud":"#2C5A87", "Dynamics/Copilot/AI":"#6748BB",
+  "Exchange":"#2C8455", "SQL Server":"#1F8A8A", "SharePoint":"#A8231D", "other":"#78828E" };
+const SEV_COLOR = {Critical:"--crit", Important:"--high", Moderate:"--med", Low:"--low", Unknown:"--unk"};
+const IMPACT_PAL = ["#BF441D","#2C5A87","#6748BB","#2C8455","#C9A72E","#1F8A8A","#A8231D","#9AA4B0","#78828E"];
+const msColor = (mode,key,i) => mode==="families" ? (MS_FAM_COLOR[key] || "#78828E")
+  : mode==="severity" ? css(SEV_COLOR[key] || "--unk") : IMPACT_PAL[i % IMPACT_PAL.length];
+const MS_LAST = MS_MONTHLY.length ? MS_MONTHLY[MS_MONTHLY.length-1] : null;
+const monLabel = m => MONS[+m.slice(5,7)-1] + " " + m.slice(0,4);
+
+/* ---- KPI strip ---- */
+function msKpis(){
+  const box = el("mskpis"); if(!box) return;
+  const yr = String(THIS_YEAR);
+  const zdY   = MS_ZD.filter(z => String(z[0]).startsWith(yr));
+  const zdKev = zdY.filter(z => KEV_SET.has(z[1])).length;
+  const hr    = MS_HR[yr] || null;
+  const ptk   = MS_PTKEV[yr] || null;
+  const aiY   = MS_AI.filter(a => String(a[1]||"").startsWith(yr)).length;
+  const na    = "Available after the next refresh.";
+  const cards = [
+    {s:"--kev", lab:`Patch Tuesday CVEs · ${MS_LAST?monLabel(MS_LAST.month):"latest release"}`,
+     val: MS_LAST ? num(MS_LAST.total) : "—",
+     sub: MS_LAST ? `${num(MS_LAST.families["Edge/Chromium"]||0)} of them Edge/Chromium · ${num(MS_LAST.exploited||0)} flagged exploited at release` : na},
+    {s:"--kev", lab:`Zero-days at release · ${yr}`, val: MS_ZD.length ? num(zdY.length) : "—",
+     sub: MS_ZD.length ? `${zdKev} of ${zdY.length} also in CISA KEV · ${num(MS_ZD.length)} since 2016` : na},
+    {s:"--mark", lab:'"Exploitation More Likely" hit-rate · '+yr,
+     val: hr ? (Math.round((hr.rate||0)*1000)/10)+"<small>%</small>" : "—",
+     sub: hr ? `${num(hr.became_kev)} of ${num(hr.more_likely)} rated More Likely reached KEV` : na},
+    {s:"--mark", lab:"Median days · Patch Tuesday to KEV listing",
+     val: ptk && ptk.median_days!=null ? num(ptk.median_days) : "—",
+     sub: ptk ? `${yr}, across ${num(ptk.n)} Microsoft CVEs that reached KEV` : na},
+    {s:"--myth", lab:"AI-credited Microsoft CVEs", val: MS_AI.length ? num(MS_AI.length) : "—",
+     sub: MS_AI.length ? `${num(aiY)} of them published in ${yr}` : na}
+  ];
+  box.innerHTML = cards.map(c => `<div class="kpi" style="--stripe:var(${c.s})"><div class="lab">${c.lab}</div><div class="val">${c.val}</div><div class="sub">${esc(c.sub)}</div></div>`).join("");
+  if(el("msasof")) el("msasof").textContent = MS.asof
+    ? `Security Update Guide data as of ${fmtLong(MS.asof)}${MS.source_count?` · ${num(MS.source_count)} CVE records scanned`:""}. The current month's release is revised in place by Microsoft all month, so its total can still move.`
+    : "Microsoft data has not shipped in this build yet.";
+}
+
+/* ---- stacked monthly chart ---- */
+let msRange = "2026", msMode = "families", msChart = null;
+const msOff = new Set();
+function msMonths(){
+  const ms = MS_MONTHLY.map(x => x.month);
+  return msRange==="all" ? ms : msRange==="mythos" ? ms.filter(m => m >= MYTHOS_WEEK.slice(0,7)) : ms.filter(m => m.startsWith(THIS_YEAR+""));
+}
+function msKeys(){
+  if(msMode==="families") return MS_FAMS.length ? MS_FAMS.slice() : [...new Set(MS_MONTHLY.flatMap(x => Object.keys(x.families||{})))];
+  const seen = new Set(); MS_MONTHLY.forEach(x => Object.keys(x[msMode]||{}).forEach(k => seen.add(k)));
+  return [...seen].sort();
+}
+function msBucket(m){ return MS_MONTHLY.find(x => x.month===m) || null; }
+function msDatasets(){
+  const ms = msMonths(), keys = msKeys();
+  return keys.filter(k => !(msMode==="families" && msOff.has(k))).map((k,i) => ({
+    type:"bar", label:k, stack:"m", borderRadius:1, barPercentage:.8, categoryPercentage:.86,
+    backgroundColor: msColor(msMode,k,keys.indexOf(k)),
+    data: ms.map(m => { const b = msBucket(m); return b ? ((b[msMode]||{})[k] || 0) : null; })
+  }));
+}
+function msOpts(){
+  const o = baseOpts("CVEs per release month", false);
+  o.scales.x.ticks.callback = function(v){ const m = this.getLabelForValue(v);
+    return msRange==="all" ? (m.endsWith("-01") ? m.slice(0,4) : "") : MONS[+m.slice(5,7)-1]; };
+  o.scales.x.ticks.maxTicksLimit = msRange==="all" ? 14 : 12;
+  o.plugins.tooltip.callbacks.title = i => monLabel(i[0].label);
+  o.plugins.tooltip.filter = i => i.raw;
+  o.plugins.tooltip.callbacks.afterBody = i => { const b = msBucket(i[0].label); return b ? ["Release total: "+num(b.total)] : []; };
+  return o;
+}
+function msChips(){
+  const box = el("mschips"); if(!box) return;
+  if(msMode!=="families"){ box.innerHTML=""; box.hidden = true; return; }
+  box.hidden = false;
+  box.innerHTML = msKeys().map(k => `<button type="button" class="chip" data-msfam="${esc(k)}" aria-pressed="${msOff.has(k)?"false":"true"}" style="--c:${MS_FAM_COLOR[k]||"#78828E"}"><i></i>${esc(k)}</button>`).join("");
+}
+function msNote(){
+  const n = el("msnote"); if(!n) return;
+  const ms = msMonths();
+  let tot = 0, edge = 0;
+  ms.forEach(m => { const b = msBucket(m); if(!b) return; tot += b.total||0; edge += (b.families||{})["Edge/Chromium"]||0; });
+  const share = tot ? Math.round(1000*edge/tot)/10 : 0;
+  const rng = msRange==="all" ? "since April 2016" : msRange==="mythos" ? "since the Mythos Preview" : String(THIS_YEAR);
+  n.textContent = tot
+    ? `Edge/Chromium is ${share}% of the CVEs in view (${num(edge)} of ${num(tot)}, ${rng}) — the record months of ${THIS_YEAR} are substantially an Edge story, and the Patching tab's Patch Tuesday line excludes them entirely. Use the Edge/Chromium chip to drop them and compare like with like.`
+    : "No release months in this range yet.";
+}
+function msRedraw(){ if(!msChart) return; msChart.data.labels = msMonths(); msChart.data.datasets = msDatasets(); msChart.options = msOpts(); msChart.update(); msNote(); }
+
+/* ---- record months ---- */
+function msRecords(){
+  const box = el("msrecbars"); if(!box) return;
+  if(!MS_RECORDS.length){ box.innerHTML = PENDING+'Record months are ranked from <code>ZW.microsoft.records</code>.</div>'; return; }
+  const mx = Math.max(...MS_RECORDS.map(r => r[1]));
+  box.innerHTML = MS_RECORDS.map(r => `<div class="r ${String(r[0]).startsWith(THIS_YEAR+"")?"cur":""}"><span class="y">${esc(monLabel(r[0]))}</span><span class="b" style="width:${Math.max(2,Math.round(100*r[1]/mx))}%"></span><span class="n">${num(r[1])}</span></div>`).join("");
+  const inYear = MS_RECORDS.filter(r => String(r[0]).startsWith(THIS_YEAR+"")).length;
+  if(el("msrecnote")) el("msrecnote").textContent = `${inYear} of the ${MS_RECORDS.length} largest releases on record fall in ${THIS_YEAR}. Counts include Edge/Chromium entries.`;
+}
+
+/* ---- zero-day table ---- */
+function msZdDraw(){
+  const tb = document.querySelector("#mszdtbl tbody"); if(!tb) return;
+  const q = ((el("mszq")||{}).value || "").trim().toLowerCase();
+  const rows = MS_ZD.slice().sort((a,b) => a[0] < b[0] ? 1 : -1)
+    .filter(r => !q || `${r[1]} ${r[2]} ${r[3]}`.toLowerCase().includes(q));
+  tb.innerHTML = rows.length ? rows.map(r => {
+    const kev = KEV_SET.has(r[1]);
+    return `<tr><td class="mono">${esc(r[0])}</td><td><a class="pill fresh" href="#tab=browse&cve=${esc(r[1])}">${esc(r[1])}</a></td><td>${esc(r[2]||"")}</td><td class="dim">${esc(r[3]||"")}</td><td class="num mono">${r[4]==null?"—":r[4]}</td><td>${kev?'<span class="pill over">KEV</span>':'<span class="pill old">not in KEV</span>'}</td></tr>`;
+  }).join("") : `<tr class="empty-row"><td colspan="6">${MS_ZD.length?"No zero-day matches that filter. Try a CVE id, a product family or a word from the title.":"Microsoft zero-day flags arrive with the next pipeline run."}</td></tr>`;
+  const kevN = rows.filter(r => KEV_SET.has(r[1])).length;
+  if(el("mszdfoot")) el("mszdfoot").textContent = rows.length
+    ? `${rows.length} CVE${rows.length===1?"":"s"} shown · ${kevN} also listed in CISA KEV. Microsoft flags exploitation on its own evidence, so a CVE can be marked exploited here and never reach KEV.`
+    : "";
+}
+
+/* ---- likelihood hit-rate ---- */
+let msHrChart = null;
+function msHrDraw(){
+  const cv = el("mshrchart"); if(!cv) return;
+  const years = Object.keys(MS_HR).sort();
+  if(!years.length){ cv.parentElement.innerHTML = PENDING+'The exploitability-index hit-rate needs <code>ZW.microsoft.likelihood_hit_rate</code>.</div>'; return; }
+  const o = baseOpts("% later added to KEV", false);
+  o.scales.y.stacked = false; o.scales.x.stacked = false;
+  o.scales.y2 = {position:"right", beginAtZero:true, grid:{display:false}, border:{display:false},
+    ticks:{color:css("--ink-3"), font:AXIS_FONT, precision:0}, title:{display:true, text:"CVEs rated More Likely", color:css("--ink-3"), font:{size:11}}};
+  o.plugins.tooltip.callbacks.afterBody = i => { const h = MS_HR[years[i[0].dataIndex]]; return h ? [`${num(h.became_kev)} of ${num(h.more_likely)} reached KEV`] : []; };
+  msHrChart = new Chart(cv, {data:{labels:years, datasets:[
+    {type:"bar", label:"% reaching KEV", data:years.map(y => Math.round(1000*(MS_HR[y].rate||0))/10), backgroundColor:css("--mark"), borderRadius:2, barPercentage:.7, categoryPercentage:.8},
+    {type:"line", label:"rated More Likely", data:years.map(y => MS_HR[y].more_likely), borderColor:css("--ink-3"), backgroundColor:css("--ink-3"), borderWidth:1.5, pointRadius:2, tension:.3, yAxisID:"y2"}
+  ]}, options:o});
+  const best = years.slice().sort((a,b) => (MS_HR[b].rate||0) - (MS_HR[a].rate||0))[0];
+  const cur = MS_HR[String(THIS_YEAR)];
+  if(el("mshrnote")) el("mshrnote").textContent =
+    `Best year for the index was ${best} at ${Math.round(1000*(MS_HR[best].rate||0))/10}%. `+
+    (cur ? `In ${THIS_YEAR} just ${num(cur.became_kev)} of ${num(cur.more_likely)} More Likely CVEs have reached KEV so far (${Math.round(1000*(cur.rate||0))/10}%) — the current year is the least settled, since KEV listings can follow a release by months. ` : "")+
+    `Read it as a triage prior, not a prediction: the rating is assigned at release from Microsoft's own code analysis, while KEV records what was observed.`;
+}
+
+/* ---- .NET support bands ---- */
+function dnBands(){
+  const box = el("dnbands"); if(!box) return;
+  if(!MS_CHANNELS.length){ box.innerHTML = PENDING+'.NET channel bands need <code>ZW.microsoft.dotnet.channels</code>.</div>'; return; }
+  const eolBy = {}; MS_EOL.forEach(r => { if(r && r.cycle) eolBy[String(r.cycle)] = r; });
+  const startOf = ch => { const e = eolBy[String(ch.channel).replace(/\.0$/,"")] || {};
+    const secs = (ch.security_releases||[]).map(s => s[0]).filter(Boolean).sort();
+    return e.releaseDate || secs[0] || ch.latest_date || null; };
+  const rows = MS_CHANNELS.map(ch => ({ch, start:startOf(ch), end: ch.eol || TODAY})).filter(r => r.start);
+  if(!rows.length){ box.innerHTML = PENDING+'No .NET channel carries a usable release date yet.</div>'; return; }
+  const lo = rows.reduce((a,r) => r.start < a ? r.start : a, rows[0].start);
+  const hi = rows.reduce((a,r) => r.end > a ? r.end : a, rows[0].end);
+  const t = s => Date.parse(s+"T00:00:00Z");
+  const span = Math.max(1, t(hi) - t(lo));
+  const pos = s => Math.max(0, Math.min(100, 100*(t(s)-t(lo))/span));
+  const years = []; for(let y = +lo.slice(0,4)+1; y <= +hi.slice(0,4); y += 3) years.push(y);
+  box.innerHTML =
+    `<div class="bandscale">${years.map(y => `<span style="left:${pos(y+"-01-01")}%">${y}</span>`).join("")}</div>` +
+    rows.map(r => {
+      const lts = r.ch.release_type === "lts";
+      const eolPassed = r.ch.eol && r.ch.eol < TODAY;
+      const ticks = (r.ch.security_releases||[]).filter(s => s[0] && s[0] >= lo && s[0] <= hi)
+        .map(s => `<i style="left:${pos(s[0])}%" title="${esc(s[1]||"")} · ${esc(s[0])} · ${(s[2]||[]).length} CVE${(s[2]||[]).length===1?"":"s"}"></i>`).join("");
+      const left = pos(r.start), right = pos(r.end);
+      return `<div class="bandrow"><span class="bl">.NET ${esc(r.ch.channel)}<span class="bt ${lts?"lts":"sts"}">${lts?"LTS":"STS"}</span></span>`+
+        `<span class="bb"><span class="seg ${lts?"lts":"sts"} ${eolPassed?"gone":""}" style="left:${left}%;width:${Math.max(.7,right-left)}%">${ticks}</span></span>`+
+        `<span class="bn">${(r.ch.security_releases||[]).length}</span></div>`;
+    }).join("");
+  const live = MS_CHANNELS.filter(c => c.eol && c.eol >= TODAY).sort((a,b) => a.eol < b.eol ? -1 : 1);
+  if(el("dnbandnote")) el("dnbandnote").textContent =
+    `Right-hand number is security releases shipped on that channel. `+
+    (live.length ? `Next channel out of support: .NET ${live[0].channel} on ${fmtLong(live[0].eol)}${live[1] && live[1].eol===live[0].eol ? ` — and .NET ${live[1].channel} the same day` : ""}. ` : "")+
+    `A tick is a patch release carrying at least one CVE; EOL dates come from endoflife.date and match Microsoft's own support policy.`;
+}
+
+/* ---- .NET components ---- */
+const DN_KW = /\b(blazor|signalr|razor|components?|webassembly)\b/i;
+function dnComponents(){
+  const box = el("dncomp"); if(!box) return;
+  const keys = Object.keys(MS_COMPS);
+  if(!keys.length){ box.innerHTML = PENDING+'Component counts need <code>ZW.microsoft.dotnet.components</code>.</div>'; return; }
+  const LABEL = {aspnetcore:"ASP.NET Core", kestrel:"Kestrel", signalr:"SignalR", blazor:"Blazor", efcore:"EF Core", runtime:".NET runtime", maui:".NET MAUI", wpf:"WPF", winforms:"WinForms"};
+  const order = ["runtime","aspnetcore","kestrel","signalr","blazor","efcore","maui","wpf","winforms"].filter(k => k in MS_COMPS)
+    .concat(keys.filter(k => ["runtime","aspnetcore","kestrel","signalr","blazor","efcore","maui","wpf","winforms"].indexOf(k) < 0));
+  box.innerHTML = order.map(k => {
+    const rows = MS_COMPS[k] || [];
+    const body = rows.length
+      ? `<div class="tbl-scroll"><table><thead><tr><th>Released</th><th>CVE</th><th>Title</th><th class="num">CVSS</th><th>Severity</th></tr></thead><tbody>`+
+        rows.slice().sort((a,b) => a[0] < b[0] ? 1 : -1).slice(0,12).map(r =>
+          `<tr><td class="mono">${esc(r[0])}</td><td><a class="pill" href="https://nvd.nist.gov/vuln/detail/${esc(r[1])}" target="_blank" rel="noopener">${esc(r[1])}</a></td><td class="dim">${esc(r[2]||"")}</td><td class="num mono">${r[3]==null?"—":r[3]}</td><td>${r[4]&&r[4]!=="Unknown"?`<span class="pill sev-${String(r[4]).toLowerCase()==="critical"?"critical":String(r[4]).toLowerCase()==="important"?"high":"medium"}">${esc(r[4])}</span>`:'<span class="pill old">unrated</span>'}</td></tr>`).join("")+
+        `</tbody></table></div>`+(rows.length>12?`<p class="note note--tight" style="margin-top:var(--s2)">Newest 12 of ${num(rows.length)} shown.</p>`:"")
+      : `<p class="note note--tight" style="margin-top:var(--s2)">No CVE names this component. MSRC files these under the <code class="mono">.NET</code> and <code class="mono">ASP.NET Core</code> tags and its descriptions rarely name a component, so a zero here means "the source does not say", not "no vulnerabilities".</p>`;
+    return `<div class="compblk"><div class="ch"><span class="cn">${esc(LABEL[k]||k)}</span><span class="cc ${rows.length?"":"zero"}">${rows.length}</span></div>${body}</div>`;
+  }).join("");
+}
+function dnBlazorFallback(){
+  const box = el("dnblazor"); if(!box) return;
+  const hits = [];
+  DOTNET_ITEMS.map(dnRow).forEach(r => { if(DN_KW.test(r.title)) hits.push({date:r.date, cve:r.cve, title:r.title, src:"dotnet/announcements"}); });
+  Object.entries(MS_COMPS).forEach(([k,rows]) => (rows||[]).forEach(r => { if(DN_KW.test(String(r[2]||""))) hits.push({date:r[0], cve:r[1], title:r[2], src:"MSRC · "+k}); }));
+  const seen = new Set();
+  const uniq = hits.filter(h => { const id = h.cve || h.title; if(seen.has(id)) return false; seen.add(id); return true; })
+    .sort((a,b) => a.date < b.date ? 1 : -1);
+  const repoRows = Object.entries(Object.assign({}, MS_XREPO,
+      {"dotnet/aspnetcore": (REPO["dotnet/aspnetcore"]||{}).months || {}, "dotnet/runtime": (REPO["dotnet/runtime"]||{}).months || {}}))
+    .map(([repo,months]) => [repo, Object.values(months||{}).reduce((s,v) => s+v, 0)])
+    .filter(r => r[1] > 0).sort((a,b) => b[1]-a[1]);
+  const fact = FRAMES.find(f => /\.NET/.test(f.framework || ""));
+  box.innerHTML = `<div class="panel-head" style="margin-top:var(--s6)"><div><h3 style="margin:0">Blazor, SignalR and Razor components, the honest way</h3>`+
+    `<p class="note note--body" style="margin-top:var(--s2)">Because MSRC does not tag at component level, everything below is a keyword match on advisory titles — a heuristic, not an authoritative component index.</p></div></div>`+
+    (uniq.length
+      ? `<div class="tbl-scroll"><table><thead><tr><th>Date</th><th>CVE</th><th>Advisory</th><th>Source</th></tr></thead><tbody>`+
+        uniq.slice(0,30).map(h => `<tr><td class="mono">${esc(h.date||"")}</td><td>${h.cve?`<a class="pill" href="https://nvd.nist.gov/vuln/detail/${esc(h.cve)}" target="_blank" rel="noopener">${esc(h.cve)}</a>`:'<span class="pill old">no id</span>'}</td><td class="dim">${esc(h.title||"")}</td><td class="micro">${esc(h.src)}</td></tr>`).join("")+
+        `</tbody></table></div>`
+      : `<p class="note note--body">Nothing in <code class="mono">dotnet/announcements</code> or the MSRC component lists mentions Blazor, SignalR, Razor or Components by name in its title — which is exactly the gap described above, not an absence of bugs.</p>`)+
+    (repoRows.length ? `<p class="note">Repository advisories, where the component detail actually lives: ${repoRows.map(r => `<span class="pill">${esc(r[0])} · ${r[1]}</span>`).join(" ")} — these are counts only; the advisory titles are not in the data contract, so they cannot be keyword-filtered here.</p>` : "")+
+    (fact ? `<div class="fact" style="margin-top:var(--s4)"><div class="fh"><span class="fn">${esc(fact.framework)}</span><span class="fv">${num(fact.count)}</span></div><p>${esc(fact.note)}</p><p class="meta">${esc(fact.vendor)} · ${esc(fact.date)} · hand-curated</p></div>` : "");
+}
+
+/* ---- Azure / Copilot tables ---- */
+function msCloudTables(){
+  const fill = (sel, rows, label) => {
+    const tb = document.querySelector(sel+" tbody"); if(!tb) return;
+    tb.innerHTML = rows.length
+      ? rows.slice().sort((a,b) => a[0] < b[0] ? 1 : -1).slice(0,200).map(r =>
+          `<tr><td class="mono">${esc(r[0])}</td><td><a class="pill" href="https://nvd.nist.gov/vuln/detail/${esc(r[1])}" target="_blank" rel="noopener">${esc(r[1])}</a></td><td class="dim" title="${esc(r[3]||"")}">${esc(r[2]||"")}</td></tr>`).join("")
+      : `<tr class="empty-row"><td colspan="3">${label} CVEs arrive with the next pipeline run.</td></tr>`;
+  };
+  fill("#msaztbl", MS_AZURE, "Azure");
+  fill("#mscotbl", MS_COPILOT, "Copilot and AI product");
+  const yr = String(THIS_YEAR);
+  const say = (id, rows) => { if(el(id)) el(id).textContent = rows.length
+    ? `${num(rows.filter(r => String(r[0]).startsWith(yr)).length)} in ${yr} · ${num(rows.length)} since 2016${rows.length>200?" · 200 shown":""}` : ""; };
+  say("msazs", MS_AZURE); say("mscos", MS_COPILOT);
+}
+
+/* ---- bug age ---- */
+function msAge(){
+  const box = el("msagebars"); if(!box) return;
+  const years = Object.keys(MS_AGE).sort();
+  if(!years.length){ box.innerHTML = PENDING+'Bug age needs <code>ZW.microsoft.bug_age</code>.</div>'; return; }
+  const mx = Math.max(.01, ...years.map(y => MS_AGE[y].mean || 0));
+  box.innerHTML = years.map(y => `<div class="r ${+y===THIS_YEAR?"cur":""}"><span class="y">${y}</span><span class="b" style="width:${Math.max(2,Math.round(100*(MS_AGE[y].mean||0)/mx))}%"></span><span class="n" title="${num(MS_AGE[y].n)} CVEs">${(MS_AGE[y].mean||0).toFixed(2)}y</span></div>`).join("");
+  const cur = MS_AGE[String(THIS_YEAR)];
+  if(el("msagenote")) el("msagenote").textContent = `Bars are the mean age in years; the right-hand figure carries the CVE count on hover. `+
+    (cur ? `Median age in ${THIS_YEAR} is ${cur.median} year${cur.median===1?"":"s"} across ${num(cur.n)} CVEs — Microsoft assigns and publishes in the same year almost every time, so the mean of ${cur.mean} is carried by a small tail of much older bugs. ` : "")+
+    `Compare the Linux tab, where the same measure runs to a decade because kernel CVE ids are assigned when the fix lands, not when the bug was written.`;
+}
+
+/* ---- shared CNA comparison ---- */
+const CMP_SERIES = [["Microsoft","--kev"],["Linux","--myth"],["Apple","--mark"]];
+function cmpChart(canvasId, legendId, noteId){
+  const cv = el(canvasId); if(!cv) return null;
+  const have = CMP_SERIES.filter(([n]) => CNA[n]);
+  if(!have.length || !CNA_WEEKS.length){
+    cv.parentElement.innerHTML = PENDING+'The vendor comparison reads weekly high/critical counts from <code>ZW.cna.series</code>.</div>';
+    if(el(legendId)) el(legendId).innerHTML = ""; return null;
+  }
+  const weeks = CNA_WEEKS.filter(w => w >= "2022-01-03");
+  const o = baseOpts("high/critical CVEs per week", true);
+  o.scales.y.stacked = false; o.scales.x.stacked = false;
+  const ch = new Chart(cv, {data:{labels:weeks, datasets:have.map(([n,c]) => ({
+    type:"line", label:n, data:weeks.map(w => (CNA[n]||{})[w] ?? 0),
+    borderColor:css(c), backgroundColor:css(c), borderWidth:1.6, pointRadius:0, tension:.25
+  }))}, options:o, plugins:[markers]});
+  if(el(legendId)) el(legendId).innerHTML = have.map(([n,c]) => `<span><i class="sw" style="background:var(${c})"></i>${n} (CNA)</span>`).join("")+`<span><i class="sw dash"></i>Model releases</span>`;
+  if(el(noteId)){
+    const last52 = weeks.slice(-52);
+    const tot = n => last52.reduce((s,w) => s+((CNA[n]||{})[w]||0), 0);
+    el(noteId).textContent = "Last 52 weeks: "+have.map(([n]) => `${n} ${num(tot(n))}`).join(" · ")+
+      ". Counts are CVEs each CNA published at high or critical severity, not vulnerabilities found or exploited.";
+  }
+  return ch;
+}
+
+BUILDERS.microsoft = function(){
+  msKpis();
+  if(MS_MONTHLY.length){
+    msChart = new Chart(el("mschart"), {data:{labels:msMonths(), datasets:msDatasets()}, options:msOpts()});
+    msChips(); msNote();
+  } else {
+    el("mschart").parentElement.innerHTML = PENDING+'The Patch Tuesday family breakdown reads <code>ZW.microsoft.monthly</code>.</div>';
+    if(el("mschips")) el("mschips").hidden = true;
+    if(el("msnote")) el("msnote").textContent = "";
+  }
+  msRecords(); msZdDraw(); msHrDraw(); dnBands(); dnComponents(); dnBlazorFallback(); msCloudTables(); msAge();
+  cmpChart("mscmpchart","mscmplegend","mscmpnote");
+};
+document.querySelectorAll("[data-msrange]").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("[data-msrange]").forEach(x => x.setAttribute("aria-pressed","false"));
+  b.setAttribute("aria-pressed","true"); msRange = b.dataset.msrange; msRedraw(); }));
+document.querySelectorAll("[data-msmode]").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("[data-msmode]").forEach(x => x.setAttribute("aria-pressed","false"));
+  b.setAttribute("aria-pressed","true"); msMode = b.dataset.msmode; msChips(); msRedraw(); }));
+if(el("mschips")) el("mschips").addEventListener("click", e => {
+  const b = e.target.closest("[data-msfam]"); if(!b) return;
+  const k = b.dataset.msfam;
+  if(msOff.has(k)) msOff.delete(k); else msOff.add(k);
+  b.setAttribute("aria-pressed", msOff.has(k) ? "false" : "true"); msRedraw(); });
+if(el("mszq")) el("mszq").addEventListener("input", msZdDraw);
+
+/* ================= linux tab ================= */
+const LX            = D.linux || {};
+const LX_MONTHLY    = LX.monthly || [];               // [{month,total,subsystems{},rejected}]
+const LX_SUBS       = LX.subsystems || [];
+const LX_RELEASE    = LX.by_release || {};            // {series:{n,date}}
+const LX_AGE        = (LX.bug_age || {}).by_year || {};
+const LX_BRANCHES   = LX.branches || [];              // [{version,type,date,eol,iseol}]
+const LX_KEV        = LX.kev || [];                   // [added,cve,product,name,epss,flags[]]
+const LX_LAG        = LX.distro_lag || [];            // [cve,upstream,redhat,ubuntu,debian,lag_min]
+const LX_SYZ        = (LX.syzbot_share || {}).by_year || {};
+const LX_AI         = LX.ai_credited || [];           // [cve,pub,subsystem,matched[]]
+const LX_ANDROID    = (LX.android || {}).monthly || [];
+const LX_PAL = ["#BF441D","#2C5A87","#6748BB","#2C8455","#C9A72E","#1F8A8A","#A8231D","#C4471F","#9AA4B0"];
+const LX_LAST = LX_MONTHLY.length ? LX_MONTHLY[LX_MONTHLY.length-1] : null;
+const dayYears = d => Math.round((d/365.25)*10)/10;
+const verKey = v => { const p = String(v).split("."); return (+p[0]||0)*1000 + (+p[1]||0); };
+const LTS_SERIES = new Set(LX_BRANCHES.filter(b => b.type === "longterm").map(b => String(b.version).split(".").slice(0,2).join(".")));
+const lagDays = (a,b) => { if(!a || !b) return null;
+  return Math.round((Date.parse(b+"T00:00:00Z") - Date.parse(a+"T00:00:00Z"))/86400000); };
+const LX_LAG_BY = {}; LX_LAG.forEach(r => { LX_LAG_BY[r[0]] = r; });
+
+function lxKpis(){
+  const box = el("lxkpis"); if(!box) return;
+  const yr = String(THIS_YEAR);
+  const peak = Object.entries(LX_RELEASE).sort((a,b) => (b[1].n||0)-(a[1].n||0))[0] || null;
+  const age = LX_AGE[yr] || LX_AGE[Object.keys(LX_AGE).sort().pop()] || null;
+  const ageYear = LX_AGE[yr] ? yr : Object.keys(LX_AGE).sort().pop();
+  const withExploit = LX_KEV.filter(k => (k[5]||[]).length).length;
+  const syzYears = Object.keys(LX_SYZ).sort();
+  const syzY = syzYears.length ? syzYears[syzYears.length-1] : null;
+  const na = "Available after the next refresh.";
+  const cards = [
+    {s:"--kev", lab:`Kernel CVEs · ${LX_LAST?monLabel(LX_LAST.month):"latest month"}`, val: LX_LAST ? num(LX_LAST.total) : "—",
+     sub: LX_LAST ? `${num(LX_LAST.rejected||0)} CVE ids rejected the same month · ${num(LX_MONTHLY.reduce((s,x)=>s+x.total,0))} since the kernel became a CNA` : na},
+    {s:"--myth", lab:"Busiest release series", val: peak ? num(peak[1].n) : "—",
+     sub: peak ? `Linux ${peak[0]}${LTS_SERIES.has(peak[0])?" (LTS)":""} — fixes keep landing on longterm branches for years` : na},
+    {s:"--mark", lab:`Median bug age at fix · ${ageYear||""}`, val: age ? dayYears(age.median)+"<small>y</small>" : "—",
+     sub: age ? `${Math.round((age.share_gt5y||0)*100)}% older than 5 years · ${Math.round((age.share_gt10y||0)*100)}% older than 10 · n=${num(age.n)}` : na},
+    {s:"--kev", lab:"Kernel &amp; Android CVEs in CISA KEV", val: LX_KEV.length ? num(LX_KEV.length) : "—",
+     sub: LX_KEV.length ? `${num(withExploit)} have public exploit code (Metasploit, Exploit-DB or a published PoC)` : na},
+    {s:"--myth", lab:`Found by syzbot · ${syzY||""}`, val: syzY ? Math.round((LX_SYZ[syzY]||0)*1000)/10+"<small>%</small>" : "—",
+     sub: syzY ? `of that year's kernel CVEs credited to the kernel's own fuzzer` : na}
+  ];
+  box.innerHTML = cards.map(c => `<div class="kpi" style="--stripe:var(${c.s})"><div class="lab">${c.lab}</div><div class="val">${c.val}</div><div class="sub">${esc(c.sub)}</div></div>`).join("");
+  if(el("lxasof")) el("lxasof").textContent = LX.asof
+    ? `Kernel CVE index as of ${fmtLong(LX.asof)}${(LX.bug_age||{}).sample_n?` · bug age measured on ${num(LX.bug_age.sample_n)} CVEs whose introducing commit could be dated`:""}. The current month is partial.`
+    : "Linux kernel data has not shipped in this build yet.";
+}
+
+/* ---- subsystem stack ---- */
+let lxRange = "2026", lxSubChart = null;
+const LX_TOP = (() => {
+  const tot = {}; LX_MONTHLY.forEach(m => Object.entries(m.subsystems||{}).forEach(([s,v]) => { tot[s] = (tot[s]||0)+v; }));
+  return Object.entries(tot).filter(([s]) => s !== "other").sort((a,b) => b[1]-a[1]).slice(0,8).map(r => r[0]);
+})();
+const lxMonths = () => { const ms = LX_MONTHLY.map(x => x.month);
+  return lxRange === "all" ? ms : ms.filter(m => m.startsWith(THIS_YEAR+"")); };
+function lxSubDatasets(){
+  const ms = lxMonths();
+  const keys = LX_TOP.concat(["other"]);
+  const ds = keys.map((k,i) => ({type:"bar", label:k === "other" ? "other subsystems" : k, stack:"s",
+    backgroundColor: k === "other" ? "#9AA4B0" : LX_PAL[i % LX_PAL.length], borderRadius:1, barPercentage:.8, categoryPercentage:.86,
+    data: ms.map(m => { const b = LX_MONTHLY.find(x => x.month===m); if(!b) return null;
+      if(k !== "other") return (b.subsystems||{})[k] || 0;
+      return Object.entries(b.subsystems||{}).filter(([s]) => LX_TOP.indexOf(s) < 0).reduce((s,[,v]) => s+v, 0); })}));
+  ds.push({type:"line", label:"rejected CVE ids", data: ms.map(m => { const b = LX_MONTHLY.find(x => x.month===m); return b ? (b.rejected||0) : null; }),
+    borderColor:css("--ink-3"), backgroundColor:css("--ink-3"), borderWidth:1.2, pointRadius:0, tension:.3, borderDash:[4,3]});
+  return ds;
+}
+function lxSubOpts(){
+  const o = baseOpts("kernel CVEs per month", false);
+  o.scales.x.ticks.callback = function(v){ const m = this.getLabelForValue(v);
+    return lxRange === "all" ? (m.endsWith("-01") ? m.slice(0,4) : MONS[+m.slice(5,7)-1].slice(0,1)) : MONS[+m.slice(5,7)-1]; };
+  o.plugins.tooltip.callbacks.title = i => monLabel(i[0].label);
+  o.plugins.tooltip.filter = i => i.raw;
+  return o;
+}
+function lxSubNote(){
+  const n = el("lxsubnote"); if(!n) return;
+  const ms = lxMonths(); let tot = 0, rej = 0;
+  ms.forEach(m => { const b = LX_MONTHLY.find(x => x.month===m); if(!b) return; tot += b.total||0; rej += b.rejected||0; });
+  const first = LX_MONTHLY.length ? LX_MONTHLY[0].month : "";
+  n.textContent = tot
+    ? `${num(tot)} kernel CVEs in view, ${num(rej)} rejected ids alongside them. The series starts at ${first?monLabel(first):"Feb 2024"}, when the kernel began assigning its own CVEs — there is no comparable "before" to plot, because almost none of these fixes would previously have received a CVE at all.`
+    : "No months in this range yet.";
+}
+
+/* ---- CVEs per release ---- */
+let lxRelChart = null;
+function lxRelDraw(){
+  const cv = el("lxrelchart"); if(!cv) return;
+  const keys = Object.keys(LX_RELEASE).sort((a,b) => verKey(a)-verKey(b));
+  if(!keys.length){ cv.parentElement.innerHTML = PENDING+'Per-release counts need <code>ZW.linux.by_release</code>.</div>'; return; }
+  const o = baseOpts("CVEs naming this series", false);
+  o.scales.y.stacked = false; o.scales.x.stacked = false;
+  o.plugins.tooltip.callbacks.afterBody = i => { const k = keys[i[0].dataIndex], r = LX_RELEASE[k];
+    return [(LTS_SERIES.has(k) ? "Longterm (LTS) branch" : "Not a tracked LTS branch"), r.date ? "latest release "+r.date : "no release date in kernel.org's current list"]; };
+  lxRelChart = new Chart(cv, {data:{labels:keys, datasets:[{type:"bar", label:"CVEs",
+    data: keys.map(k => LX_RELEASE[k].n || 0), borderRadius:2, barPercentage:.82, categoryPercentage:.88,
+    backgroundColor: keys.map(k => LTS_SERIES.has(k) ? css("--myth") : css("--myth-2"))}]}, options:o});
+  const lts = keys.filter(k => LTS_SERIES.has(k));
+  const top = keys.slice().sort((a,b) => (LX_RELEASE[b].n||0)-(LX_RELEASE[a].n||0))[0];
+  if(el("lxrelnote")) el("lxrelnote").textContent =
+    `${keys.length} release series carry at least one CVE; ${lts.length} of them are longterm branches kernel.org still tracks (${lts.join(", ")}). `+
+    `Linux ${top} leads with ${num(LX_RELEASE[top].n)} — a series accumulates CVEs for as long as fixes are backported to it, so the tallest bars are the oldest live LTS branches, not the buggiest code.`;
+}
+
+/* ---- bug age distribution ---- */
+let lxAgeChart = null;
+function lxAgeDraw(){
+  const cv = el("lxagechart"); if(!cv) return;
+  const years = Object.keys(LX_AGE).sort();
+  if(!years.length){ cv.parentElement.innerHTML = PENDING+'The bug-age distribution needs <code>ZW.linux.bug_age</code>.</div>'; return; }
+  const o = baseOpts("years from introduction to fix", false);
+  o.scales.y.stacked = false; o.scales.x.stacked = false;
+  o.plugins.tooltip.callbacks.afterBody = i => { const a = LX_AGE[years[i[0].dataIndex]];
+    return [`${Math.round((a.share_gt10y||0)*100)}% older than 10 years`, `${Math.round((a.share_gt5y||0)*100)}% older than 5 years`, `n=${num(a.n)}`]; };
+  lxAgeChart = new Chart(cv, {data:{labels:years, datasets:[
+    {type:"bar", label:"25th–75th percentile", data:years.map(y => [dayYears(LX_AGE[y].p25), dayYears(LX_AGE[y].p75)]),
+     backgroundColor:css("--myth-2"), borderRadius:2, barPercentage:.5, categoryPercentage:.8},
+    {type:"bar", label:"median", data:years.map(y => dayYears(LX_AGE[y].median)),
+     backgroundColor:css("--myth"), borderRadius:2, barPercentage:.22, categoryPercentage:.8}
+  ]}, options:o});
+  const cur = LX_AGE[String(THIS_YEAR)] || LX_AGE[years[years.length-1]];
+  const curY = LX_AGE[String(THIS_YEAR)] ? THIS_YEAR : years[years.length-1];
+  const sh = Math.round((cur.share_gt10y||0)*100);
+  const word = sh >= 50 ? "More than half" : sh >= 45 ? "Close to half" : `${sh}%`;
+  if(el("lxagenote")) el("lxagenote").textContent =
+    `${word} of ${curY}'s kernel fixes are for bugs older than ten years (${sh}% of ${num(cur.n)} dated fixes; median ${dayYears(cur.median)} years). `+
+    `Ages are measured from the introducing commit named in the CVE record to the fix commit, so only CVEs whose introducing commit could be dated are counted — ${num((LX.bug_age||{}).sample_n||0)} in total.`;
+}
+
+/* ---- exploited kernel CVEs ---- */
+function lxKevDraw(){
+  const tb = document.querySelector("#lxkevtbl tbody"); if(!tb) return;
+  const q = ((el("lxkq")||{}).value || "").trim().toLowerCase();
+  const rows = LX_KEV.slice().sort((a,b) => a[0] < b[0] ? 1 : -1)
+    .filter(r => !q || `${r[1]} ${r[2]} ${r[3]}`.toLowerCase().includes(q));
+  const EXPL = {msf:"Metasploit", edb:"Exploit-DB", poc:"public PoC"};
+  tb.innerHTML = rows.length ? rows.map(r => {
+    const lag = LX_LAG_BY[r[1]];
+    const rh = lag ? lagDays(lag[1], lag[2]) : null, ub = lag ? lagDays(lag[1], lag[3]) : null;
+    const dcell = v => v == null ? '<td class="num mono dim">—</td>' : `<td class="num mono">${v>0?"+":""}${v} d</td>`;
+    return `<tr><td class="mono">${esc(r[0])}</td><td><a class="pill fresh" href="#tab=browse&cve=${esc(r[1])}">${esc(r[1])}</a></td>`+
+      `<td>${esc(r[2]||"")}</td><td class="dim">${esc(r[3]||"")}</td>`+
+      `<td class="num mono">${r[4]==null?"—":(Math.round(r[4]*1000)/10)+"%"}</td>`+
+      `<td class="sevrow">${(r[5]||[]).length?(r[5]||[]).map(f => `<span class="pill over">${esc(EXPL[f]||f)}</span>`).join(""):'<span class="pill old">none published</span>'}</td>`+
+      dcell(rh)+dcell(ub)+`</tr>`;
+  }).join("") : `<tr class="empty-row"><td colspan="8">${LX_KEV.length?"No exploited kernel CVE matches that filter.":"Exploited kernel CVEs arrive with the next pipeline run."}</td></tr>`;
+  const withLag = rows.filter(r => LX_LAG_BY[r[1]] && (LX_LAG_BY[r[1]][2] || LX_LAG_BY[r[1]][3])).length;
+  if(el("lxkevfoot")) el("lxkevfoot").textContent = rows.length
+    ? `${rows.length} entr${rows.length===1?"y":"ies"} · ${withLag} carry a dated Red Hat or Ubuntu advisory for the distro-lag columns. A negative lag means the distro shipped its advisory before the upstream fix date recorded here, which happens on embargoed fixes.`
+    : "";
+}
+
+/* ---- branch board ---- */
+function lxBranches(){
+  const box = el("lxbranchgrid"); if(!box) return;
+  if(!LX_BRANCHES.length){ box.innerHTML = PENDING+'The branch board reads <code>ZW.linux.branches</code> from kernel.org.</div>'; return; }
+  const TYPE = {mainline:"Mainline", stable:"Stable", longterm:"Longterm (LTS)", "linux-next":"Integration tree"};
+  box.innerHTML = LX_BRANCHES.map(b => `<div class="fw">
+      <div class="fwh2"><span class="fwn">Linux ${esc(b.version)}</span><span class="badge ${b.iseol?"draft":"final"}">${b.iseol?"end of life":"maintained"}</span></div>
+      <div class="fwm">${esc(TYPE[b.type]||b.type||"")} <span class="badge type">${b.date?esc(fmtLong(b.date)):"undated"}</span></div>
+      <p>${b.iseol
+        ? "No further fixes land on this branch — every kernel CVE published from here on applies to anything still running it."
+        : (b.type === "longterm" ? "Maintained long-term: security fixes are backported here for years, which is why its CVE count is high." : b.type === "mainline" ? "Where fixes land first; stable and longterm branches backport from here." : "Currently maintained stable series.")}</p>
+      ${b.eol ? `<div class="refs"><span class="pill">EOL ${esc(b.eol)}</span></div>` : ""}
+    </div>`).join("");
+}
+
+/* ---- syzbot vs AI vs human ---- */
+let lxSyzChart = null;
+function lxSyzDraw(){
+  const cv = el("lxsyzchart"); if(!cv) return;
+  const years = Object.keys(LX_SYZ).sort();
+  if(!years.length){ cv.parentElement.innerHTML = PENDING+'Discovery credit shares need <code>ZW.linux.syzbot_share</code>.</div>'; return; }
+  const totals = {}; LX_MONTHLY.forEach(m => { const y = m.month.slice(0,4); totals[y] = (totals[y]||0) + (m.total||0); });
+  const aiN = {}; LX_AI.forEach(a => { const y = String(a[1]||"").slice(0,4); if(y) aiN[y] = (aiN[y]||0)+1; });
+  const syz = years.map(y => Math.round((LX_SYZ[y]||0)*1000)/10);
+  const ai  = years.map(y => totals[y] ? Math.round(1000*(aiN[y]||0)/totals[y])/10 : 0);
+  const hum = years.map((y,i) => Math.max(0, Math.round((100 - syz[i] - ai[i])*10)/10));
+  const o = baseOpts("% of that year's kernel CVEs", false);
+  o.scales.y.max = 100;
+  o.plugins.tooltip.callbacks.afterBody = i => { const y = years[i[0].dataIndex];
+    return [`${num(totals[y]||0)} kernel CVEs that year`, `${num(aiN[y]||0)} credited to an AI tool`]; };
+  lxSyzChart = new Chart(cv, {data:{labels:years, datasets:[
+    {type:"bar", label:"syzbot", data:syz, backgroundColor:css("--myth"), stack:"c", borderRadius:1, barPercentage:.6, categoryPercentage:.8},
+    {type:"bar", label:"AI-credited", data:ai, backgroundColor:css("--mark"), stack:"c", borderRadius:1, barPercentage:.6, categoryPercentage:.8},
+    {type:"bar", label:"everyone else", data:hum, backgroundColor:css("--panel-3"), stack:"c", borderRadius:1, barPercentage:.6, categoryPercentage:.8}
+  ]}, options:o});
+  const lastY = years[years.length-1];
+  if(el("lxsyznote")) el("lxsyznote").textContent =
+    `In ${lastY}, ${syz[years.length-1]}% of kernel CVEs were credited to syzbot and ${ai[years.length-1]}% to an AI discovery tool (${num(aiN[lastY]||0)} CVEs of ${num(totals[lastY]||0)}). `+
+    `"Everyone else" is the remainder, not a measured category: kernel CVE records often carry no discovery credit at all, so this is a floor for human-found bugs and a ceiling for nothing.`;
+}
+
+/* ---- Android ---- */
+function lxAndroid(){
+  const box = el("lxandroidbody"); if(!box) return;
+  if(!LX_ANDROID.length){
+    box.innerHTML = PENDING+'Google publishes the Android Security Bulletin as HTML only — no JSON export exists — so monthly counts and the "under limited, targeted exploitation" flag need the bulletin parser the pipeline is building. Kernel-component rows in each bulletin carry the same upstream CVE ids as the records above, so they will join straight onto this tab.</div>';
+    return;
+  }
+  box.innerHTML = `<div class="tbl-scroll"><table><thead><tr><th>Bulletin</th><th class="num">CVEs</th><th class="num">Critical</th><th class="num">Exploited</th></tr></thead><tbody>`+
+    LX_ANDROID.slice().sort((a,b) => a.month < b.month ? 1 : -1).map(r =>
+      `<tr><td class="mono">${esc(monLabel(r.month))}</td><td class="num mono">${num(r.total)}</td><td class="num mono">${num(r.critical)}</td><td class="num mono">${num(r.exploited)}</td></tr>`).join("")+
+    `</tbody></table></div>`;
+}
+
+BUILDERS.linux = function(){
+  lxKpis();
+  if(LX_MONTHLY.length){
+    lxSubChart = new Chart(el("lxsubchart"), {data:{labels:lxMonths(), datasets:lxSubDatasets()}, options:lxSubOpts()});
+    el("lxsublegend").innerHTML = LX_TOP.concat(["other subsystems"]).map((k,i) =>
+      `<span><i class="sw" style="background:${k==="other subsystems"?"#9AA4B0":LX_PAL[i % LX_PAL.length]}"></i>${esc(k)}</span>`).join("")+
+      `<span><i class="sw dash"></i>rejected CVE ids</span>`;
+    lxSubNote();
+  } else {
+    el("lxsubchart").parentElement.innerHTML = PENDING+'The subsystem breakdown reads <code>ZW.linux.monthly</code>.</div>';
+  }
+  lxRelDraw(); lxAgeDraw(); lxKevDraw(); lxBranches(); lxSyzDraw(); lxAndroid();
+  cmpChart("lxcmpchart","lxcmplegend","lxcmpnote");
+};
+document.querySelectorAll("[data-lxrange]").forEach(b => b.addEventListener("click", () => {
+  if(!lxSubChart) return;
+  document.querySelectorAll("[data-lxrange]").forEach(x => x.setAttribute("aria-pressed","false"));
+  b.setAttribute("aria-pressed","true"); lxRange = b.dataset.lxrange;
+  lxSubChart.data.labels = lxMonths(); lxSubChart.data.datasets = lxSubDatasets(); lxSubChart.options = lxSubOpts(); lxSubChart.update(); lxSubNote(); }));
+if(el("lxkq")) el("lxkq").addEventListener("input", lxKevDraw);
+
 /* ================= hash routing ================= */
 function routeHash(){
   const h=location.hash.slice(1);
@@ -2482,6 +3217,14 @@ Object.entries(ADVISORIES).forEach(([sid,rows])=>(rows||[]).forEach(([date,s,tit
 ((D.atlas||{}).techniques||[]).forEach(t=>{ if(!t||!t.id) return; SIDX.push({g:"AI attacks (ATLAS)",k:`${t.id} ${t.name||""} ${t.tactic||""}`.toLowerCase(),m:t.id,t:`${t.name||""} — ${t.tactic||""}`,d:"",go:()=>{goTab("ai");el("atlasavid").scrollIntoView({behavior:"smooth",block:"start"});}}); });
 ((D.atlas||{}).case_studies||[]).forEach(c=>{ if(!c||!c[1]) return; SIDX.push({g:"AI attacks (ATLAS)",k:`${c[1]} ${c[2]||""} ${c[3]||""} ${c[4]||""}`.toLowerCase(),m:c[1],t:`${c[2]||""} — ${c[3]||""}`,d:c[0]||"",go:()=>{goTab("ai");el("atlasavid").scrollIntoView({behavior:"smooth",block:"start"});}}); });
 ((D.ai_incidents||{}).latest||[]).forEach(a=>{ if(!a||!a[1]) return; SIDX.push({g:"AI incidents (AVID)",k:`${a[1]} ${a[2]||""}`.toLowerCase(),m:a[1],t:a[2]||"",d:a[0]||"",go:()=>{goTab("ai");el("atlasavid").scrollIntoView({behavior:"smooth",block:"start"});}}); });
+MS_ZD.forEach(z=>SIDX.push({g:"Microsoft zero-days",k:`${z[1]} ${z[2]||""} ${z[3]||""}`.toLowerCase(),m:z[1],t:`${z[2]||""} — ${z[3]||""}`,d:z[0],go:()=>{goTab("microsoft");el("mszq").value=z[1];msZdDraw();el("mszerodays").scrollIntoView({behavior:"smooth",block:"start"});}}));
+Object.entries(MS_COMPS).forEach(([comp,rows])=>{ (rows||[]).forEach(r=>SIDX.push({g:".NET components",k:`${comp} ${r[1]} ${r[2]||""}`.toLowerCase(),m:r[1],t:`${comp} — ${r[2]||""}`,d:r[0],go:()=>{goTab("microsoft");el("mscomponents").scrollIntoView({behavior:"smooth",block:"start"});}}));
+  SIDX.push({g:".NET components",k:`${comp} component`.toLowerCase(),m:comp,t:`${(rows||[]).length} CVE${(rows||[]).length===1?"":"s"} name this component`,d:"",go:()=>{goTab("microsoft");el("mscomponents").scrollIntoView({behavior:"smooth",block:"start"});}}); });
+MS_CHANNELS.forEach(c=>SIDX.push({g:".NET channels",k:`.net ${c.channel} ${c.release_type||""} ${c.support||""}`.toLowerCase(),m:".NET "+c.channel,t:`${String(c.release_type||"").toUpperCase()} · ${c.support||""}${c.eol?" · EOL "+c.eol:""}`,d:c.latest||"",go:()=>{goTab("microsoft");el("msdotnet").scrollIntoView({behavior:"smooth",block:"start"});}}));
+LX_SUBS.forEach(sub=>{ const n=LX_MONTHLY.reduce((a,m)=>a+((m.subsystems||{})[sub]||0),0); if(!n) return;
+  SIDX.push({g:"Kernel subsystems",k:`${sub} kernel subsystem linux`.toLowerCase(),m:sub,t:`${n} kernel CVEs since the Linux CNA began`,d:"",go:()=>{goTab("linux");el("lxsubsystems").scrollIntoView({behavior:"smooth",block:"start"});}}); });
+LX_KEV.forEach(k=>SIDX.push({g:"Exploited kernel CVEs",k:`${k[1]} ${k[2]||""} ${k[3]||""}`.toLowerCase(),m:k[1],t:`${k[2]||""} — ${k[3]||""}`,d:k[0],go:()=>{goTab("linux");el("lxkq").value=k[1];lxKevDraw();el("lxkev").scrollIntoView({behavior:"smooth",block:"start"});}}));
+LX_BRANCHES.forEach(b=>SIDX.push({g:"Kernel branches",k:`linux ${b.version} ${b.type||""}`.toLowerCase(),m:"Linux "+b.version,t:`${b.type||""}${b.iseol?" · end of life":" · maintained"}`,d:b.date||"",go:()=>{goTab("linux");el("lxbranches").scrollIntoView({behavior:"smooth",block:"start"});}}));
 }
 const q=el("q"), sres=el("sres"); let sel=-1, hits=[];
 function runSearch(){ const v=q.value.trim().toLowerCase(); sres.innerHTML=""; sel=-1; hits=[]; if(v.length<2) return; buildSearchIndex(); const terms=v.split(/\s+/);
