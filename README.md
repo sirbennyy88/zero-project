@@ -66,13 +66,27 @@ python data-src/refresh.py
 
 **Flags:**
 - `--offline` — rebuild outputs from cache only, no network fetch
-- `GITHUB_TOKEN=...` — enables per-ecosystem monthly counts (requires many API calls; rate-limited without it)
+- `--skip a,b,c` — skip these fetchers (use their cache); names match the `@cached(...)` id: `kev,ledger,epoch,msrc,oracle,gh_eco,gh_repos,dotnet,cve_pub,nvd_watchlist,extra_feeds,euvd,epss,p0,exploit,ssvc,advisories,atlas,avid,csaf,ai_credit`
+- `--only a,b,c` — run *only* these fetchers (inverse of `--skip`; every other fetcher uses its cache) — handy for iterating on one source without a full 10-20 minute run
+- `--watchlist-limit N` — only pull the first N Products-tab watchlist entries (useful for a quick smoke test of `nvd_watchlist`)
+- `--ai-credit-full` — force a full cvelistV5 zip rescan instead of the incremental delta scan
+- `--since YYYY-MM-DD` — earliest date scoped into every fetcher (default `2016-01-01`)
+- `GITHUB_TOKEN=...` — enables per-ecosystem monthly counts (requires many API calls; rate-limited without it) and raises GitHub's unauthenticated rate limits for `gh_repos`/`avid`/`ai_credit`
+- `NVD_API_KEY=...` — required for a fast `nvd_watchlist` pull (0.7s/request vs 6.5s/request unkeyed); request one at https://nvd.nist.gov/developers/request-an-api-key
 
 For example:
 ```bash
-GITHUB_TOKEN=ghp_... python data-src/refresh.py
+GITHUB_TOKEN=ghp_... NVD_API_KEY=... python data-src/refresh.py
 python data-src/refresh.py --offline
+python data-src/refresh.py --only advisories,extra_feeds   # quick check of just the RSS-based sources
 ```
+
+Every fetcher is independent and wrapped so one bad source can't take down the run: on any exception
+it logs `[name] FAILED (...) -> cache` and falls back to the last good cached copy, and `build()`
+itself is wrapped so a bad merge doesn't overwrite yesterday's `zeroweek-data.*` with a half-built
+file. Non-fatal issues (a feed returning 0 items, a degraded source) are collected into
+`zeroweek-data.json`'s `meta.warnings`, and per-source freshness/row-counts are in `source_status`
+(surfaced on the site's Data tab).
 
 ## File layout
 
@@ -156,6 +170,44 @@ never breaks the site deploy. To enable it:
    gh secret set CLOUDFLARE_API_TOKEN --repo sirbennyy88/zero-project
    ```
 3. `CLOUDFLARE_ACCOUNT_ID` is already set as a repository secret.
+
+**Status:** as of this writing `CLOUDFLARE_API_TOKEN` is *not* set (`gh secret list` shows only
+`CLOUDFLARE_ACCOUNT_ID` and `NVD_API_KEY`), so every weekly run's `cloudflare: sync to D1` step fails
+with `wrangler: CLOUDFLARE_API_TOKEN environment variable` and D1 has been stuck at the 2026-09-07
+snapshot (`/api/stats` → `last_refresh: 2026-09-07T00:08:14Z`) while `zeroweek-data.json` keeps moving
+forward weekly. The site itself is unaffected (it reads the static JSON, not D1) — this only stales
+the optional read API. Add the secret above to resume the sync; `continue-on-error: true` on that step
+means it will never fail the deploy either way.
+
+**Custom domain:** `zero.propulse.tech` has no DNS record yet (`Resolve-DnsName` returns "DNS name does
+not exist") — the CNAME in Cloudflare Pages hasn't been created. The Worker and site are both live at
+their `*.workers.dev` / GitHub Pages URLs in the meantime; the CNAME file's domain will start resolving
+once someone adds the CNAME record in the DNS zone (not something this pipeline can or should do).
+
+### Troubleshooting fetchers
+
+Advisory-feed sources are the most likely to break (vendors reshape their blogs/RSS without notice).
+`[advisories:<id>] FAILED: ...` or `ok, 0 items` in `data-src/cache/last_run.log` points at the exact
+feed; the URL list lives in `ADVISORY_FEEDS` in `refresh.py`. Recently fixed:
+- **CISA alerts** — `cybersecurity-advisories/rss.xml` now 404s; switched to `cybersecurity-advisories/all.xml`,
+  which is the correct current URL (confirmed 200 OK from a browser) but CISA's WAF still 403s Python's
+  `urllib` specifically — every `www.cisa.gov` path we tried (the new URL, `/news.xml`, even the bare
+  homepage) 403s to `urllib` while returning 200 to a real browser/`Invoke-WebRequest`, so this looks
+  like a TLS/HTTP fingerprint block rather than a UA check, and isn't fixable from stdlib `urllib` alone.
+  Only `cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json` (used by `fetch_kev`,
+  served from a different path/CDN rule) is unaffected. The advisory feed correctly falls back to its
+  cache and reports `ok: false` in `source_status` either way — nothing crashes, the KEV feed itself is
+  unaffected, and the URL fix is still worth keeping since it's the right endpoint if CISA's WAF policy
+  changes.
+- **MSRC blog** — `msrc.microsoft.com/blog/rss.xml` now serves an HTML redirect, not XML, so it silently
+  produced 0 items; switched to the Microsoft Security blog feed (`microsoft.com/en-us/security/blog/feed/`).
+- **CCCS (Canadian Centre for Cyber Security) alerts** — `cyber.gc.ca`'s RSS API now 404s on every path
+  we could find (their own error page comes back as a 200 Atom document, which used to be silently
+  counted as "0 items"); the fetcher now detects that error document and marks the source `FAILED` so
+  the last good cache is kept and `source_status` reflects reality instead of reporting a false "ok".
+  No working replacement feed was found — if you find one, update `ADVISORY_FEEDS`.
+- **Grafana advisories** (in `fetch_extra_feeds`) — HTML scraping of the advisories page stopped
+  matching; switched to the site's own `security-advisories/index.xml` RSS feed.
 
 ## Suggest a tool or source
 

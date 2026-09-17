@@ -125,6 +125,18 @@
   {
    "date": "2026-09-04",
    "event": "Chrome zero-day CVE-2026-85046 added to KEV (6th exploited Chrome 0-day of 2026)"
+  },
+  {
+   "date": "2026-09-08",
+   "event": "Microsoft September Patch Tuesday: record 964-974 CVEs (source-count varies), 2 zero-days exploited in the wild (CVE-2026-81963 Windows Update Stack EoP, CVE-2026-85880 Windows ALPC)"
+  },
+  {
+   "date": "2026-09-09",
+   "event": "CISA adds Cisco Secure FMC auth bypass CVE-2026-20079 (CVSS 10.0), Citrix, and Fortinet CVE-2025-25249 to KEV; FCEB deadline 12 Sep"
+  },
+  {
+   "date": "2026-09-11",
+   "event": "EU Cyber Resilience Act Art.14 reporting obligations take effect (24h/72h/14-day cascade for actively exploited vulnerabilities); ENISA CRA Single Reporting Platform goes live"
   }
  ],
  "notable_weeks": {
@@ -135,7 +147,8 @@
   "2026-08-10": "Cisco ASA/FTD, Windows AFD, Metabase",
   "2026-08-17": "VMware vCenter, macOS, SharePoint, MLflow, TrueConf ×2",
   "2026-08-24": "Citrix NetScaler, Gitea, Oracle HTTP Server + 5 legacy CVEs",
-  "2026-08-31": "Chromium V8, SonicWall SMA1000 ×2, JFrog, PaperCut ×2"
+  "2026-08-31": "Chromium V8 CVE-2026-85046 (KEV 4 Sep), SonicWall SMA1000 ×2 (CVE-2026-83548/83549, KEV 2 Sep), JFrog, PaperCut ×2",
+  "2026-09-07": "Cisco Secure FMC auth bypass CVE-2026-20079 (CVSS 10.0), Citrix NetScaler, Fortinet CVE-2025-25249 (KEV 9 Sep, FCEB deadline 12 Sep)"
  },
  "gtig_zero_days_by_year": {
   "2019": 32,
@@ -206,8 +219,8 @@
   }
  ],
  "vendor_statements": {
-  "Microsoft": "Patch Tuesday: Apr 163 → Jun 198 (record) → Jul 570 → Aug 421 CVEs. MSRC: counts will \"continue trending larger for some time\"; MDASH AI harness + Glasswing. Mythos built PoCs for 13 of 14 bugs MS had rated \"exploitation unlikely\".",
-  "Google": "No Mythos numbers disclosed. Six exploited Chrome zero-days in 2026 (latest CVE-2026-85046, V8, 4 Sep). Weekly spikes are Android/Pixel bulletins.",
+  "Microsoft": "Patch Tuesday: Apr 163 → Jun 198 → Jul 570 → Aug 421 → Sep 964-974 (record; source counts vary by Chromium/cloud inclusion), incl. 2 zero-days exploited in the wild (CVE-2026-81963 Windows Update Stack EoP, CVE-2026-85880 Windows ALPC). MSRC: counts will \"continue trending larger for some time\"; MDASH AI harness + Glasswing. Mythos built PoCs for 13 of 14 bugs MS had rated \"exploitation unlikely\".",
+  "Google": "No Mythos numbers disclosed. As of 15 Sep 2026: six exploited Chrome zero-days in 2026 to date (latest CVE-2026-85046, V8, added to KEV 4 Sep, FCEB deadline 18 Sep). Weekly spikes are Android/Pixel bulletins.",
   "Apple": "No numbers disclosed. Calif.io built a macOS privilege-escalation chain on Apple M5 from Mythos-derived techniques (55-page report, May); Apple moved to a faster security-update cadence. 103 H/C CVEs in week of 27 Jul.",
   "Linux": "Kernel CVEs per release: ~500 (6.x era) → >1,000 (7.0) → >1,500 (7.2) → ~2,000 (7.3). 432 CVEs issued in 24 h in July. LF names Mythos and GPT-5.4-Cyber as drivers.",
   "Oracle": "Integrated Mythos Preview + OpenAI TAC into detection. CPU CVEs: Jan 158 → Apr 241 → Jun 243 → Jul 1,434 (1,449 patches, 334 products); moved to monthly cycle.",
@@ -599,6 +612,31 @@
     "Security Affairs — sixth exploited Chrome zero-day of 2026",
     "https://securityaffairs.com/190265/hacking/google-fixes-fourth-actively-exploited-chrome-zero-day-of-2026.html",
     ""
+   ],
+   [
+    "Tenable — Microsoft's September 2026 Patch Tuesday",
+    "https://www.tenable.com/blog/microsofts-september-2026-patch-tuesday-addresses-964-cves-cve-2026-81963-cve-2026-85880",
+    "record CVE count and both exploited zero-days"
+   ],
+   [
+    "The Hacker News — CISA flags exploited Cisco, Citrix, Fortinet flaws",
+    "https://thehackernews.com/2026/09/cisa-flags-exploited-cisco-citrix.html",
+    "9 Sep 2026 KEV additions, 12 Sep FCEB deadline"
+   ],
+   [
+    "Freshfields — Cyber Resilience Act reporting obligations take effect 11 September 2026",
+    "https://www.freshfields.com/en/our-thinking/blogs/technology-quotient/cyber-resilience-act-reporting-obligations-take-effect-on-11-september-2026-102nzmk",
+    "confirms Art.14 cascade timelines and ENISA Single Reporting Platform launch"
+   ],
+   [
+    "Anthropic — Expanding Project Glasswing",
+    "https://www.anthropic.com/news/expanding-project-glasswing",
+    "150 new partners, 15+ countries (2 Jun 2026)"
+   ],
+   [
+    "OWASP GenAI Security Project — Top 10 for Agentic Applications (2026)",
+    "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/",
+    "published 9 Dec 2025; full ASI01-ASI10 list"
    ]
   ]
  },
@@ -1846,7 +1884,7 @@
    "date": "2024-12-10",
    "url": "https://digital-strategy.ec.europa.eu/en/policies/cyber-resilience-act",
    "type": "regulation",
-   "relevance": "Reporting obligations for actively-exploited vulnerabilities go live 2026-09-11 (this week); the Art.14 cascade is the clearest regulatory analog to the tracker's KEV/time-to-exploit metrics.",
+   "relevance": "Reporting obligations for actively-exploited vulnerabilities took effect 2026-09-11 as scheduled (confirmed: ENISA's CRA Single Reporting Platform went live the same day; 24h early warning / 72h full notification / 14-day-after-fix final report, plus 1-month final report for severe incidents; fines up to EUR15m or 2.5% global turnover); the Art.14 cascade is the clearest regulatory analog to the tracker's KEV/time-to-exploit metrics.",
    "controls": [
     {
      "ref": "Art.14",
@@ -2172,18 +2210,74 @@
    "date": "2025-12-09",
    "url": "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/",
    "type": "ai",
-   "relevance": "Risks unique to autonomous agents; relevant to classifying AI vulnerability-hunting agents themselves as a risk class.",
+   "relevance": "Risks unique to autonomous agents; relevant to classifying AI vulnerability-hunting agents themselves as a risk class. Full ASI01-ASI10 list confirmed published by the OWASP GenAI Security Project on 2025-12-09.",
    "controls": [
     {
-     "ref": "ASI02, ASI05",
-     "title": "Tool Misuse & Exploitation; Unexpected Code Execution",
+     "ref": "ASI01",
+     "title": "Agent Goal Hijack",
      "metrics": [
       7
      ]
     },
     {
+     "ref": "ASI02",
+     "title": "Tool Misuse & Exploitation",
+     "metrics": [
+      7
+     ]
+    },
+    {
+     "ref": "ASI03",
+     "title": "Identity & Privilege Abuse",
+     "metrics": [
+      9
+     ]
+    },
+    {
      "ref": "ASI04",
-     "title": "Agentic Supply Chain Compromise",
+     "title": "Agentic Supply Chain Vulnerabilities",
+     "metrics": [
+      9
+     ]
+    },
+    {
+     "ref": "ASI05",
+     "title": "Unexpected Code Execution (RCE)",
+     "metrics": [
+      7
+     ]
+    },
+    {
+     "ref": "ASI06",
+     "title": "Memory & Context Poisoning",
+     "metrics": [
+      7
+     ]
+    },
+    {
+     "ref": "ASI07",
+     "title": "Insecure Inter-Agent Communication",
+     "metrics": [
+      9
+     ]
+    },
+    {
+     "ref": "ASI08",
+     "title": "Cascading Failures",
+     "metrics": [
+      3
+     ]
+    },
+    {
+     "ref": "ASI09",
+     "title": "Human-Agent Trust Exploitation",
+     "metrics": [
+      3
+     ]
+    },
+    {
+     "ref": "ASI10",
+     "title": "Rogue Agents",
      "metrics": [
       9
      ]

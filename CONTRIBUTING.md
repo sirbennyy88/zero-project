@@ -48,7 +48,11 @@ The refresh pipeline is the heart of the project. Before submitting:
 1. **Test locally:**
    ```bash
    python data-src/refresh.py --offline
+   python -m py_compile data-src/refresh.py
    ```
+   When changing a single fetcher (e.g. an advisory RSS URL), use `--only <name>` to re-run just that
+   one against live data instead of the full 10-20 minute pipeline, e.g.
+   `python data-src/refresh.py --only advisories`.
 
 2. **Ensure it runs with or without GITHUB_TOKEN:**
    - Without: uses cached data, skips per-ecosystem counts
@@ -56,7 +60,10 @@ The refresh pipeline is the heart of the project. Before submitting:
 
 3. **Keep it stdlib-only** (Python 3.10+, no pip dependencies)
 
-4. **Follow the pattern:** Each data source is a `@cached()` function with its own error handling
+4. **Follow the pattern:** Each data source is a `@cached()` function with its own error handling —
+   catch exceptions, `log(...)` what happened, and fall back to `cache_get(name)` rather than raising,
+   so one broken feed never fails the whole run. If your fetcher's output should show up on the site's
+   Data tab, add a `source_status[...]` entry for it in `build()`.
 
 ### For `index.html` changes
 

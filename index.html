@@ -123,6 +123,15 @@ header{display:flex;flex-direction:column;gap:var(--s3);padding:var(--s2) 0 var(
 .dek strong{color:var(--ink);font-weight:600}
 .dek .fig{font-family:var(--ff-cond);font-weight:700;color:var(--ink);font-size:1.12em;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .lede{max-width:88ch;color:var(--ink-2);margin:0;font-size:var(--fs-base)}
+/* ---- freshness stamp: the page's own clock, right where the eye lands first ---- */
+.refresh{font-family:var(--ff-mono);font-size:var(--fs-xs);color:var(--ink-3);
+  font-variant-numeric:tabular-nums;line-height:1.6;max-width:86ch}
+.refresh b{color:var(--ink-2);font-weight:500;white-space:nowrap}
+.refresh .ago{color:var(--ink-3)}
+/* inline, not a flex item: on a phone the line wraps and a flex dot would strand itself */
+.refresh .dot{display:inline-block;width:7px;height:7px;border-radius:var(--r-pill);background:var(--ok);
+  margin-right:7px;vertical-align:1px;box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 18%,transparent)}
+.refresh .dot.warn{background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 18%,transparent)}
 .lede strong{color:var(--ink);font-weight:600}
 
 /* ---- actions: one row, one shape ---- */
@@ -273,6 +282,17 @@ section[id],div[id]{scroll-margin-top:120px}
 .sw{width:11px;height:11px;border-radius:2px;display:inline-block;flex:none}
 .sw.line{height:2px;width:17px;border-radius:0}
 .sw.dash{height:0;width:17px;border-top:2px dashed var(--mark)}
+
+/* ============================================================ overview hero
+   The week's count and the series it sits in are one object, not two panels that
+   happen to be adjacent: a tinted tray holds them, and only the lead card carries
+   the accent rule. Everything below the tray is support material. */
+.hero{margin-top:var(--s6);padding:var(--s5);border:1px solid var(--line);border-radius:var(--r-lg);
+  background:var(--panel-3);display:grid;gap:var(--s4)}
+.hero .glance{margin-top:0;gap:var(--s4)}
+.hero .panel{margin-top:0;box-shadow:none}
+.hero .panel--lead{border-top-width:4px}
+.hero .glance .big{font-size:calc(var(--num-xl) * 1.1)}
 
 /* ============================================================ overview: this week at a glance (the anchor) */
 .glance{display:grid;grid-template-columns:1.15fr .85fr;gap:var(--s6);margin-top:var(--s6)}
@@ -577,6 +597,7 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
   .wrap{padding:var(--s4) var(--s4) var(--s7)}
   .nav .in{padding:var(--s3) var(--s4) 0;gap:var(--s3)}
   .panel{padding:var(--s5) var(--s4) var(--s4);border-radius:var(--r)}
+  .hero{padding:var(--s3);border-radius:var(--r);gap:var(--s3)}
   .pgrid,.ciso,.bod,.multi,.timeline{grid-template-columns:1fr}
   .yrs{grid-template-columns:repeat(2,1fr)}
   .kpis{grid-template-columns:1fr}
@@ -625,9 +646,10 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
 
 <div class="wrap" id="top">
 <header>
-  <div class="eyebrow">ISO weeks (Mon–Sun) · data through <span id="dataThrough">—</span> · refreshed every Monday · Scope: 2016 → today; KEV since Nov 2021, P0 since 2014</div>
+  <div class="eyebrow">ISO weeks (Mon–Sun) · data through <span id="dataThrough">—</span> · Scope: 2016 → today; KEV since Nov 2021, P0 since 2014</div>
+  <div class="refresh" id="refreshline"></div>
   <h1>How many zero-days per week — before and after Mythos?</h1>
-  <p class="dek"><strong>Exploited in the wild</strong> runs at <span class="fig" id="k_post">—</span> a week since Claude Mythos Preview shipped on 7 Apr 2026, against <span class="fig" id="k_pre">—</span> in the 22 weeks before and a five-year average of <span class="fig" id="k_5y">—</span>. <strong>Found by Mythos</strong> is a different order of magnitude: <span class="fig" id="k_ledger">—</span> open-source findings in Anthropic's public ledger.</p>
+  <p class="dek"><strong>Exploited in the wild</strong> runs at <span class="fig" id="k_post">—</span> a week since Claude Mythos Preview shipped on 7 Apr 2026, against <span class="fig" id="k_pre">—</span> in the <span id="k_prewks">22</span> weeks before and a five-year average of <span class="fig" id="k_5y">—</span>. <strong>Found by Mythos</strong> is a different order of magnitude: <span class="fig" id="k_ledger">—</span> open-source findings in Anthropic's public ledger.</p>
   <div class="actions">
     <a class="act act--primary" href="#tab=browse">Browse this week</a>
     <a class="act" href="feed.xml">RSS · weekly digest</a>
@@ -639,17 +661,8 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
 
 <!-- ============ OVERVIEW ============ -->
 <div class="tp" id="tab-overview" role="tabpanel" aria-labelledby="t-overview" tabindex="0">
-<section class="panel" id="exploited">
-  <div class="panel-head">
-    <div><h2>Exploited in the wild, by week</h2><p>Vulnerabilities CISA added to its Known Exploited Vulnerabilities catalog each week — the closest public proxy for "zero-days confirmed under attack". Bars split by whether the CVE was issued in the same year (fresh) or earlier (old bugs newly seen exploited). Solid line is the 4-week average; dashed markers are Anthropic model events. Click a bar to open that week in Browse.</p></div>
-    <div class="controls"><div class="toggle" role="group" aria-label="Range"><button type="button" aria-pressed="false" data-krange="mythos">Since Mythos</button><button type="button" aria-pressed="true" data-krange="2026">2026</button><button type="button" aria-pressed="false" data-krange="12m">12 months</button><button type="button" aria-pressed="false" data-krange="all">Since Nov 2021 (KEV)</button></div><div class="toggle" role="group" aria-label="Series"><button type="button" aria-pressed="true" data-kev="split">Fresh vs old</button><button type="button" aria-pressed="false" data-kev="total">Total</button><button type="button" aria-pressed="false" data-kev="ransom">Ransomware</button></div></div>
-  </div>
-  <div class="chart-wrap"><canvas id="kev"></canvas></div>
-  <div class="legend"><span><i class="sw" style="background:var(--kev)"></i>CVE issued same year</span><span><i class="sw" style="background:var(--kev-old)"></i>CVE issued earlier</span><span><i class="sw line" style="background:var(--ink)"></i>4-week moving average</span><span><i class="sw dash"></i>Model release / access event</span><span id="partialnote"></span></div>
-  <p class="note">KEV's catalog only goes back to Nov 2021. For zero-days exploited in the wild before that, see <a href="#tab=overview">Project Zero's "P0 in-the-wild" series, 2014→ (yearly)</a> in the ten-year row below.</p>
-  <p class="note" id="chartCap"></p>
-</section>
-
+<!-- HERO: the week's count, then the series it sits in. Everything else is support. -->
+<div class="hero">
 <div class="glance" id="glance">
   <section class="panel panel--lead">
     <h3>This week at a glance</h3>
@@ -662,6 +675,19 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
     <ul id="g_wow"></ul>
     <p class="note">Counts are CISA KEV additions (confirmed exploited in the wild). "Fresh" = CVE issued in the same year it was added; "older" = a bug from an earlier year newly seen exploited.</p>
   </section>
+</div>
+
+<section class="panel" id="exploited">
+  <div class="panel-head">
+    <div><h2>Exploited in the wild, by week</h2><p>Vulnerabilities CISA added to its Known Exploited Vulnerabilities catalog each week — the closest public proxy for "zero-days confirmed under attack". Bars split by whether the CVE was issued in the same year (fresh) or earlier (old bugs newly seen exploited). Solid line is the 4-week average; dashed markers are Anthropic model events. Click a bar to open that week in Browse.</p></div>
+    <div class="controls"><div class="toggle" role="group" aria-label="Range"><button type="button" aria-pressed="false" data-krange="mythos">Since Mythos</button><button type="button" aria-pressed="true" data-krange="2026">2026</button><button type="button" aria-pressed="false" data-krange="12m">12 months</button><button type="button" aria-pressed="false" data-krange="all">Since Nov 2021 (KEV)</button></div><div class="toggle" role="group" aria-label="Series"><button type="button" aria-pressed="true" data-kev="split">Fresh vs old</button><button type="button" aria-pressed="false" data-kev="total">Total</button><button type="button" aria-pressed="false" data-kev="ransom">Ransomware</button></div></div>
+  </div>
+  <div class="chart-wrap"><canvas id="kev"></canvas></div>
+  <div class="legend"><span><i class="sw" style="background:var(--kev)"></i>CVE issued same year</span><span><i class="sw" style="background:var(--kev-old)"></i>CVE issued earlier</span><span><i class="sw line" style="background:var(--ink)"></i>4-week moving average</span><span><i class="sw dash"></i>Model release / access event</span><span id="partialnote"></span></div>
+  <p class="note">KEV's catalog only goes back to Nov 2021. For zero-days exploited in the wild before that, see <a href="#tab=overview">Project Zero's "P0 in-the-wild" series, 2014→ (yearly)</a> in the ten-year row below.</p>
+  <p class="note" id="scalenote" hidden></p>
+  <p class="note" id="chartCap"></p>
+</section>
 </div>
 
 <section class="kpis">
@@ -697,7 +723,7 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
 
 <section class="panel" id="advisories">
   <div class="panel-head">
-    <div><h2>Advisories this week</h2><p>The latest items across national CERTs, ZDI and vendor threat-intel blogs, newest first. Each source's own RSS feed, keyword-filtered where the feed mixes non-security posts in. See <a href="#tab=data">Data &amp; sources</a> for per-feed status.</p></div>
+    <div><h2>Latest advisories</h2><p>The twelve most recent items across national CERTs, ZDI and vendor threat-intel blogs, newest first — a rolling window, not one ISO week. Each source's own RSS feed, keyword-filtered where the feed mixes non-security posts in. See <a href="#tab=data">Data &amp; sources</a> for per-feed status.</p></div>
   </div>
   <div class="duelist" id="advlist"></div>
   <p class="note" id="advnote"></p>
@@ -801,7 +827,7 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
   </div>
   <div class="kpis" id="aikpis" style="margin:0 0 var(--s5)"></div>
   <div class="chart-wrap"><canvas id="aicreditchart"></canvas></div>
-  <div class="legend"><span><i class="sw" style="background:var(--myth)"></i>AI-credited CVEs / week</span><span><i class="sw line" style="background:var(--kev)"></i>All CVEs published / week (right axis)</span></div>
+  <div class="legend"><span><i class="sw" style="background:var(--myth)"></i>AI-credited CVEs / week</span><span><i class="sw line" style="background:var(--kev)"></i>All CVEs published / week (right axis)</span><span id="aipartial"></span></div>
   <p class="note" id="aicreditnote"></p>
   <div class="two" style="margin-top:var(--s5)">
     <div>
@@ -857,12 +883,12 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
 <div class="tp" id="tab-vendors" role="tabpanel" aria-labelledby="t-vendors" tabindex="0" hidden>
 <section class="panel" id="companies">
   <div class="panel-head">
-    <div><h2>Major vendors: high &amp; critical CVEs published per week</h2><p>What the big companies are actually disclosing. Each week's bar stacks the high- and critical-severity CVEs published by that vendor's own CVE Numbering Authority (cve.org records, via Epoch AI's explorer). This is the public tail of Glasswing: Mythos-found bugs only show up here once the vendor ships a patch and files the CVE, typically 45–90 days after discovery. Across the 21 notable CNAs, monthly high/critical CVEs went from a pre-Mythos record of ~490 to <span id="epochpeak">—</span>. Toggle vendors below; hover a bar for the split.</p></div>
+    <div><h2>Major vendors: high &amp; critical CVEs published per week</h2><p>What the big companies are actually disclosing. Each week's bar stacks the high- and critical-severity CVEs published by that vendor's own CVE Numbering Authority (cve.org records, via Epoch AI's explorer). This is the public tail of Glasswing: Mythos-found bugs only show up here once the vendor ships a patch and files the CVE, typically 45–90 days after discovery. Across the <span id="cnacount">21</span> notable CNAs, monthly high/critical CVEs went from a pre-Mythos record of ~490 to <span id="epochpeak">—</span>. Toggle vendors below; hover a bar for the split.</p></div>
     <div class="controls"><div class="toggle" role="group" aria-label="Range"><button type="button" aria-pressed="true" data-crange="1y">Since Sep 2025</button><button type="button" aria-pressed="false" data-crange="all">All years</button></div><div class="toggle" role="group" aria-label="Scale"><button type="button" aria-pressed="true" data-cscale="linear">Linear</button><button type="button" aria-pressed="false" data-cscale="logarithmic">Log</button></div><div class="toggle" role="group" aria-label="Other CNAs"><button type="button" aria-pressed="false" data-other="1">+ all other CNAs</button></div></div>
   </div>
   <div class="chips" id="chips"></div>
   <div class="chart-wrap tall"><canvas id="cochart"></canvas></div>
-  <div class="legend"><span><i class="sw dash"></i>Model release / access event</span><span>Latest week is partial</span><span>Notable-CNA total shown in tooltip</span></div>
+  <div class="legend"><span><i class="sw dash"></i>Model release / access event</span><span id="copartial"></span><span>Notable-CNA total shown in tooltip</span></div>
   <h3 style="margin-top:var(--s7)">Vendor by vendor · pre vs post Mythos Preview</h3>
   <div class="multi" id="multi"></div>
   <h3 style="margin-top:var(--s7)">Scorecard · what each Glasswing partner has published or said</h3>
@@ -894,6 +920,7 @@ footer .stamp b{color:var(--ink-2);font-weight:500}
   </div>
   <div class="chart-wrap short"><canvas id="patchchart"></canvas></div>
   <div class="legend"><span><i class="sw" style="background:var(--kev)"></i>Microsoft Patch Tuesday CVEs</span><span><i class="sw" style="background:var(--myth)"></i>Oracle CPU patches</span><span><i class="sw" style="background:var(--mark)"></i>.NET security advisories (right axis)</span><span><i class="sw dash"></i>Mythos Preview (7 Apr 2026)</span></div>
+  <p class="note" id="patchnote"></p>
 </section>
 
 <section class="panel" id="dotnet">
@@ -1108,17 +1135,23 @@ const PENDING = '<div class="pending"><b>Available after the next Monday refresh
 const KEV_ALL = (D.kev && D.kev.entries) || [];   // [date,cve,vendor,product,K/U,due,name,published,category,score,severity,ai_found]
 const AI_FOUND = D.ai_found || {};
 const AI_INDEX = AI_FOUND.index || {};
-const KW = (D.kev && D.kev.weekly) || [];         // [week,total,fresh,older,ransom,median_tte_days,edge_count]
-const KWEEKS = KW.map(r=>r[0]);
 const DATA_THROUGH = (D.meta && D.meta.data_through) || (KEV_ALL.length? KEV_ALL[KEV_ALL.length-1][0] : "");
+/* The pipeline can emit a row for an ISO week that has not begun inside the data yet
+   (week start later than data_through). Such a week is not "the latest week, partial" —
+   it has no coverage at all, and treating it as current empties the hero panel, the
+   week browser and the latest-week KPI. Keep only weeks the data actually reaches. */
+const inData = w => !DATA_THROUGH || w <= DATA_THROUGH;
+const KW_RAW = (D.kev && D.kev.weekly) || [];     // [week,total,fresh,older,ransom,median_tte_days,edge_count]
+const KW = KW_RAW.filter(r=>inData(r[0]));
+const KWEEKS = KW.map(r=>r[0]);
 const LATEST_WEEK = KWEEKS[KWEEKS.length-1] || "2026-01-05";
 const LATEST_PARTIAL = DATA_THROUGH < endOf(LATEST_WEEK);
 const LAST_FULL = KW.filter(r=>r[0]!==LATEST_WEEK||!LATEST_PARTIAL).map(r=>r[0]).pop() || LATEST_WEEK;
 const EVENTS = D.events || [];
 const NOTABLE = D.notable_weeks || {};
-const MY = (D.ledger && D.ledger.weekly) || [];
+const MY = ((D.ledger && D.ledger.weekly) || []).filter(r=>inData(r[0]));
 const CNA = (D.cna && D.cna.series) || {};
-const CNA_WEEKS = (D.cna && D.cna.weeks) || [];
+const CNA_WEEKS = ((D.cna && D.cna.weeks) || []).filter(inData);
 const MSRC = (D.patch && D.patch.msrc) || {};
 const ORACLE = (D.patch && D.patch.oracle) || {};
 const DOTNET = (D.patch && D.patch.dotnet) || {};
@@ -1168,6 +1201,24 @@ function ssvcPill(cve){
   return `<span class="pill ${cls}" title="CISA-ADP SSVC · Automatable: ${esc(s.automatable||"—")} · Technical impact: ${esc(s.impact||"—")}">${esc(s.exploitation)}</span>`;
 }
 el("dataThrough").textContent = DATA_THROUGH ? fmtLong(DATA_THROUGH) : "—";
+/* Freshness stamp. Both halves are computed: the left from ZW.meta.generated, the
+   right from the reader's own clock, so the line never claims a refresh that passed. */
+(function refreshLine(){
+  const box=el("refreshline"); if(!box) return;
+  const stampUTC = d => d.toLocaleDateString("en-GB",{day:"numeric",month:"short",timeZone:"UTC"})+" "+
+    String(d.getUTCHours()).padStart(2,"0")+":"+String(d.getUTCMinutes()).padStart(2,"0")+" UTC";
+  const now=new Date();
+  const next=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),9,15,0));
+  while(next<=now || next.getUTCDay()!==1) next.setUTCDate(next.getUTCDate()+1);
+  const gen=(D.meta&&D.meta.generated)||"";
+  const t=gen?new Date(gen):null;
+  if(!t||isNaN(+t)){ box.innerHTML=`<i class="dot warn"></i><span>Refresh time not recorded in this build · next refresh <b>${stampUTC(next)}</b></span>`; return; }
+  const days=Math.floor((now-t)/86400000);
+  const stale=days>=8;                                     // one full weekly cycle missed
+  const ago=days<=0?"today":days===1?"1 day ago":days+" days ago";
+  box.innerHTML=`<i class="dot${stale?" warn":""}"></i><span>Last refreshed <b>${stampUTC(t)}</b> <span class="ago">(${ago})</span>`+
+    ` · next refresh <b>${stampUTC(next)}</b>`+(stale?` <span class="ago">— last Monday's run did not land</span>`:"")+`</span>`;
+})();
 el("footstamp").textContent = D.meta ? `Last refresh ${(D.meta.generated||"").slice(0,16).replace("T"," ")} UTC · KEV feed ${(D.meta.kev_released||"").slice(0,10)} · ledger rev ${(D.ledger&&D.ledger.totals&&D.ledger.totals.as_of)||"—"}` : "";
 el("datastamp").textContent = D.meta ? `Generated ${(D.meta.generated||"").slice(0,16).replace("T"," ")} UTC · ${num(KEV_ALL.length)} KEV entries · ${num(KWEEKS.length)} weeks · KEV catalog ${num(D.meta.kev_catalog_size)} entries · ledger ${num(D.meta.ledger_entries)} entries.` : "";
 
@@ -1361,7 +1412,7 @@ const FW_FALLBACK = [
   {"id":"pci-dss-4.0.1","name":"PCI DSS","version":"4.0.1","date":"2024-06-11","url":"https://www.pcisecuritystandards.org","type":"regulation","relevance":"Mandatory for cardholder-data environments; Req 6.3 and 11.3 cover identification, patching SLA, and scanning cadence.","controls":[{"ref":"6.3.1/6.3.3","title":"Vulnerability identification and 1-month critical/high patch SLA","metrics":[1,5,6,10]},{"ref":"11.3.1/11.3.2","title":"Quarterly internal/external vulnerability scans","metrics":[2,5]}]},
   {"id":"soc2-cc7.1","name":"SOC 2 (AICPA Trust Services Criteria)","version":"2017 TSC, 2022 points of focus","date":"2022","url":"https://www.aicpa-cima.com","type":"security","relevance":"Audit attestation criteria; CC7.1 is the vulnerability/anomaly detection control cited in SOC 2 reports.","controls":[{"ref":"CC7.1","title":"Detection and monitoring for vulnerabilities","metrics":[1,2,5,9]},{"ref":"CC7.2","title":"Anomaly and security-event monitoring/response","metrics":[3,4]}]},
   {"id":"eu-nis2","name":"EU NIS2 Directive","version":"2022/2555","date":"2023-01-16","url":"https://eur-lex.europa.eu/eli/dir/2022/2555","type":"regulation","relevance":"Requires vulnerability handling/disclosure and supply-chain vuln assessment for essential/important entities; transposition still incomplete in several member states as of mid-2026.","controls":[{"ref":"Art.21(2)(e)","title":"Vulnerability handling and disclosure in system acquisition/maintenance","metrics":[6,7,10]},{"ref":"Art.21(2)(d)","title":"Supply-chain security","metrics":[5,8,9]}]},
-  {"id":"eu-cra","name":"EU Cyber Resilience Act","version":"Regulation (EU) 2024/2847","date":"2024-12-10","url":"https://digital-strategy.ec.europa.eu/en/policies/cyber-resilience-act","type":"regulation","relevance":"Reporting obligations for actively-exploited vulnerabilities go live 2026-09-11 (this week); the Art.14 cascade is the clearest regulatory analog to the tracker's KEV/time-to-exploit metrics.","controls":[{"ref":"Art.14","title":"24h/72h/final report cascade for actively exploited vulns","metrics":[1,3,4,7]},{"ref":"Annex I Part II","title":"Vulnerability-handling essential requirements","metrics":[5,8,9,10]}]},
+  {"id":"eu-cra","name":"EU Cyber Resilience Act","version":"Regulation (EU) 2024/2847","date":"2024-12-10","url":"https://digital-strategy.ec.europa.eu/en/policies/cyber-resilience-act","type":"regulation","relevance":"Reporting obligations for actively-exploited vulnerabilities went live 2026-09-11; the Art.14 cascade is the clearest regulatory analog to the tracker's KEV/time-to-exploit metrics.","controls":[{"ref":"Art.14","title":"24h/72h/final report cascade for actively exploited vulns","metrics":[1,3,4,7]},{"ref":"Annex I Part II","title":"Vulnerability-handling essential requirements","metrics":[5,8,9,10]}]},
   {"id":"sec-cyber-disclosure","name":"SEC Cybersecurity Disclosure Rule","version":"Item 1.05, Form 8-K","date":"2023-07-26","url":"https://www.sec.gov/newsroom","type":"regulation","relevance":"Material-incident disclosure within 4 business days; downstream trigger context for tracked exploits becoming reportable incidents.","controls":[{"ref":"Item 1.05","title":"4-business-day material incident disclosure","metrics":[3,4]}]},
   {"id":"nist-ai-rmf-1.0","name":"NIST AI Risk Management Framework 1.0","version":"1.0 (NIST.AI.100-1)","date":"2023-01-26","url":"https://www.nist.gov/itl/ai-risk-management-framework","type":"ai","relevance":"Foundational voluntary AI risk framework (Govern/Map/Measure/Manage); predates AI-driven vuln discovery so has no explicit clause for metric 7.","controls":[{"ref":"Govern 1-6","title":"Accountability, risk tolerance, third-party oversight","metrics":[1,5,9]},{"ref":"Map 1-5","title":"Context and categorization of AI use","metrics":[7]},{"ref":"Measure 2.7-2.13","title":"Security and resilience of AI systems","metrics":[4,5]},{"ref":"Manage 2-4","title":"Risk response and prioritization","metrics":[1,6]}]},
   {"id":"nist-ai-600-1","name":"NIST AI 600-1 Generative AI Profile","version":"1.0","date":"2024-07-26","url":"https://doi.org/10.6028/NIST.AI.600-1","type":"ai","relevance":"Closest existing NIST text addressing dual-use cyber-offensive capability of generative models — direct anchor for metric 7.","controls":[{"ref":"Information Security risk category","title":"Cyber-offensive capability / uplift actions","metrics":[7]},{"ref":"GAI dissemination risk actions","title":"Obtain/replicate/disseminate risk","metrics":[3]}]},
@@ -1523,7 +1574,15 @@ const HAS_TTE = !!TTE_PIPE || TTE_ENTRY_DAYS.length>0;
   el("g_count").innerHTML = `${es.length}<small> exploited CVEs added · week of ${fmtWk(w)}${LATEST_PARTIAL?" (so far)":""}</small>`;
   el("g_sub").textContent = `${fresh} fresh · ${es.length-fresh} older · ${es.filter(e=>e[4]==="K").length} ransomware-linked · ${fmtLong(w)} – ${fmtLong(endOf(w))}`;
   if(el("chartCap")) el("chartCap").textContent = `This week: ${es.length} added (${fresh} fresh)`;
-  el("g_list").innerHTML = es.slice(0,8).map(e=>`<li><span class="m">${e[0].slice(5)}</span><span><a class="pill ${isFresh(e)?"fresh":"old"}" href="#tab=browse&cve=${e[1]}">${e[1]}</a> ${esc(e[2])} · ${esc(e[3])}</span></li>`).join("") + (es.length>8?`<li><span class="m"></span><a href="#tab=browse&week=${w}">…and ${es.length-8} more this week</a></li>`:"");
+  /* A genuinely empty week is a real outcome, not a loading state: say so, and offer
+     the last week that did have additions rather than leaving the panel blank. */
+  if(!es.length){
+    const prev=KWEEKS.slice(0,-1).reverse().find(x=>(byWeek[x]||[]).length);
+    el("g_list").innerHTML=`<li><span class="m"></span><span class="dim">CISA has added nothing to the catalog in this week so far.`+
+      (prev?` The last week with additions was <a href="#tab=browse&week=${prev}">${fmtWk(prev)}</a> — ${(byWeek[prev]||[]).length} added.`:"")+`</span></li>`;
+  } else {
+    el("g_list").innerHTML = es.slice(0,8).map(e=>`<li><span class="m">${e[0].slice(5)}</span><span><a class="pill ${isFresh(e)?"fresh":"old"}" href="#tab=browse&cve=${e[1]}">${e[1]}</a> ${esc(e[2])} · ${esc(e[3])}</span></li>`).join("") + (es.length>8?`<li><span class="m"></span><a href="#tab=browse&week=${w}">…and ${es.length-8} more this week</a></li>`:"");
+  }
   const last8=KW.slice(-9); const rows=[];
   for(let i=last8.length-1;i>=Math.max(0,last8.length-6);i--){ const r=last8[i]; const p=last8[i-1]; const d=p?r[1]-p[1]:0; rows.push(`<li><span class="m">${fmtWk(r[0])}</span><span><a href="#tab=browse&week=${r[0]}">${r[1]} added</a> · ${r[2]} fresh, ${r[3]} older${r[4]?`, ${r[4]} ransomware`:""}${p?` <span class="m">${d>0?"+":""}${d} vs prior</span>`:""}${NOTABLE[r[0]]?` — ${esc(NOTABLE[r[0]])}`:""}</span></li>`); }
   el("g_wow").innerHTML=rows.join("");
@@ -1532,13 +1591,14 @@ const HAS_TTE = !!TTE_PIPE || TTE_ENTRY_DAYS.length>0;
   const idx=w=>KWEEKS.indexOf(w);
   const post=KW.filter(r=>r[0]>=MYTHOS_WEEK && (r[0]!==LATEST_WEEK||!LATEST_PARTIAL));
   const preStart=KWEEKS[Math.max(0,idx(MYTHOS_WEEK)-22)]; const pre=KW.filter(r=>r[0]>=preStart&&r[0]<MYTHOS_WEEK);
+  const preN=pre.length; if(el("k_prewks")) el("k_prewks").textContent=preN;
   const avg=a=>a.length?a.reduce((s,r)=>s+r[1],0)/a.length:0; const avgF=a=>a.length?a.reduce((s,r)=>s+r[2],0)/a.length:0;
   const pa=avg(post), pr=avg(pre), a5=avg(FULL_WEEKS);
   el("k_post").textContent=pa.toFixed(1); el("k_pre").textContent=pr.toFixed(1); el("k_5y").textContent=a5.toFixed(1);
-  el("kpi1").innerHTML=`${pa.toFixed(1)}<small>/ wk</small>`; el("kpi1d").textContent=`${pr?((pa/pr-1)*100).toFixed(0):"—"}% vs prior 22 wks (${pr.toFixed(1)}) · 5-yr avg ${a5.toFixed(1)}`;
+  el("kpi1").innerHTML=`${pa.toFixed(1)}<small>/ wk</small>`; el("kpi1d").textContent=`${pr?(pa>=pr?"+":"")+((pa/pr-1)*100).toFixed(0)+"%":"—"} vs prior ${preN} wks (${pr.toFixed(1)}) · 5-yr avg ${a5.toFixed(1)}`;
   el("kpi1s").textContent=`${post.reduce((s,r)=>s+r[1],0)} CISA KEV additions over ${post.length} full weeks from 6 Apr 2026`;
   const pf=avgF(post), prf=avgF(pre);
-  el("kpi2").innerHTML=`${pf.toFixed(1)}<small>/ wk</small>`; el("kpi2d").textContent=`vs ${prf.toFixed(1)} / wk in the 22 weeks before`;
+  el("kpi2").innerHTML=`${pf.toFixed(1)}<small>/ wk</small>`; el("kpi2d").textContent=`vs ${prf.toFixed(1)} / wk in the ${preN} weeks before`;
   el("kpi2s").textContent=`${post.reduce((s,r)=>s+r[2],0)} of ${post.reduce((s,r)=>s+r[1],0)} carry a CVE-${THIS_YEAR} id`;
   const lw=KW[KW.length-1]; const rank=KW.filter(r=>r[0].startsWith(String(THIS_YEAR))).sort((a,b)=>b[2]-a[2]).findIndex(r=>r[0]===lw[0])+1;
   el("kpi3l").textContent=`Latest week · ${fmtWk(lw[0])} – ${fmtWk(endOf(lw[0]))}${LATEST_PARTIAL?" (partial)":""}`;
@@ -1684,20 +1744,53 @@ function kevDatasets(){
   if(kevMode==="total") return [bar("KEV additions",rows.map(r=>r[1]),css("--kev")),line];
   return [bar("Ransomware-linked",rows.map(r=>r[4]),css("--crit")),bar("Other",rows.map(r=>r[1]-r[4]),css("--kev-old")),line];
 }
+/* CISA seeded the catalog with ~290 historical entries in its first week. That bar is a
+   bootstrap, not a week of exploitation, and on a 250-week axis it squashes every real
+   week into the bottom sixth of the plot. The long views cap the axis just above the
+   busiest ordinary week and label whatever runs off the top, so nothing is hidden. */
+function kevYMax(rows){
+  const v=rows.map(r=>r[1]).filter(n=>n>0).sort((a,b)=>b-a);
+  if(v.length<12 || v[0] < v[1]*3) return null;
+  return Math.max(10, Math.ceil(v[1]*1.18/5)*5);
+}
+const clipMark={id:"clipmark",afterDatasetsDraw(ch){
+  const rows=kevRows(); const max=kevYMax(rows); if(max==null) return;
+  const {ctx,chartArea:{top,right,left},scales:{x}}=ch;
+  ctx.save(); ctx.font='500 10.5px "IBM Plex Mono", monospace'; ctx.fillStyle=css("--kev-ink");
+  ctx.textBaseline="top"; ctx.textAlign="left";
+  rows.forEach((r,i)=>{ if(r[1]<=max) return;
+    const t=`▲ ${r[1]}`, tw=ctx.measureText(t).width;
+    ctx.fillText(t, Math.min(Math.max(left, x.getPixelForValue(i)+4), right-tw), top+2);
+  });
+  ctx.restore();
+}};
+function updateScaleNote(){
+  const box=el("scalenote"); if(!box) return;
+  const rows=kevRows(), max=kevYMax(rows);
+  const off=max==null?[]:rows.filter(r=>r[1]>max);
+  box.textContent = off.length
+    ? `Axis capped at ${max} so the ordinary weeks stay readable. ${off.length===1?"One week runs":off.length+" weeks run"} off the top and carries its real total: `
+      + off.map(r=>`${fmtWkY(r[0])} — ${r[1]}`).join(", ")
+      + (off.length===1&&off[0][0]===KWEEKS[0]?" (the catalog's opening dump of historical entries, not one week's exploitation)":"")+"."
+    : "";
+  box.hidden = !off.length;
+}
 function kevOpts(){
   const o=baseOpts("KEV additions / week");
+  const ym=kevYMax(kevRows()); if(ym!=null) o.scales.y.max=ym;
   o.plugins.tooltip.callbacks.title=items=>"Week of "+items[0].label+(items[0].label===LATEST_WEEK&&LATEST_PARTIAL?" (partial)":"");
   o.plugins.tooltip.callbacks.afterBody=items=>{const r=KW.find(x=>x[0]===items[0].label)||[]; const n=NOTABLE[r[0]]; return [`Total ${r[1]} · ransomware-linked ${r[4]}`,"click to browse this week"].concat(n?["— "+n]:[]);};
   o.onClick=(evt,els)=>{ if(els.length&&kevChart){ const w=kevChart.data.labels[els[0].index]; showWeek(w,true); } };
   o.onHover=(evt,els)=>{evt.native.target.style.cursor=els.length?"pointer":"default";};
   return o;
 }
-function kevRedraw(){ if(!kevChart) return; kevChart.data.labels=kevRows().map(r=>r[0]); kevChart.data.datasets=kevDatasets(); kevChart.update(); }
+function kevRedraw(){ if(!kevChart) return; kevChart.data.labels=kevRows().map(r=>r[0]); kevChart.data.datasets=kevDatasets(); kevChart.options=kevOpts(); kevChart.update(); updateScaleNote(); }
 document.querySelectorAll("[data-kev]").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("[data-kev]").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");kevMode=b.dataset.kev;kevRedraw();}));
 document.querySelectorAll("[data-krange]").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("[data-krange]").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");kevRange=b.dataset.krange;kevRedraw();}));
 el("partialnote").textContent=LATEST_PARTIAL?`Week of ${fmtWk(LATEST_WEEK)} is partial (data to ${fmtWk(DATA_THROUGH)})`:"";
 /* chart lives on the Overview tab (which builds eagerly, not via BUILDERS), so create it here rather than in BUILDERS.exploited */
-kevChart=new Chart(el("kev"),{data:{labels:kevRows().map(r=>r[0]),datasets:kevDatasets()},options:kevOpts(),plugins:[markers]});
+kevChart=new Chart(el("kev"),{data:{labels:kevRows().map(r=>r[0]),datasets:kevDatasets()},options:kevOpts(),plugins:[markers,clipMark]});
+updateScaleNote();
 
 /* --- time to exploit --- */
 function drawTTE(){
@@ -1857,7 +1950,9 @@ function drawAdvisories(){
   box.innerHTML = top.length ? top.map(a=>`<div class="d"><div class="top"><span class="w mono">${esc(a.date||"—")}</span><span class="pill">${esc(ADVISORY_NAMES[a.sid]||a.sid)}</span></div><div class="bot"><a href="${esc(a.link||"#")}" target="_blank" rel="noopener">${esc(a.title)}</a></div></div>`).join("") :
     `<p class="note">Available after the next Monday refresh.</p>`;
   const ok=Object.values(D.source_status||{}).filter(s=>s&&s.ok).length, total=Object.keys(D.source_status||{}).length;
-  el("advnote").textContent = total ? `${num(all.length)} items across ${Object.keys(ADVISORIES).length} feeds this run; ${ok} of ${total} tracked sources returned data successfully.` : "";
+  const d0=top.length?(top[top.length-1].date||""):"", d1=top.length?(top[0].date||""):"";
+  const span = top.length ? `Showing ${top.length} of ${num(all.length)}, ${d0&&d0!==d1?`${d0} → ${d1}`:(d1||"date unknown")}. ` : "";
+  el("advnote").textContent = total ? `${span}${num(all.length)} items across ${Object.keys(ADVISORIES).length} feeds in the last pipeline run; ${ok} of ${total} tracked sources returned data successfully.` : "";
 }
 drawP0Mini();
 drawAdvisories();
@@ -1903,7 +1998,7 @@ el("revq").addEventListener("input",revDraw);
 let aiCreditChart=null;
 function drawAiCredit(){
   const box=el("aicredit"); if(!box) return;
-  const weekly=(AI_FOUND.weekly||[]).filter(r=>r[0]>=`${THIS_YEAR-1}-01-01`);
+  const weekly=(AI_FOUND.weekly||[]).filter(r=>r[0]>=`${THIS_YEAR-1}-01-01` && inData(r[0]));
   if(!weekly.length){
     el("aikpis").innerHTML='<p class="note">Available after the next fetch_ai_credit refresh.</p>';
     return;
@@ -1913,16 +2008,28 @@ function drawAiCredit(){
     layout:{padding:{top:10,right:8}},
     scales:{
       x:{grid:{display:false},border:{color:t.line},ticks:{color:t.ink3,font:AXIS_FONT,maxRotation:0,autoSkip:true,autoSkipPadding:14,maxTicksLimit:12,callback(v){const l=this.getLabelForValue(v);return /^\d{4}-\d{2}-\d{2}$/.test(l)?fmtWkY(l):l;}}},
-      y:{beginAtZero:true,grid:{color:t.grid},border:{display:false},ticks:{color:t.ink3,font:AXIS_FONT,precision:0},title:{display:true,text:"AI-credited CVEs / week",color:t.ink3,font:{size:11}}},
-      y1:{beginAtZero:true,position:"right",grid:{display:false},border:{display:false},ticks:{color:t.ink3,font:AXIS_FONT,precision:0},title:{display:true,text:"all CVEs published / week",color:t.ink3,font:{size:11}}}
+      /* Two scales on one plot only work if each axis is visibly bound to its series,
+         so each title takes its series' colour rather than the shared muted grey. */
+      y:{beginAtZero:true,grid:{color:t.grid},border:{display:false},ticks:{color:t.ink3,font:AXIS_FONT,precision:0},title:{display:true,text:"AI-credited CVEs / week",color:css("--myth"),font:{size:11}}},
+      y1:{beginAtZero:true,position:"right",grid:{display:false},border:{display:false},ticks:{color:t.ink3,font:AXIS_FONT,precision:0},title:{display:true,text:"all CVEs published / week",color:css("--kev"),font:{size:11}}}
     },
-    plugins:{legend:{display:false},tooltip:tipStyle({callbacks:{title:items=>"Week of "+items[0].label}})}
+    plugins:{legend:{display:false},tooltip:tipStyle({callbacks:{
+      title:items=>"Week of "+items[0].label+(items[0].label===lastW&&partialLast?" (partial)":"")}})}
   };
+  /* The final week is still filling up. Drawn solid it reads as a collapse in CVE
+     publication, so its bar is faded and its line segment dashed. */
+  const lastW=weekly[weekly.length-1][0], n=weekly.length;
+  const partialLast = DATA_THROUGH && DATA_THROUGH < endOf(lastW);
   if(aiCreditChart) aiCreditChart.destroy();
   aiCreditChart=new Chart(el("aicreditchart"),{data:{labels:weekly.map(r=>r[0]),datasets:[
-    {type:"bar",label:"AI-credited CVEs",data:weekly.map(r=>r[1]),backgroundColor:css("--myth"),yAxisID:"y",barPercentage:.8,categoryPercentage:.9},
-    {type:"line",label:"All CVEs published",data:weekly.map(r=>r[2]),borderColor:css("--kev"),backgroundColor:css("--kev"),borderWidth:2,pointRadius:0,tension:.25,yAxisID:"y1"}
+    {type:"bar",label:"AI-credited CVEs",data:weekly.map(r=>r[1]),yAxisID:"y",barPercentage:.8,categoryPercentage:.9,
+     backgroundColor:weekly.map((r,i)=>(partialLast&&i===n-1)?css("--myth-2"):css("--myth"))},
+    {type:"line",label:"All CVEs published",data:weekly.map(r=>r[2]),borderColor:css("--kev"),backgroundColor:css("--kev"),borderWidth:2,pointRadius:0,tension:.25,yAxisID:"y1",
+     segment:{borderDash:c=>(partialLast&&c.p1DataIndex===n-1)?[4,3]:undefined}}
   ]},options:o});
+  if(el("aipartial")) el("aipartial").textContent = partialLast
+    ? `Week of ${fmtWk(lastW)} is partial (data to ${fmtWk(DATA_THROUGH)}) — faded bar, dashed line`
+    : "All weeks shown are complete";
 
   const T=AI_FOUND.totals||{};
   const yr=String(THIS_YEAR);
@@ -2027,6 +2134,8 @@ document.querySelector("[data-other]").addEventListener("click",e=>{showOther=!s
 
 BUILDERS.vendors=function(){
   const chipsEl=el("chips");
+  if(el("cnacount")) el("cnacount").textContent=Object.keys(CNA).filter(c=>c!=="Other CNAs").length;
+  if(el("copartial")) el("copartial").textContent=CNA_LAST_PARTIAL?`Latest week (${fmtWk(CNA_LAST)}) is partial — data to ${fmtWk(DATA_THROUGH)}`:"All weeks shown are complete";
   const names=Object.keys(CNA).filter(c=>c!=="Other CNAs").sort((a,b)=>Object.values(CNA[b]).reduce((s,v)=>s+v,0)-Object.values(CNA[a]).reduce((s,v)=>s+v,0));
   names.forEach(c=>{ const b=document.createElement("button"); b.className="chip"; b.type="button"; b.dataset.cna=c; b.style.setProperty("--c",CCOL[c]||"#888"); b.setAttribute("aria-pressed",selected.has(c)?"true":"false"); b.innerHTML=`<i></i>${esc(c)}`;
     b.addEventListener("click",()=>{ if(selected.has(c)) selected.delete(c); else selected.add(c); b.setAttribute("aria-pressed",selected.has(c)?"true":"false"); coRedraw(); }); chipsEl.appendChild(b); });
@@ -2157,6 +2266,15 @@ function dnDraw(){
 }
 el("dnq").addEventListener("input",dnDraw);
 BUILDERS.patching=function(){
+  /* The month that contains data_through is always mid-flight: say which one and why,
+     rather than letting a short final bar read as a drop in patch volume. */
+  if(el("patchnote")){
+    const cur=(DATA_THROUGH||TODAY).slice(0,7), last=allMonths[allMonths.length-1];
+    const nm=m=>m?MONS[+m.slice(5,7)-1]+" "+m.slice(0,4):"—";
+    el("patchnote").textContent = last>=cur
+      ? `${nm(last)} is in progress — the release cycle has not closed, so its bars are a running total, not a monthly figure. Last complete month: ${nm(allMonths.filter(m=>m<cur).pop())}.`
+      : `All months shown are complete releases; the series ends at ${nm(last)}.`;
+  }
   pcChart=new Chart(el("patchchart"),{data:{labels:pMonths(),datasets:pcDatasets()},options:pcOpts(),plugins:[pcMark]});
   dnDraw();
 };
@@ -2187,7 +2305,9 @@ BUILDERS.frameworks=function(){
   if(ecoKeys.length){ ecoChart=new Chart(el("ecochart"),{data:{labels:eMonths(),datasets:ecoDatasets()},options:ecoOpts(),plugins:[ecoMark]});
     el("ecolegend").innerHTML=ecoKeys.map(e=>`<span><i class="sw" style="background:${ECOL[e]||"#888"}"></i>${ECON[e]||e}</span>`).join("");
     const pre=m=>m>=`${THIS_YEAR}-01`&&m<="2026-03", post=m=>m>="2026-04"&&m<DATA_THROUGH.slice(0,7);
-    el("econote").textContent="Jan–Mar 2026 avg → Apr onward avg (complete months): "+ecoKeys.map(e=>{const a=Object.entries(ECO[e]).filter(([m])=>pre(m)).map(([,v])=>v), b=Object.entries(ECO[e]).filter(([m])=>post(m)).map(([,v])=>v); const av=x=>x.length?Math.round(x.reduce((s,v)=>s+v,0)/x.length):"—"; return `${ECON[e]||e} ${av(a)}→${av(b)}`;}).join(" · ");
+    el("econote").textContent="Jan–Mar 2026 avg → Apr onward avg (complete months): "+ecoKeys.map(e=>{const a=Object.entries(ECO[e]).filter(([m])=>pre(m)).map(([,v])=>v), b=Object.entries(ECO[e]).filter(([m])=>post(m)).map(([,v])=>v); const av=x=>x.length?Math.round(x.reduce((s,v)=>s+v,0)/x.length):"—"; return `${ECON[e]||e} ${av(a)}→${av(b)}`;}).join(" · ")
+      + (()=>{const cur=(DATA_THROUGH||TODAY).slice(0,7), last=ecoMonthsAll[ecoMonthsAll.length-1];
+             return last&&last>=cur?` · ${MONS[+last.slice(5,7)-1]} ${last.slice(0,4)} is partial and excluded from both averages.`:"";})();
   } else { el("ecochart").parentElement.innerHTML='<p class="note note--body">Ecosystem counts need a GitHub token in the refresh pipeline (see the README) and are missing from this build.</p>'; }
   const hy=el("heatyears");
   if(Object.keys(REPO).length){ for(let y=2021;y<=THIS_YEAR;y++){ const b=document.createElement("button"); b.type="button"; b.textContent=y; b.setAttribute("aria-pressed",y===heatYear?"true":"false"); b.addEventListener("click",()=>{heatYear=y;[...hy.children].forEach(x=>x.setAttribute("aria-pressed",x.textContent==String(y)?"true":"false"));heatDraw();}); hy.appendChild(b);} heatDraw(); }
@@ -2254,16 +2374,23 @@ BUILDERS.governance=function(){
   try{
     const OWASP = D.owasp || {};
     const owaspGroups = [
-      {key:"llm_top10_2025", label:"OWASP LLM Top 10 (2025)"},
-      {key:"agentic_top10", label:"OWASP Agentic AI Top 10"},
-      {key:"ml_top10", label:"OWASP ML Top 10"}
+      {key:"llm_top10_2025", label:"OWASP LLM Top 10 (2025)", url:"https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/"},
+      {key:"agentic_top10", label:"OWASP Top 10 for Agentic Applications (2026)",
+       url:"https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/",
+       pending:"ASI01–ASI10 are published on OWASP's own page, but the pipeline has no machine-readable source for the entry ids and titles yet, so nothing is invented here."},
+      {key:"ml_top10", label:"OWASP ML Top 10", url:"https://owasp.org/www-project-machine-learning-security-top-10/"}
     ];
     const owaspBox = el("owaspgroups");
     if(owaspBox){
       const html = owaspGroups.map(g=>{
         const items = OWASP[g.key]||[];
-        if(!items.length) return "";
-        return `<h4 style="margin-top:var(--s4)">${esc(g.label)}</h4><div class="chips">${items.map(it=>
+        /* An empty list is a state worth showing: the list exists, its official
+           entry ids just are not in this build yet. Silently dropping the whole
+           group reads as "OWASP has nothing here", which is the wrong claim. */
+        if(!items.length) return `<h4 style="margin-top:var(--s5)">${esc(g.label)}</h4>`+
+          `<div class="pending"><b>List pending official IDs.</b> ${esc(g.pending||"The entries are published but not yet in this build's dataset; they arrive with the next Monday refresh.")}`+
+          (g.url?` <a href="${esc(g.url)}" rel="noopener" target="_blank">Read the list at OWASP →</a>`:"")+`</div>`;
+        return `<h4 style="margin-top:var(--s5)">${esc(g.label)}</h4><div class="chips">${items.map(it=>
           `<a class="chip" href="${esc((it&&it.url)||"#")}" target="_blank" rel="noopener">${esc((it&&it.id)||"")} ${esc((it&&it.name)||"")}</a>`
         ).join("")}</div>`;
       }).join("");
@@ -2329,7 +2456,12 @@ function routeHash(){
 window.addEventListener("hashchange",routeHash);
 
 /* ================= search ================= */
-const SIDX=[];
+/* The index walks every KEV entry, EUVD record, advisory item, .NET advisory and
+   framework control — tens of thousands of string concatenations. None of it is
+   needed to paint the page, so it is built the first time the field is touched. */
+const SIDX=[]; let sidxDone=false;
+function buildSearchIndex(){
+  if(sidxDone) return; sidxDone=true;
 KEV_ALL.forEach(e=>SIDX.push({g:"Exploited (KEV)",k:`${e[1]} ${e[2]} ${e[3]} ${e[6]} ${CAT_LABEL[catOf(e)]||""}`.toLowerCase(),m:e[1],t:`${e[2]} · ${e[3]} — ${e[6]}`,d:e[0],go:()=>openCVE(e[1])}));
 Object.entries(AI_INDEX).forEach(([cve,rec])=>SIDX.push({g:"AI-credited CVEs",k:`${cve} ${(rec.matched||[]).join(" ")} ${rec.cna||""}`.toLowerCase(),m:cve,t:`${(rec.matched||[]).join(", ")||"AI-credited"} · ${rec.cna||rec.source||""}`,d:rec.pub||"",go:()=>{goTab("ai");el("aicredit").scrollIntoView({behavior:"smooth",block:"start"});}}));
 REVEALED.forEach(m=>SIDX.push({g:"Found by Mythos (revealed)",k:`${m.id} ${m.project} ${m.bug_class} ${m.title}`.toLowerCase(),m:m.id,t:`${m.project} · ${m.bug_class} — ${m.title}`,d:m.severity,go:()=>{goTab("ai");el("revq").value=m.id;revDraw();el("revealed").scrollIntoView({behavior:"smooth",block:"start"});}}));
@@ -2350,14 +2482,16 @@ Object.entries(ADVISORIES).forEach(([sid,rows])=>(rows||[]).forEach(([date,s,tit
 ((D.atlas||{}).techniques||[]).forEach(t=>{ if(!t||!t.id) return; SIDX.push({g:"AI attacks (ATLAS)",k:`${t.id} ${t.name||""} ${t.tactic||""}`.toLowerCase(),m:t.id,t:`${t.name||""} — ${t.tactic||""}`,d:"",go:()=>{goTab("ai");el("atlasavid").scrollIntoView({behavior:"smooth",block:"start"});}}); });
 ((D.atlas||{}).case_studies||[]).forEach(c=>{ if(!c||!c[1]) return; SIDX.push({g:"AI attacks (ATLAS)",k:`${c[1]} ${c[2]||""} ${c[3]||""} ${c[4]||""}`.toLowerCase(),m:c[1],t:`${c[2]||""} — ${c[3]||""}`,d:c[0]||"",go:()=>{goTab("ai");el("atlasavid").scrollIntoView({behavior:"smooth",block:"start"});}}); });
 ((D.ai_incidents||{}).latest||[]).forEach(a=>{ if(!a||!a[1]) return; SIDX.push({g:"AI incidents (AVID)",k:`${a[1]} ${a[2]||""}`.toLowerCase(),m:a[1],t:a[2]||"",d:a[0]||"",go:()=>{goTab("ai");el("atlasavid").scrollIntoView({behavior:"smooth",block:"start"});}}); });
+}
 const q=el("q"), sres=el("sres"); let sel=-1, hits=[];
-function runSearch(){ const v=q.value.trim().toLowerCase(); sres.innerHTML=""; sel=-1; hits=[]; if(v.length<2) return; const terms=v.split(/\s+/);
+function runSearch(){ const v=q.value.trim().toLowerCase(); sres.innerHTML=""; sel=-1; hits=[]; if(v.length<2) return; buildSearchIndex(); const terms=v.split(/\s+/);
   const scored=SIDX.filter(x=>terms.every(t=>x.k.includes(t))).slice(0,60); if(!scored.length){sres.innerHTML='<div class="none">No match. Try a CVE id, vendor, product, control reference or framework name.</div>';return;}
   const groups={}; scored.forEach(x=>(groups[x.g]=groups[x.g]||[]).push(x)); let i=0;
   sres.innerHTML=Object.entries(groups).map(([g,xs])=>`<div class="g">${g} · ${xs.length}</div>`+xs.slice(0,12).map(x=>{hits.push(x);return `<a href="#" data-i="${i++}"><span class="m">${esc(x.m)}</span><span>${esc(x.t)}</span><span class="d">${esc(x.d)}</span></a>`;}).join("")).join("");
   sres.querySelectorAll("a").forEach(a=>a.addEventListener("click",ev=>{ev.preventDefault();pick(+a.dataset.i);})); }
 function pick(i){ const h=hits[i]; if(!h) return; sres.innerHTML=""; q.blur(); h.go(); }
-q.addEventListener("input",runSearch); q.addEventListener("focus",runSearch);
+q.addEventListener("input",runSearch);
+q.addEventListener("focus",()=>{ buildSearchIndex(); runSearch(); }, {once:false});
 q.addEventListener("keydown",e=>{ const as=sres.querySelectorAll("a"); if(e.key==="ArrowDown"){e.preventDefault();sel=Math.min(as.length-1,sel+1);} else if(e.key==="ArrowUp"){e.preventDefault();sel=Math.max(0,sel-1);} else if(e.key==="Enter"){e.preventDefault();if(sel>=0)pick(sel);else if(as.length)pick(0);return;} else if(e.key==="Escape"){sres.innerHTML="";q.blur();return;} else return; as.forEach((a,i)=>a.setAttribute("aria-selected",i===sel?"true":"false")); if(as[sel]) as[sel].scrollIntoView({block:"nearest"}); });
 document.addEventListener("click",e=>{ if(!e.target.closest(".search")) sres.innerHTML=""; });
 

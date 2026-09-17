@@ -24,6 +24,7 @@ NVD_KEY = os.environ.get('NVD_API_KEY', '')
 NVD_SLEEP = 0.7 if NVD_KEY else 6.5
 ARGS = None
 LOG = []
+WARNINGS = []  # non-fatal issues surfaced in meta.warnings (missing sources, degraded fetchers, etc.)
 try:
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 except Exception:
@@ -113,10 +114,12 @@ def fetch_kev():
     ents.sort(key=lambda r: (r[0], r[1]))
     return {'released': j.get('dateReleased'), 'count': j.get('count'), 'entries': ents}
 
-def kev_weekly(entries):
-    """entries: enriched KEV rows [date,cve,vendor,product,K/U,due,name,published,category,score,severity]."""
+def kev_weekly(entries, cap=None):
+    """entries: enriched KEV rows [date,cve,vendor,product,K/U,due,name,published,category,score,severity].
+    cap: last date.isoformat() to allow (weeks whose Monday is after `cap` are never emitted)."""
     first = max(START, dt.date(2021, 11, 1))
-    weeks = weeks_between(first, TODAY); idx = {w: i for i, w in enumerate(weeks)}
+    end = min(TODAY, monday(cap)) if cap else TODAY
+    weeks = weeks_between(first, end); idx = {w: i for i, w in enumerate(weeks)}
     buckets = [{'total': 0, 'fresh': 0, 'older': 0, 'ransom': 0, 'tte': [], 'edge': 0} for _ in weeks]
     for d, cve, ven, prod, k, due, name, pub, cat, score, sev, *_ in entries:
         w = monday(d).isoformat()
@@ -491,10 +494,18 @@ def fetch_extra_feeds():
         log('[extra_feeds] nodejs FAILED:', repr(ex))
     time.sleep(0.3)
     try:
-        page = http('https://grafana.com/security/security-advisories/', headers=BROWSER_UA, timeout=30)
+        xml_text = http('https://grafana.com/security/security-advisories/index.xml', headers=BROWSER_UA, timeout=30)
+        root = ET.fromstring(xml_text)
         rows = []
-        for m in re.finditer(r'<a[^>]+href="(/security/security-advisories/[^"]+)"[^>]*>([^<]{5,150})</a>', page):
-            rows.append(['', '', htmlmod.unescape(m.group(2)).strip(), '', 'https://grafana.com' + m.group(1)])
+        for item in root.iter('item'):
+            title = (item.findtext('title') or '')[:200]; link = item.findtext('link') or ''
+            pub = item.findtext('pubDate') or ''
+            try: d_ = dt.datetime.strptime(pub[:25].strip(), '%a, %d %b %Y %H:%M:%S').date().isoformat()
+            except Exception: d_ = pub[:10]
+            cid_m = re.search(r'(CVE-\d{4}-\d{4,7})', link, re.I) or re.search(r'(CVE-\d{4}-\d{4,7})', title, re.I)
+            cid = cid_m.group(1).upper() if cid_m else ''
+            rows.append([d_, cid, title, '', link])
+        rows.sort(key=lambda r: r[0], reverse=True)
         if rows: out['grafana'] = rows[:100]
         else: log('[extra_feeds] grafana: no machine-readable advisories found, skipping')
     except Exception as ex:
@@ -788,9 +799,9 @@ ADVISORY_FEEDS = [
     ('jvn-rss', 'JVN/JPCERT', 'JPCERT/CC + IPA', 'https://jvn.jp/rss/jvn.rdf', True),
     ('cert-fr', 'CERT-FR (ANSSI)', 'ANSSI', 'https://cert.ssi.gouv.fr/feed/', True),
     ('cyber-gc-ca', 'Canadian Centre for Cyber Security alerts', 'Canadian Centre for Cyber Security', 'https://www.cyber.gc.ca/api/cccs/rss/v1/get?feed=alerts&lang=en', True),
-    ('cisa-alerts', 'CISA alerts', 'CISA', 'https://www.cisa.gov/cybersecurity-advisories/rss.xml', True),
+    ('cisa-alerts', 'CISA alerts', 'CISA', 'https://www.cisa.gov/cybersecurity-advisories/all.xml', True),
     ('talos-blog', 'Cisco Talos vulnerability reports', 'Cisco Talos', 'https://blog.talosintelligence.com/rss/', False),
-    ('msrc-blog', 'Microsoft MSRC blog', 'Microsoft MSRC', 'https://msrc.microsoft.com/blog/rss.xml', False),
+    ('msrc-blog', 'Microsoft Security blog', 'Microsoft MSRC', 'https://www.microsoft.com/en-us/security/blog/feed/', False),
     ('gtig-blog', 'Google Threat Intelligence blog', 'Google Threat Intelligence Group', 'https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v', False),
     ('rapid7-blog', 'Rapid7 blog', 'Rapid7', 'https://blog.rapid7.com/rss/', False),
     ('crowdstrike-blog', 'CrowdStrike blog', 'CrowdStrike', 'https://www.crowdstrike.com/blog/feed/', False),
@@ -837,6 +848,8 @@ def fetch_advisories():
     for sid, name, org, url, is_pure in ADVISORY_FEEDS:
         try:
             text = http(url, headers=BROWSER_UA, timeout=30)
+            if '404 - ERROR' in text or '<title>404' in text:
+                raise RuntimeError('feed endpoint returned a 404 error document')
             items = _feed_items(text)
             rows = []
             for date, title, link in items:
@@ -1360,13 +1373,20 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_wat
           euvd=None, epss=None, p0=None, exploit=None, ssvc=None, advisories=None,
           atlas=None, avid=None, csaf=None, ai_credit=None):
     data_through = max(e[0] for e in kev['entries']) if kev else TODAY.isoformat()
+    cap_week = monday(data_through).isoformat()  # never emit weeks after the last KEV dateAdded
+    if ledger and ledger.get('weekly'):
+        ledger = dict(ledger); ledger['weekly'] = [r for r in ledger['weekly'] if r[0] <= cap_week]
+    if epoch:
+        epoch = dict(epoch)
+        epoch['weeks'] = [w for w in epoch.get('weeks', []) if w <= cap_week]
+        epoch['series'] = {c: {w: v for w, v in s.items() if w <= cap_week} for c, s in (epoch.get('series') or {}).items()}
     cve_pub = cve_pub or {}
     kev_categories = MANUAL.get('kev_categories', {})
     kev_entries = []
     for d, cve, ven, prod, k, due, name in (kev['entries'] if kev else []):
         info = cve_pub.get(cve) or {}
         kev_entries.append([d, cve, ven, prod, k, due, name, info.get('pub') or '', categorize(ven, prod, kev_categories), info.get('score'), info.get('sev') or ''])
-    kw = kev_weekly(kev_entries) if kev_entries else []
+    kw = kev_weekly(kev_entries, cap=data_through) if kev_entries else []
     watchlist = build_watchlist(nvd_watchlist, extra_feeds, kev_entries)
     kev_cves = {e[1] for e in kev_entries}
     euvd_built = build_euvd(euvd, kev_entries)
@@ -1410,6 +1430,20 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_wat
     _st('bsi-csaf-aggregator', bool(csaf_providers), len(csaf_providers), max((p.get('last_updated') or '' for p in csaf_providers), default=None) or None)
     _st('redhat-csaf', bool(csaf_latest), len(csaf_latest), csaf_latest[0][0] if csaf_latest else None)
     _st('ai-credit-cvelistv5', bool((ai_credit or {}).get('index')), len((ai_credit or {}).get('index') or {}), (ai_credit or {}).get('asof'), (ai_credit or {}).get('last_full_tag') or '')
+    _st('anthropic-ledger', bool(ledger), (ledger or {}).get('entries'))
+    _st('epoch-ai-cve-explorer', bool(epoch), len((epoch or {}).get('weeks') or []))
+    _st('msrc-cvrf', bool(msrc), len(msrc or {}), max(msrc) if msrc else None)
+    _st('oracle-cpu', bool(oracle), len(oracle or {}), max(oracle) if oracle else None)
+    _st('github-advisories-ecosystem', bool(eco), sum(len(v) for v in (eco or {}).values()))
+    _st('github-advisories-repo', bool(repos), len(repos or {}))
+    _st('dotnet-announcements', bool(dotnet), len((dotnet or {}).get('items') or []))
+    _st('cvelistv5-published', bool(cve_pub), len(cve_pub))
+    _st('nvd-watchlist', bool(nvd_watchlist), len(nvd_watchlist or {}))
+    _st('kubernetes-cve-feed', bool((extra_feeds or {}).get('kubernetes')), len((extra_feeds or {}).get('kubernetes') or []))
+    _st('nodejs-vuln-feed', bool((extra_feeds or {}).get('nodejs')), len((extra_feeds or {}).get('nodejs') or []))
+    _st('grafana-advisories', bool((extra_feeds or {}).get('grafana')), len((extra_feeds or {}).get('grafana') or []))
+    for sid in source_status:
+        if not source_status[sid]['ok']: WARNINGS.append(f"source degraded: {sid} ({source_status[sid].get('note') or 'no data / stale cache'})")
     events = [{'date': e['date'], 'label': e['label'], 'week': monday(e['date']).isoformat(), 'frac': round((dt.date.fromisoformat(e['date']).weekday() + .5) / 7, 2)} for e in MANUAL['events']]
     revealed_manual = []
     for line in (HERE / 'mythos_cves_raw.txt').read_text(encoding='utf-8').splitlines():
@@ -1423,7 +1457,8 @@ def build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_wat
         'meta': {'generated': dt.datetime.now(dt.timezone.utc).isoformat(timespec='seconds'), 'data_through': data_through, 'scope_start': START.isoformat(),
                  'scope_note': f'Scope: {START.year} → today; KEV since Nov 2021, P0 since 2014',
                  'kev_released': kev.get('released') if kev else None, 'kev_catalog_size': kev.get('count') if kev else None,
-                 'ledger_entries': ledger.get('entries') if ledger else None, 'site': MANUAL['site'], 'log': LOG[-40:]},
+                 'ledger_entries': ledger.get('entries') if ledger else None, 'site': MANUAL['site'], 'log': LOG[-40:],
+                 'warnings': WARNINGS[-60:]},
         'events': events,
         'timeline': MANUAL['timeline'],
         'notable_weeks': MANUAL['notable_weeks'],
@@ -1543,13 +1578,23 @@ def main():
     global ARGS, START
     ap = argparse.ArgumentParser(); ap.add_argument('--offline', action='store_true'); ap.add_argument('--force-eco', action='store_true', help='pull ecosystem counts even without a token (slow, rate-limited)')
     ap.add_argument('--skip', default='', help='comma list of fetchers to skip: kev,ledger,epoch,msrc,oracle,gh_eco,gh_repos,dotnet,cve_pub,nvd_watchlist,extra_feeds,euvd,epss,p0,exploit,ssvc,advisories,atlas,avid,csaf,ai_credit')
+    ap.add_argument('--only', default='', help='comma list of fetchers to run (all others use cache); inverse of --skip, same fetcher names')
     ap.add_argument('--watchlist-limit', type=int, default=None, help='only process the first N watchlist products in fetch_nvd_watchlist (first full run is slow: ~51 products x ~18 windows x 6.5s unkeyed)')
     ap.add_argument('--ai-credit-full', action='store_true', help='force a full cvelistV5 zip rescan for fetch_ai_credit instead of the incremental delta scan')
     ap.add_argument('--since', default='2016-01-01', help='earliest date scoped into every fetcher (default 2016-01-01, i.e. a 10-year window); KEV weekly still starts at the later of this and Nov 2021 (catalog start), and the P0 sheet independently supplies 2014+')
     ARGS = ap.parse_args(); skip = set(x.strip() for x in ARGS.skip.split(',') if x.strip())
+    only = set(x.strip() for x in ARGS.only.split(',') if x.strip())
     START = dt.date.fromisoformat(ARGS.since)
     log(f'[scope] START={START.isoformat()} (--since={ARGS.since})')
-    run = lambda name, fn, *a: (cache_get(name) if name in skip else fn(*a))
+    if only: log(f'[scope] --only={sorted(only)} (all other fetchers use cache)')
+    def run(name, fn, *a):
+        if name in skip or (only and name not in only):
+            log(f'[{name}] skipped -> cache'); return cache_get(name)
+        try:
+            return fn(*a)
+        except Exception as ex:
+            WARNINGS.append(f'{name}: unhandled exception {ex!r} -> cache')
+            log(f'[{name}] UNHANDLED EXCEPTION: {ex!r} -> cache'); return cache_get(name)
     kev = run('kev', fetch_kev); ledger = run('ledger', fetch_ledger); epoch = run('epoch', fetch_epoch)
     msrc = run('msrc', fetch_msrc); oracle = run('oracle', fetch_oracle)
     eco = run('gh_eco', fetch_gh_eco); repos = run('gh_repos', fetch_gh_repos); dotnet = run('dotnet', fetch_dotnet)
@@ -1570,8 +1615,14 @@ def main():
     avid = run('avid', fetch_avid)
     csaf = run('csaf', fetch_csaf)
     ai_credit = run('ai_credit', fetch_ai_credit)
-    build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_watchlist, extra_feeds,
-          euvd, epss, p0, exploit, ssvc, advisories, atlas, avid, csaf, ai_credit)
+    try:
+        build(kev, ledger, epoch, msrc, oracle, eco, repos, dotnet, cve_pub, nvd_watchlist, extra_feeds,
+              euvd, epss, p0, exploit, ssvc, advisories, atlas, avid, csaf, ai_credit)
+    except Exception as ex:
+        WARNINGS.append(f'build: FAILED {ex!r} -- zeroweek-data.* left unchanged from the previous run')
+        log(f'[build] FAILED: {ex!r} -- outputs NOT overwritten, keeping previous zeroweek-data.*')
+        (CACHE / 'last_run.log').write_text('\n'.join(LOG), encoding='utf-8')
+        sys.exit(f'build() failed: {ex!r}')
     (CACHE / 'last_run.log').write_text('\n'.join(LOG), encoding='utf-8')
 
 if __name__ == '__main__':
